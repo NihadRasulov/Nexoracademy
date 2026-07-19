@@ -1,0 +1,6 @@
+server:
+  port: 4145
+
+spring:
+  flyway:
+    enabled: false
