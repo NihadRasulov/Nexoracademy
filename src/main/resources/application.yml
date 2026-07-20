@@ -4,3 +4,15 @@ server:
 spring:
   flyway:
     enabled: false
+
+  application:
+    name: NexoraAcademy
+
+  profiles:
+    active: dev
+
+app:
+  cors:
+    allowed-origins:
+      - http://localhost:3000
+      - http://localhost:5173
