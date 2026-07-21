@@ -1,18 +1,39 @@
 server:
   port: 4145
 
+# application.yml — Spring Boot + PostgreSQL + Flyway konfiqurasiyası
+# (Node.js/NestJS istifadə olunursa, eyni parametrləri flyway.conf faylına köçürmək kifayətdir — aşağıda nümunə var)
+
 spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:nexora_academy}
+    username: ${DB_USER:nexora_app}
+    password: ${DB_PASSWORD:change_me_in_dotenv}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+
+  jpa:
+    hibernate:
+      # DİQQƏT: schema idarəçiliyi tam Flyway-ə həvalə olunur.
+      # Hibernate heç vaxt schema yaratmamalı/dəyişməməlidir.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        default_schema: identity
+        format_sql: true
+    open-in-view: false
+
   flyway:
-    enabled: false
-
-  application:
-    name: NexoraAcademy
-
-  profiles:
-    active: dev
-
-app:
-  cors:
-    allowed-origins:
-      - http://localhost:3000
-      - http://localhost:5173
+    enabled: true
+    locations: classpath:db/migration
+    schemas: identity,catalog,academics,billing,outcomes,crm,cms,ai,notify,platform,analytics
+    default-schema: identity
+    baseline-on-migrate: true
+    baseline-version: 0
+    validate-on-migrate: true
+    out-of-order: false
+    # server-tərəfli CREATE EXTENSION icazəsi olan rol tələb olunur:
+    # bax V1__init_extensions_and_schemas.sql (pgcrypto, citext, vector)

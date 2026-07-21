@@ -1,24 +1,42 @@
 version: "3.9"
 
 services:
-
   postgres:
-    image: postgres:17
-
+    # pgvector extension-ı ilə gələn rəsmi image (ai.kb_embeddings üçün lazımdır)
+    image: pgvector/pgvector:pg16
     container_name: nexora-postgres
-
     restart: unless-stopped
-
     environment:
-      POSTGRES_DB: nexora_db
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: root
-
+      POSTGRES_DB: nexora_academy
+      POSTGRES_USER: nexora_app
+      POSTGRES_PASSWORD: change_me_in_dotenv
     ports:
       - "5432:5432"
-
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - nexora_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexora_app -d nexora_academy"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Maven/Java quraşdırmadan migration-ları işə salmaq üçün.
+  # Eyni compose şəbəkəsində olduğu üçün host "postgres" (servis adı) ilə qoşulur —
+  # "localhost" yazmaq lazım deyil, çünki konteynerin öz daxilindən baxır.
+  flyway:
+    image: flyway/flyway:10
+    container_name: nexora-flyway
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./src/main/resources/db/migration:/flyway/sql   # <-- düzəliş budur
+    command: >
+      -url=jdbc:postgresql://postgres:5432/nexora_academy
+      -user=nexora_app
+      -password=change_me_in_dotenv
+      -connectRetries=5
+      migrate
 
 volumes:
-  postgres_data:
+  nexora_pg_data:
