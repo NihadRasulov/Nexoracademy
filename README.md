@@ -5,17 +5,17 @@
 ```
 src/main/resources/db/migration/
 ├── V1__init_extensions_and_schemas.sql   (extension-lar + 11 schema)
-├── V2__identity_schema.sql               (auth, RBAC, sessions)
-├── V3__catalog_schema.sql                (kurslar, kateqoriyalar, təlimatçılar)
-├── V4__academics_schema.sql              (qruplar, cədvəl, qeydiyyat)
-├── V5__billing_schema.sql                (ödəniş, təqsit, təqaüd, kampaniya)
-├── V6__outcomes_schema.sql               (rəylər, məzun nəticələri)
-├── V7__crm_schema.sql                    (lead-lər, formlar, newsletter)
-├── V8__cms_schema.sql                    (səhifələr, bloq, media)
-├── V9__ai_schema.sql                     (chatbot, RAG, tövsiyələr, AI safety)
-├── V10__notify_schema.sql                (bildirişlər)
-├── V11__platform_schema.sql              (UI ayarları, feature flag, audit log)
-└── V12__analytics_schema.sql             (event tracking, materialized view)
+├── V2__create_enum_types.sql               (auth, RBAC, sessions)
+├── V3__create_identity_schema.sql                (kurslar, kateqoriyalar, təlimatçılar)
+├── V4__create_catalog_schema.sql              (qruplar, cədvəl, qeydiyyat)
+├── V5__create_academics_schema.sql                (ödəniş, təqsit, təqaüd, kampaniya)
+├── V6__create_billing_schema.sql               (rəylər, məzun nəticələri)
+├── V7__create_crm_schema.sql                    (lead-lər, formlar, newsletter)
+├── V8__create_outcomes_schema.sql                    (səhifələr, bloq, media)
+├── V9__create_cms_schema.sql                     (chatbot, RAG, tövsiyələr, AI safety)
+├── V10__create_ai_schema.sql                (bildirişlər)
+├── V11__create_notify_schema.sql              (UI ayarları, feature flag, audit log)
+└── V12__create_platform_schema.sql             (event tracking, materialized view)
 ```
 
 Flyway faylları default olaraq `src/main/resources/db/migration/` qovluğunda axtarır

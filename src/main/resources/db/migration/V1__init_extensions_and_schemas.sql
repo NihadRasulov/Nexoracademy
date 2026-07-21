@@ -1,27 +1,24 @@
--- =====================================================================
 -- V1__init_extensions_and_schemas.sql
--- Nexora Academy — Initial setup: extensions + 11 subject-area schemas
--- =====================================================================
+-- Genişlənmələr və bütün modul sxemlərinin (schema) yaradılması.
+-- application.yml-dəki spring.flyway.schemas siyahısı ilə tam üst-üstə düşür.
 
--- gen_random_uuid() üçün
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";   -- gen_random_uuid() üçün
+CREATE EXTENSION IF NOT EXISTS "citext";     -- case-insensitive email üçün
+CREATE EXTENSION IF NOT EXISTS "vector";     -- kb_articles.embedding üçün (pgvector)
 
--- case-insensitive email/username sahələri üçün (identity.users.email, crm.leads.email və s.)
-CREATE EXTENSION IF NOT EXISTS "citext";
+CREATE SCHEMA IF NOT EXISTS identity;    -- users, oauth_accounts, sessions
+CREATE SCHEMA IF NOT EXISTS catalog;     -- categories, courses, instructors
+CREATE SCHEMA IF NOT EXISTS academics;   -- course_groups, enrollments
+CREATE SCHEMA IF NOT EXISTS billing;     -- payments, scholarships
+CREATE SCHEMA IF NOT EXISTS outcomes;    -- course_reviews, graduate_outcomes
+CREATE SCHEMA IF NOT EXISTS crm;         -- leads, contact_submissions, chat_sessions, campaigns
+CREATE SCHEMA IF NOT EXISTS cms;         -- cms_content
+CREATE SCHEMA IF NOT EXISTS ai;          -- kb_articles
+CREATE SCHEMA IF NOT EXISTS notify;      -- notifications
+CREATE SCHEMA IF NOT EXISTS platform;    -- paylaşılan ENUM tipləri + audit_logs
+CREATE SCHEMA IF NOT EXISTS analytics;   -- hazırda cədvəl yoxdur, gələcək hesabatlar üçün ayrılıb
 
--- ai.kb_embeddings.embedding (RAG) üçün — server bunu dəstəkləmirsə bu sətri şərh halına sal
--- (Not: pgvector serverdə quraşdırılmalıdır: apt/yum paketi və ya managed Postgres addon)
-CREATE EXTENSION IF NOT EXISTS "vector";
-
--- Subject-area schema-lar (SRS Modul 1-31)
-CREATE SCHEMA IF NOT EXISTS identity;
-CREATE SCHEMA IF NOT EXISTS catalog;
-CREATE SCHEMA IF NOT EXISTS academics;
-CREATE SCHEMA IF NOT EXISTS billing;
-CREATE SCHEMA IF NOT EXISTS outcomes;
-CREATE SCHEMA IF NOT EXISTS crm;
-CREATE SCHEMA IF NOT EXISTS cms;
-CREATE SCHEMA IF NOT EXISTS ai;
-CREATE SCHEMA IF NOT EXISTS notify;
-CREATE SCHEMA IF NOT EXISTS platform;
-CREATE SCHEMA IF NOT EXISTS analytics;
+-- QEYD: bu extension-ları yaratmaq üçün DB istifadəçisinin superuser
+-- olması, ya da CREATE əmrinə icazəsi olması lazımdır. Adətən bunu
+-- Postgres admin (məs. Docker-dəki "postgres" superuser) ilə bir dəfəlik
+-- edib, sonra tətbiq rolunu (nexora_app) məhdud səlahiyyətlə saxlamaq tövsiyə olunur.

@@ -1,21 +1,21 @@
-version: "3.9"
-
 services:
   postgres:
-    # pgvector extension-ı ilə gələn rəsmi image (ai.kb_embeddings üçün lazımdır)
+    # pgvector extension-ı ilə gələn rəsmi image (ai.kb_articles.embedding üçün lazımdır)
     image: pgvector/pgvector:pg16
     container_name: nexora-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: nexora_academy
-      POSTGRES_USER: nexora_app
-      POSTGRES_PASSWORD: change_me_in_dotenv
+      POSTGRES_DB: ${DB_NAME:-nexora_academy}
+      POSTGRES_USER: ${DB_USER:-nexora_app}
+      # ${VAR:?...} formatı: .env-də DB_PASSWORD təyin olunmayıbsa, compose xəta ilə dayanır —
+      # beləliklə default/plaintext şifrə heç vaxt image-a "sızmır".
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD .env faylında təyin edilməlidir}
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - nexora_pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U nexora_app -d nexora_academy"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-nexora_app} -d ${DB_NAME:-nexora_academy}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -29,14 +29,21 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    environment:
+      FLYWAY_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-nexora_academy}
+      FLYWAY_USER: ${DB_USER:-nexora_app}
+      FLYWAY_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD .env faylında təyin edilməlidir}
+      FLYWAY_CONNECT_RETRIES: 5
+      # application.yml-dəki spring.flyway.schemas ilə eyni siyahı:
+      FLYWAY_SCHEMAS: identity,catalog,academics,billing,outcomes,crm,cms,ai,notify,platform,analytics
+      FLYWAY_DEFAULT_SCHEMA: identity
+      FLYWAY_BASELINE_ON_MIGRATE: "true"
+      FLYWAY_BASELINE_VERSION: "0"
+      FLYWAY_VALIDATE_ON_MIGRATE: "true"
+      FLYWAY_OUT_OF_ORDER: "false"
     volumes:
-      - ./src/main/resources/db/migration:/flyway/sql   # <-- düzəliş budur
-    command: >
-      -url=jdbc:postgresql://postgres:5432/nexora_academy
-      -user=nexora_app
-      -password=change_me_in_dotenv
-      -connectRetries=5
-      migrate
+      - ./src/main/resources/db/migration:/flyway/sql
+    command: migrate
 
 volumes:
   nexora_pg_data:

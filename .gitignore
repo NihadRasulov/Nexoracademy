@@ -31,3 +31,10 @@ build/
 
 ### VS Code ###
 .vscode/
+
+
+# --- Sirlər / lokal konfiq ---
+.env
+.env.*
+!.env.example
+application-secrets.yml

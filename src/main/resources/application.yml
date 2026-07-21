@@ -2,7 +2,8 @@ server:
   port: 4145
 
 # application.yml — Spring Boot + PostgreSQL + Flyway konfiqurasiyası
-# (Node.js/NestJS istifadə olunursa, eyni parametrləri flyway.conf faylına köçürmək kifayətdir — aşağıda nümunə var)
+# Dəyərlər .env faylından (spring-dotenv vasitəsilə) və ya real ETX env
+# dəyişənlərindən oxunur — bax .env.example. .env heç vaxt commit edilməməlidir.
 
 spring:
   datasource:
@@ -22,6 +23,8 @@ spring:
       ddl-auto: validate
     properties:
       hibernate:
+        # Yalnız default (@Table schema göstərilməyən entity-lər üçün) sxem.
+        # Digər modullardakı entity-lərdə @Table(schema = "catalog") və s. göstərilməlidir.
         default_schema: identity
         format_sql: true
     open-in-view: false
