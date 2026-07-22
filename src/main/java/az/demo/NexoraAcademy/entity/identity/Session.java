@@ -52,4 +52,8 @@ public class Session {
 
     @Column(name = "revoked_at")
     private Instant revokedAt;
+
+    /** Failed-guess counter for short numeric OTP codes (EMAIL_VERIFY / LOGIN_OTP types) — see AuthProperties#otpMaxAttempts. */
+    @Column(nullable = false)
+    private Short attempts = 0;
 }

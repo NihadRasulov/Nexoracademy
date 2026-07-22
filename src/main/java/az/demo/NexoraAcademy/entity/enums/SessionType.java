@@ -5,7 +5,8 @@ import jakarta.persistence.Converter;
 public enum SessionType implements PgEnum {
     SESSION("session"),
     PASSWORD_RESET("password_reset"),
-    EMAIL_VERIFY("email_verify");
+    EMAIL_VERIFY("email_verify"),
+    LOGIN_OTP("login_otp");
 
     private final String dbValue;
 

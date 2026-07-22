@@ -4,7 +4,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 
-public record VerifyEmailRequest(
+/** Second step of login: the 6-digit code emailed after a successful email+password check. */
+public record LoginOtpVerifyRequest(
         @NotBlank @Email String email,
 
         @NotBlank

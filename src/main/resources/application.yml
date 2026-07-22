@@ -82,7 +82,10 @@ app:
 
   auth:
     password-reset-expiration-ms: ${PASSWORD_RESET_EXPIRATION_MS:3600000}     # 1 saat
-    email-verify-expiration-ms: ${EMAIL_VERIFY_EXPIRATION_MS:86400000}       # 24 saat
+    # Qeydiyyat/login OTP-ləri (6 rəqəmli kod) — link deyil, ona görə ömrü qısadır.
+    email-verify-expiration-ms: ${EMAIL_VERIFY_EXPIRATION_MS:600000}          # 10 dəqiqə
+    login-otp-expiration-ms: ${LOGIN_OTP_EXPIRATION_MS:600000}                # 10 dəqiqə
+    otp-max-attempts: ${OTP_MAX_ATTEMPTS:5}
 
   # CRUD/error logları harada saxlanılsın (bax logback-spring.xml).
   # create/read/update/delete/error üçün ayrı alt-qovluqlar, 30 gün saxlama.

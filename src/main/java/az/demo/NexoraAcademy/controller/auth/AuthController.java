@@ -1,6 +1,8 @@
 package az.demo.NexoraAcademy.controller.auth;
 
 import az.demo.NexoraAcademy.dto.auth.ForgotPasswordRequest;
+import az.demo.NexoraAcademy.dto.auth.LoginOtpResponse;
+import az.demo.NexoraAcademy.dto.auth.LoginOtpVerifyRequest;
 import az.demo.NexoraAcademy.dto.auth.LoginRequest;
 import az.demo.NexoraAcademy.dto.auth.RefreshTokenRequest;
 import az.demo.NexoraAcademy.dto.auth.RegisterRequest;
@@ -33,9 +35,16 @@ public class AuthController {
         return ResponseEntity.status(201).body(authService.register(request));
     }
 
+    /** Step 1 of login: email+password check. On success, emails a 6-digit code — no tokens yet. */
     @PostMapping("/login")
-    public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
+    public ResponseEntity<LoginOtpResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
         return ResponseEntity.ok(authService.login(request, httpRequest.getRemoteAddr()));
+    }
+
+    /** Step 2 of login: submit the emailed code to receive the actual access/refresh tokens. */
+    @PostMapping("/login/verify-otp")
+    public ResponseEntity<TokenResponse> verifyLoginOtp(@Valid @RequestBody LoginOtpVerifyRequest request, HttpServletRequest httpRequest) {
+        return ResponseEntity.ok(authService.verifyLoginOtp(request, httpRequest.getRemoteAddr()));
     }
 
     @PostMapping("/refresh")

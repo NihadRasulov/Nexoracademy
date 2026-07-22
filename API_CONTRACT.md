@@ -10,6 +10,23 @@ Bu sənəd `D:\NexoraAcademy\NexoraAcademy\NexoraAcademy` repo-sunun mənbə kod
 
 ## 1. Autentifikasiya / JWT
 
+### 1.0 Email OTP (register + login) — 2026-07-22-dən sonra əlavə olunub
+Bu bölmə yenilənib: **login artıq iki addımlıdır**, register-in email-təsdiqi də link deyil, 6-rəqəmli OTP-dir. Mənbə: `AuthService.java`, `AuthController.java`, `Session`/`SessionType` (yeni `LOGIN_OTP` dəyəri + `attempts` sütunu, bax `V13__add_login_otp_and_session_attempts.sql`).
+
+- **Register:** `POST /api/v1/auth/register` əvvəlki kimi hesab yaradır (`PENDING_VERIFICATION`), amma indi email-ə **link əvəzinə 6-rəqəmli OTP kod** göndərir. Təsdiq: `POST /api/v1/auth/verify-email` artıq `{token}` yox, **`{email, otp}`** qəbul edir.
+- **Login iki addımlıdır:**
+  1. `POST /api/v1/auth/login` `{email, password}` — uğurlu olsa, **tokens QAYTARMIR**, əvəzinə email-ə 6-rəqəmli OTP göndərir və `LoginOtpResponse{message, email, expiresInSeconds}` qaytarır (200).
+  2. `POST /api/v1/auth/login/verify-otp` `{email, otp}` — OTP düzgündürsə, əsl `TokenResponse` (access+refresh) qaytarır (200). Bu addımda `lastLoginAt`/`UserLoggedInEvent` işə düşür (addım-1-də yox).
+- **OTP xüsusiyyətləri:**
+  - 6 rəqəm, `SecureRandom` ilə, `String.format("%06d", ...)`.
+  - Saxlanma: mövcud `identity.sessions` cədvəlində (`Session` entity), `tokenHash` sütununda SHA-256 hash kimi (xam OTP DB-də saxlanmır) — register-OTP `type=EMAIL_VERIFY`, login-OTP `type=LOGIN_OTP`.
+  - Ömrü: `AuthProperties.emailVerifyExpirationMs` (register-OTP) və `loginOtpExpirationMs` (login-OTP) — hər ikisinin **default** dəyəri 10 dəqiqədir, env `EMAIL_VERIFY_EXPIRATION_MS`/`LOGIN_OTP_EXPIRATION_MS` ilə override olunur.
+  - **Brute-force qoruması:** `Session.attempts` sütunu — hər səhv təxmin artırılır, `AuthProperties.otpMaxAttempts` (default 5) aşılanda o kod dərhal ləğv olunur (`revokedAt` doldurulur) — istifadəçi yenidən `/login` (və ya `/resend-verification`) çağırıb təzə kod istəməlidir.
+  - Yeni OTP istəniəndə (təkrar `/login` və ya `/resend-verification` çağırılanda) **əvvəlki hələ istifadə olunmamış OTP avtomatik ləğv olunur** — eyni anda yalnız bir aktiv kod var.
+  - Xəta mesajları (hamısı 401, `InvalidTokenException`): kod tapılmadı/vaxtı bitib/artıq istifadə olunub → `"Invalid or expired code"`; vaxtı keçib → `"Code has expired"`; səhv rəqəmlər → `"Invalid code"`.
+- **`refresh`/`logout` dəyişməyib** — `verify-otp`-dan alınan tokenlərlə eyni şəkildə işləyir (bax §1.6/§1.7).
+- **DİQQƏT — canlı sınaqda aşkarlanan konfiqurasiya qeydi:** real `.env` faylında (repo-dakı `.env.example` deyil, developer-in öz `.env`-i) köhnə `EMAIL_VERIFY_EXPIRATION_MS=86400000` (24 saat) dəyəri qala bilər — bu, real OTP-nin 24 saat etibarlı qalması deməkdir (6 rəqəmli kod üçün həddindən artıq uzun, brute-force pəncərəsini böyüdür). Yeni `.env`-lərdə `EMAIL_VERIFY_EXPIRATION_MS=600000`, `LOGIN_OTP_EXPIRATION_MS=600000`, `OTP_MAX_ATTEMPTS=5` istifadə edilməlidir (bax `.env.example`).
+
 ### 1.1 Alqoritm
 `src/main/java/az/demo/NexoraAcademy/service/JwtService.java` — token **HS256** (HMAC-SHA256) ilə imzalanır:
 ```java
@@ -116,16 +133,17 @@ Fayl: `controller/auth/AuthController.java`
 
 | Metod | Path | Rol | Request Body | Response Body | Status |
 |---|---|---|---|---|---|
-| POST | `/api/v1/auth/register` | permitAll | `RegisterRequest{email:string(@Email,max255), fullName:string(2-150), phone:string?(pattern), password:string(8-72, ≥1 hərf+≥1 rəqəm)}` | `RegisterResponse{userId:UUID, email:string, message:string}` | 201, 400 (validation), 409 (email artıq var) |
-| POST | `/api/v1/auth/login` | permitAll | `LoginRequest{email:string(@Email), password:string}` | `TokenResponse{accessToken:string, refreshToken:string, tokenType:"Bearer", expiresInSeconds:long}` | 200, 400, 401 (yanlış email/parol — mesaj hər iki halda eynidir, user enumeration qorunur) |
+| POST | `/api/v1/auth/register` | permitAll | `RegisterRequest{email:string(@Email,max255), fullName:string(2-150), phone:string?(pattern), password:string(8-72, ≥1 hərf+≥1 rəqəm)}` | `RegisterResponse{userId:UUID, email:string, message:string}` | 201, 400 (validation), 409 (email/phone artıq var) |
+| POST | `/api/v1/auth/login` | permitAll | `LoginRequest{email:string(@Email), password:string}` | **`LoginOtpResponse{message:string, email:string, expiresInSeconds:long}`** — tokens YOXDUR, uğurlu olsa email-ə 6-rəqəmli OTP göndərilir | 200, 400, 401 (yanlış email/parol — mesaj hər iki halda eynidir, user enumeration qorunur) |
+| POST | `/api/v1/auth/login/verify-otp` | permitAll | `LoginOtpVerifyRequest{email:string(@Email), otp:string(6 rəqəm)}` | `TokenResponse{accessToken:string, refreshToken:string, tokenType:"Bearer", expiresInSeconds:long}` | 200, 400, 401 (kod səhv/vaxtı bitib/tapılmadı) |
 | POST | `/api/v1/auth/refresh` | permitAll | `RefreshTokenRequest{refreshToken:string}` | `TokenResponse` (yuxarı bax) | 200, 400, 401 (etibarsız/istifadə olunmuş/vaxtı bitmiş) |
 | POST | `/api/v1/auth/logout` | permitAll | `RefreshTokenRequest{refreshToken:string}` | boş (`Void`) | 204 (tapılmasa belə 204 qaytarır — idempotent) |
 | POST | `/api/v1/auth/forgot-password` | permitAll | `ForgotPasswordRequest{email:string(@Email)}` | boş | 204 (email mövcud olub-olmamasından asılı olmayaraq — enumeration qorunur) |
-| POST | `/api/v1/auth/reset-password` | permitAll | `ResetPasswordRequest{token:string, newPassword:string(8-72, ≥1 hərf+≥1 rəqəm)}` | boş | 204, 400, 401 (etibarsız/vaxtı bitmiş token) |
-| POST | `/api/v1/auth/verify-email` | permitAll | `VerifyEmailRequest{token:string}` | boş | 204, 400, 401 |
-| POST | `/api/v1/auth/resend-verification` | permitAll | `ResendVerificationRequest{email:string(@Email)}` | boş | 204 |
+| POST | `/api/v1/auth/reset-password` | permitAll | `ResetPasswordRequest{token:string, newPassword:string(8-72, ≥1 hərf+≥1 rəqəm)}` | boş | 204, 400, 401 (etibarsız/vaxtı bitmiş token) — **dəyişməyib, hələ də link-token-based**, OTP DEYİL |
+| POST | `/api/v1/auth/verify-email` | permitAll | **`VerifyEmailRequest{email:string(@Email), otp:string(6 rəqəm)}`** (əvvəllər `{token}` idi — dəyişdi, bax §1.0) | boş | 204, 400, 401 |
+| POST | `/api/v1/auth/resend-verification` | permitAll | `ResendVerificationRequest{email:string(@Email)}` | boş | 204 — yeni OTP göndərir, əvvəlkini ləğv edir |
 
-Qeyd: `login` endpoint-i `HttpServletRequest`-dən `remoteAddr`-ı oxuyub `UserLoggedInEvent`-ə göndərir (audit üçün) — request body-yə təsiri yoxdur.
+Qeyd: `login` və `login/verify-otp` endpoint-ləri `HttpServletRequest`-dən `remoteAddr`-ı oxuyur; `UserLoggedInEvent` yalnız `verify-otp` uğurlu olanda yayımlanır (bax §1.0 — login "tamamlanmış" sayılmır OTP təsdiqlənənə qədər).
 
 ---
 

@@ -17,12 +17,14 @@ import az.demo.NexoraAcademy.repository.catalog.CourseRepository;
 import az.demo.NexoraAcademy.repository.identity.UserRepository;
 import az.demo.NexoraAcademy.repository.notify.NotificationRepository;
 import az.demo.NexoraAcademy.repository.platform.AuditLogRepository;
+import az.demo.NexoraAcademy.service.notify.EmailService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
@@ -30,9 +32,14 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -68,6 +75,8 @@ class EnrollmentPaymentEventIntegrationTest {
     private AuditLogRepository auditLogRepository;
     @Autowired
     private PasswordEncoder passwordEncoder;
+    @MockitoSpyBean
+    private EmailService emailService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -118,9 +127,23 @@ class EnrollmentPaymentEventIntegrationTest {
         group.setSchedule(List.of());
         group = courseGroupRepository.save(group);
 
-        String loginResponse = mockMvc.perform(post("/api/v1/auth/login")
+        // login is now 2-step: email+password gets an emailed OTP, no tokens yet.
+        mockMvc.perform(post("/api/v1/auth/login")
                         .contentType("application/json")
                         .content("{\"email\":\"" + admin.getEmail() + "\",\"password\":\"adminpass123\"}"))
+                .andExpect(status().isOk());
+
+        org.mockito.ArgumentCaptor<String> otpBodyCaptor = org.mockito.ArgumentCaptor.forClass(String.class);
+        verify(emailService).send(eq(admin.getEmail()), anyString(), otpBodyCaptor.capture());
+        Matcher otpMatcher = Pattern.compile("\\b(\\d{6})\\b").matcher(otpBodyCaptor.getValue());
+        if (!otpMatcher.find()) {
+            throw new IllegalStateException("No 6-digit OTP found in email body: " + otpBodyCaptor.getValue());
+        }
+        String loginOtp = otpMatcher.group(1);
+
+        String loginResponse = mockMvc.perform(post("/api/v1/auth/login/verify-otp")
+                        .contentType("application/json")
+                        .content("{\"email\":\"" + admin.getEmail() + "\",\"otp\":\"" + loginOtp + "\"}"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         String token = objectMapper.readTree(loginResponse).get("accessToken").asText();

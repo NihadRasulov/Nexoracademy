@@ -3,6 +3,8 @@ package az.demo.NexoraAcademy.service;
 import az.demo.NexoraAcademy.config.AuthProperties;
 import az.demo.NexoraAcademy.config.MailProperties;
 import az.demo.NexoraAcademy.dto.auth.ForgotPasswordRequest;
+import az.demo.NexoraAcademy.dto.auth.LoginOtpResponse;
+import az.demo.NexoraAcademy.dto.auth.LoginOtpVerifyRequest;
 import az.demo.NexoraAcademy.dto.auth.LoginRequest;
 import az.demo.NexoraAcademy.dto.auth.RefreshTokenRequest;
 import az.demo.NexoraAcademy.dto.auth.RegisterRequest;
@@ -63,6 +65,9 @@ public class AuthService {
         if (userRepository.existsByEmail(request.email())) {
             throw DuplicateResourceException.of("User", "email", request.email());
         }
+        if (request.phone() != null && userRepository.existsByPhone(request.phone())) {
+            throw DuplicateResourceException.of("User", "phone", request.phone());
+        }
 
         User user = new User();
         user.setEmail(request.email());
@@ -75,14 +80,20 @@ public class AuthService {
         user = userRepository.saveAndFlush(user);
 
         eventPublisher.publishEvent(new UserRegisteredEvent(user.getId(), user.getEmail()));
-        sendVerificationEmail(user);
+        sendVerificationOtp(user);
 
         return new RegisterResponse(user.getId(), user.getEmail(),
-                "Registration successful. Please check your email to verify your account.");
+                "Registration successful. We sent a 6-digit verification code to your email.");
     }
 
+    /**
+     * Step 1 of login: checks email+password, then emails a 6-digit OTP and stops —
+     * no tokens are issued here. Step 2 is {@link #verifyLoginOtp}, which is where
+     * lastLoginAt/UserLoggedInEvent actually fire (a login isn't "complete" until the
+     * OTP is confirmed).
+     */
     @Transactional
-    public TokenResponse login(LoginRequest request, String ipAddress) {
+    public LoginOtpResponse login(LoginRequest request, String ipAddress) {
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.email(), request.password()));
@@ -92,6 +103,20 @@ public class AuthService {
 
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
+
+        sendLoginOtp(user);
+
+        return new LoginOtpResponse("A 6-digit login code has been sent to your email.", user.getEmail(),
+                authProperties.getLoginOtpExpirationMs() / 1000);
+    }
+
+    /** Step 2 of login: confirms the OTP emailed by {@link #login}, then issues real tokens. */
+    @Transactional
+    public TokenResponse verifyLoginOtp(LoginOtpVerifyRequest request, String ipAddress) {
+        User user = userRepository.findByEmail(request.email())
+                .orElseThrow(() -> new InvalidTokenException("Invalid or expired code"));
+
+        verifyOtp(user, SessionType.LOGIN_OTP, request.otp());
 
         user.setLastLoginAt(Instant.now());
         userRepository.saveAndFlush(user);
@@ -178,22 +203,16 @@ public class AuthService {
 
     @Transactional
     public void verifyEmail(VerifyEmailRequest request) {
-        Session session = sessionRepository.findByTokenHash(hash(request.token()))
-                .filter(s -> s.getType() == SessionType.EMAIL_VERIFY)
-                .orElseThrow(() -> new InvalidTokenException("Invalid or expired email verification token"));
+        User user = userRepository.findByEmail(request.email())
+                .orElseThrow(() -> new InvalidTokenException("Invalid or expired code"));
 
-        assertUsable(session);
+        verifyOtp(user, SessionType.EMAIL_VERIFY, request.otp());
 
-        User user = session.getUser();
         user.setEmailVerifiedAt(Instant.now());
         if (user.getStatus() == AccountStatus.PENDING_VERIFICATION) {
             user.setStatus(AccountStatus.ACTIVE);
         }
         userRepository.saveAndFlush(user);
-
-        session.setUsedAt(Instant.now());
-        session.setRevokedAt(Instant.now());
-        sessionRepository.saveAndFlush(session);
     }
 
     /** Always succeeds from the caller's point of view — never reveals whether the email exists. */
@@ -201,23 +220,85 @@ public class AuthService {
     public void resendVerification(ResendVerificationRequest request) {
         userRepository.findByEmail(request.email())
                 .filter(user -> user.getEmailVerifiedAt() == null)
-                .ifPresent(this::sendVerificationEmail);
+                .ifPresent(this::sendVerificationOtp);
     }
 
-    private void sendVerificationEmail(User user) {
-        String rawToken = generateRawToken();
+    private void sendVerificationOtp(User user) {
+        String otp = issueOtp(user, SessionType.EMAIL_VERIFY, authProperties.getEmailVerifyExpirationMs());
+
+        emailService.send(user.getEmail(), "Verify your NexoraAcademy email",
+                "Welcome to NexoraAcademy! Your verification code is: " + otp
+                        + "\n\nEnter this code in the app to verify your email. It is valid for "
+                        + (authProperties.getEmailVerifyExpirationMs() / 60000) + " minutes.");
+    }
+
+    private void sendLoginOtp(User user) {
+        String otp = issueOtp(user, SessionType.LOGIN_OTP, authProperties.getLoginOtpExpirationMs());
+
+        emailService.send(user.getEmail(), "Your NexoraAcademy login code",
+                "Your login code is: " + otp
+                        + "\n\nEnter this code to finish signing in. It is valid for "
+                        + (authProperties.getLoginOtpExpirationMs() / 60000) + " minutes."
+                        + "\n\nIf you did not attempt to log in, you can safely ignore this email.");
+    }
+
+    /**
+     * Generates a new 6-digit OTP for (user, type), revoking any previous still-usable
+     * OTP of the same type first so at most one is ever active — otherwise a stale code
+     * from an earlier request would still validate alongside the new one.
+     */
+    private String issueOtp(User user, SessionType type, long expirationMs) {
+        sessionRepository.findFirstByUser_IdAndTypeAndRevokedAtIsNullAndUsedAtIsNullOrderByIssuedAtDesc(user.getId(), type)
+                .ifPresent(existing -> {
+                    existing.setRevokedAt(Instant.now());
+                    sessionRepository.saveAndFlush(existing);
+                });
+
+        String otp = generateNumericOtp();
 
         Session session = new Session();
         session.setUser(user);
-        session.setType(SessionType.EMAIL_VERIFY);
-        session.setTokenHash(hash(rawToken));
-        session.setExpiresAt(Instant.now().plusMillis(authProperties.getEmailVerifyExpirationMs()));
+        session.setType(type);
+        session.setTokenHash(hash(otp));
+        session.setExpiresAt(Instant.now().plusMillis(expirationMs));
         sessionRepository.saveAndFlush(session);
 
-        String link = mailProperties.getFrontendBaseUrl() + "/verify-email?token=" + rawToken;
-        emailService.send(user.getEmail(), "Verify your NexoraAcademy email",
-                "Welcome to NexoraAcademy! Please verify your email using the link below (valid for "
-                        + (authProperties.getEmailVerifyExpirationMs() / 3600000) + " hours):\n\n" + link);
+        return otp;
+    }
+
+    /**
+     * Validates a guessed OTP against the single active (user, type) session: wrong
+     * guesses increment an attempt counter and, past AuthProperties#otpMaxAttempts,
+     * revoke the code outright (a 6-digit space is small enough that unlimited guessing
+     * against the hash would otherwise be feasible within the code's short lifetime).
+     */
+    private void verifyOtp(User user, SessionType type, String otp) {
+        Session session = sessionRepository
+                .findFirstByUser_IdAndTypeAndRevokedAtIsNullAndUsedAtIsNullOrderByIssuedAtDesc(user.getId(), type)
+                .orElseThrow(() -> new InvalidTokenException("Invalid or expired code"));
+
+        if (session.getExpiresAt().isBefore(Instant.now())) {
+            session.setRevokedAt(Instant.now());
+            sessionRepository.saveAndFlush(session);
+            throw new InvalidTokenException("Code has expired");
+        }
+
+        if (!session.getTokenHash().equals(hash(otp))) {
+            session.setAttempts((short) (session.getAttempts() + 1));
+            if (session.getAttempts() >= authProperties.getOtpMaxAttempts()) {
+                session.setRevokedAt(Instant.now());
+            }
+            sessionRepository.saveAndFlush(session);
+            throw new InvalidTokenException("Invalid code");
+        }
+
+        session.setUsedAt(Instant.now());
+        session.setRevokedAt(Instant.now());
+        sessionRepository.saveAndFlush(session);
+    }
+
+    private String generateNumericOtp() {
+        return String.format("%06d", secureRandom.nextInt(1_000_000));
     }
 
     private void assertUsable(Session session) {

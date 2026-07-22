@@ -54,6 +54,9 @@ public class UserService {
         if (userRepository.existsByEmail(request.email())) {
             throw DuplicateResourceException.of("User", "email", request.email());
         }
+        if (request.phone() != null && userRepository.existsByPhone(request.phone())) {
+            throw DuplicateResourceException.of("User", "phone", request.phone());
+        }
 
         User user = new User();
         user.setEmail(request.email());
@@ -71,6 +74,9 @@ public class UserService {
     public UserResponse update(UUID id, UserRequest request) {
         User user = getOrThrow(id);
         assertEmailAvailable(request.email(), id);
+        if (request.phone() != null) {
+            assertPhoneAvailable(request.phone(), id);
+        }
 
         user.setEmail(request.email());
         user.setPhone(request.phone());
@@ -91,7 +97,10 @@ public class UserService {
             assertEmailAvailable(request.email(), id);
             user.setEmail(request.email());
         }
-        if (request.phone() != null) user.setPhone(request.phone());
+        if (request.phone() != null) {
+            assertPhoneAvailable(request.phone(), id);
+            user.setPhone(request.phone());
+        }
         if (request.fullName() != null) user.setFullName(request.fullName());
         if (request.password() != null) user.setPasswordHash(passwordEncoder.encode(request.password()));
         if (request.role() != null) applyRoleChange(user, request.role());
@@ -124,7 +133,10 @@ public class UserService {
             assertEmailAvailable(request.email(), id);
             user.setEmail(request.email());
         }
-        if (request.phone() != null) user.setPhone(request.phone());
+        if (request.phone() != null) {
+            assertPhoneAvailable(request.phone(), id);
+            user.setPhone(request.phone());
+        }
         if (request.fullName() != null) user.setFullName(request.fullName());
         if (request.locale() != null) user.setLocale(request.locale());
         if (request.profile() != null) user.setProfile(request.profile());
@@ -158,6 +170,14 @@ public class UserService {
         userRepository.findByEmail(email).ifPresent(existing -> {
             if (!existing.getId().equals(currentUserId)) {
                 throw DuplicateResourceException.of("User", "email", email);
+            }
+        });
+    }
+
+    private void assertPhoneAvailable(String phone, UUID currentUserId) {
+        userRepository.findByPhone(phone).ifPresent(existing -> {
+            if (!existing.getId().equals(currentUserId)) {
+                throw DuplicateResourceException.of("User", "phone", phone);
             }
         });
     }

@@ -64,16 +64,21 @@ NexoraAcademy.AdminBff/
 
 ## 4. Auth axını — dəqiq tələblər
 
-`API_CONTRACT.md` §1-ə əsasən:
+`API_CONTRACT.md` §1-ə əsasən (bax §1.0 — bu bölmə 2026-07-22-də login/register-ə email OTP əlavə olunduqdan sonra yenilənib):
 
-1. **Login:** BFF `POST /api/v1/auth/login` çağırır (`{email, password}`), Spring Boot `TokenResponse{accessToken, refreshToken, tokenType, expiresInSeconds}` qaytarır.
-2. BFF bu iki token-i **server-side** saxlamalıdır (məs. distributed cache, DB, ya da BFF-in öz encrypted `HttpOnly` cookie-si daxilində — komanda qərar versin, amma **heç vaxt** admin panel frontend-in JavaScript-inə çıplaq JWT ötürülməsin).
+1. **Login iki addımlıdır, BİR addım DEYİL:**
+   - Addım 1: BFF `POST /api/v1/auth/login` çağırır (`{email, password}`). Backend **tokens qaytarmır** — uğurlu olsa `LoginOtpResponse{message, email, expiresInSeconds}` qaytarır və istifadəçinin email-inə 6-rəqəmli kod göndərir.
+   - Addım 2: BFF admin panel frontend-inə "kodu daxil et" ekranı göstərməlidir; istifadəçi kodu daxil edəndə BFF `POST /api/v1/auth/login/verify-otp` çağırır (`{email, otp}`) — bu, əsl `TokenResponse{accessToken, refreshToken, tokenType, expiresInSeconds}` qaytarır.
+   - **BFF-in login endpoint-i (öz frontend-inə baxan) bu iki addımı əks etdirməlidir** — məs. BFF-in öz `POST /auth/login`-i "OTP göndərildi" cavabı versin, ayrıca `POST /auth/login/verify-otp` (və ya bənzər) BFF endpoint-i əlavə edilsin.
+2. BFF token cütünü (yalnız addım-2-dən sonra əldə olunur) **server-side** saxlamalıdır (məs. distributed cache, DB, ya da BFF-in öz encrypted `HttpOnly` cookie-si daxilində — komanda qərar versin, amma **heç vaxt** admin panel frontend-in JavaScript-inə çıplaq JWT ötürülməsin).
 3. Hər backend çağırışında BFF `Authorization: Bearer <accessToken>` header-ini özü əlavə edir.
 4. **Access token 15 dəqiqədən sonra bitir** (`API_CONTRACT.md` §1.4). BFF 401 alanda (backend-dən) avtomatik olaraq `POST /api/v1/auth/refresh` çağırıb yeni token cütü almalı və orijinal sorğunu bir dəfə təkrarlamalıdır (transparent refresh, frontend bunu hiss etməməlidir).
 5. **Refresh token bir dəfəlikdir** — refresh çağırıldıqda backend həm yeni access, həm yeni refresh token qaytarır, BFF hər ikisini yeniləməlidir. Köhnə refresh token-i saxlamaq mənasızdır (artıq işləməyəcək).
 6. **Logout:** BFF `POST /api/v1/auth/logout` çağırıb (`{refreshToken}`) sonra öz saxladığı sessiyanı təmizləməlidir. **Diqqət:** backend logout-da yalnız refresh token-i ləğv edir, access token öz təbii 15-dəqiqəlik ömrünü yaşayır (`API_CONTRACT.md` §1.7) — BFF bunu bilməli və logout-dan sonra öz tərəfində həmin access token-i bir daha **istifadə etməməlidir** (BFF-in öz sessiyası bağlandığı üçün bu avtomatik təmin olunmalıdır, amma diqqətlə yoxla).
 7. **Rol claim-i:** JWT-də `role` claim-i (tək string, massiv deyil — `API_CONTRACT.md` §1.5). BFF bunu öz sessiyasında saxlayıb (admin panelin hansı bölmələri göstərəcəyini müəyyən etmək üçün) istifadə etməlidir.
-8. Email/istifadəçi profili JWT-də **yoxdur** — login-dən sonra `GET /api/v1/users/me` çağırılaraq tam profil əldə edilməlidir.
+8. Email/istifadəçi profili JWT-də **yoxdur** — login tamamlandıqdan (addım-2) sonra `GET /api/v1/users/me` çağırılaraq tam profil əldə edilməlidir.
+9. **Register axını da dəyişib:** `POST /api/v1/auth/register` uğurlu olandan sonra istifadəçi email-ə göndərilən 6-rəqəmli kodu `POST /api/v1/auth/verify-email {email, otp}` ilə təsdiqləməlidir (əvvəllər link-based idi, indi OTP-based-dir — `{token}` DEYİL, `{email, otp}`). Admin panel bu axını da UI-də əks etdirməlidirsə (yeni istifadəçi yaratma axınında), buna görə dizayn edilməlidir.
+10. **OTP-lər 6 rəqəmdir, 10 dəqiqə etibarlıdır (default), 5 səhv cəhddən sonra ləğv olunur** — BFF frontend-ə uyğun UX göstərməlidir (saymaq, "yeni kod göndər" düyməsi kimi — "yeni kod" sadəcə `/login` və ya `/resend-verification`-ı təkrar çağırmaqdır, əvvəlki kod avtomatik ləğv olunur).
 
 **Sual/aydınlaşdırma tələb edən nöqtə (frontend-in auth mexanizmi barədə):** Bu prompt admin panel frontend-inin BFF ilə necə autentifikasiya olunacağını (cookie-based session, öz JWT-si, s.) qəti təyin etmir — bu, layihəni tapşıran şəxslə aydınlaşdırılmalıdır. Tövsiyə: **`HttpOnly` + `Secure` + `SameSite=Strict` cookie ilə BFF-in özünün session-ı**, çünki bu XSS-ə qarşı ən təhlükəsiz standart BFF nümunəsidir.
 

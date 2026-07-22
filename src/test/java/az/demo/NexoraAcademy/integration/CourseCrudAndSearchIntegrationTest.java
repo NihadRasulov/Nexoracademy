@@ -6,6 +6,7 @@ import az.demo.NexoraAcademy.entity.enums.UserRole;
 import az.demo.NexoraAcademy.entity.identity.User;
 import az.demo.NexoraAcademy.repository.catalog.CategoryRepository;
 import az.demo.NexoraAcademy.repository.identity.UserRepository;
+import az.demo.NexoraAcademy.service.notify.EmailService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,11 +14,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.HashMap;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -40,6 +47,8 @@ class CourseCrudAndSearchIntegrationTest {
     private CategoryRepository categoryRepository;
     @Autowired
     private PasswordEncoder passwordEncoder;
+    @MockitoSpyBean
+    private EmailService emailService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -58,9 +67,21 @@ class CourseCrudAndSearchIntegrationTest {
         admin.setProfile(new HashMap<>());
         userRepository.save(admin);
 
-        String loginResponse = mockMvc.perform(post("/api/v1/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                         .contentType("application/json")
                         .content("{\"email\":\"" + adminEmail + "\",\"password\":\"adminpass123\"}"))
+                .andExpect(status().isOk());
+
+        org.mockito.ArgumentCaptor<String> otpBodyCaptor = org.mockito.ArgumentCaptor.forClass(String.class);
+        verify(emailService).send(eq(adminEmail), anyString(), otpBodyCaptor.capture());
+        Matcher otpMatcher = Pattern.compile("\\b(\\d{6})\\b").matcher(otpBodyCaptor.getValue());
+        if (!otpMatcher.find()) {
+            throw new IllegalStateException("No 6-digit OTP found in email body: " + otpBodyCaptor.getValue());
+        }
+
+        String loginResponse = mockMvc.perform(post("/api/v1/auth/login/verify-otp")
+                        .contentType("application/json")
+                        .content("{\"email\":\"" + adminEmail + "\",\"otp\":\"" + otpMatcher.group(1) + "\"}"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         adminToken = objectMapper.readTree(loginResponse).get("accessToken").asText();

@@ -22,9 +22,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Exercises the full auth flow (register -> verify email -> login -> refresh
- * -> logout) over real HTTP, through the real Spring Security filter chain,
- * against the live Postgres database.
+ * Exercises the full auth flow (register -> verify email OTP -> login -> login OTP
+ * -> refresh -> logout) over real HTTP, through the real Spring Security filter
+ * chain, against the live Postgres database.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -51,27 +51,38 @@ class AuthFlowIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.email").value(email));
 
-        // 2. capture the verification email that was "sent" and pull the token out of its link
+        // 2. capture the verification email that was "sent" and pull the 6-digit OTP out of it
         org.mockito.ArgumentCaptor<String> bodyCaptor = org.mockito.ArgumentCaptor.forClass(String.class);
         verify(emailService).send(eq(email), anyString(), bodyCaptor.capture());
-        String verifyToken = extractToken(bodyCaptor.getValue());
+        String verifyOtp = extractOtp(bodyCaptor.getValue());
 
         mockMvc.perform(post("/api/v1/auth/verify-email")
                         .contentType("application/json")
-                        .content("{\"token\":\"" + verifyToken + "\"}"))
+                        .content("{\"email\":\"" + email + "\",\"otp\":\"" + verifyOtp + "\"}"))
                 .andExpect(status().isNoContent());
 
-        // 3. login
+        // 3. login step 1 (email+password) -> no tokens yet, an OTP is emailed
         String loginBody = "{\"email\":\"" + email + "\",\"password\":\"" + password + "\"}";
-        String loginResponse = mockMvc.perform(post("/api/v1/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                         .contentType("application/json")
                         .content(loginBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value(email));
+
+        org.mockito.ArgumentCaptor<String> loginOtpBodyCaptor = org.mockito.ArgumentCaptor.forClass(String.class);
+        verify(emailService, org.mockito.Mockito.times(2)).send(eq(email), anyString(), loginOtpBodyCaptor.capture());
+        String loginOtp = extractOtp(loginOtpBodyCaptor.getAllValues().get(1));
+
+        // 3b. login step 2 (submit the OTP) -> actual tokens
+        String loginOtpResponse = mockMvc.perform(post("/api/v1/auth/login/verify-otp")
+                        .contentType("application/json")
+                        .content("{\"email\":\"" + email + "\",\"otp\":\"" + loginOtp + "\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").exists())
                 .andExpect(jsonPath("$.refreshToken").exists())
                 .andReturn().getResponse().getContentAsString();
 
-        String refreshToken = objectMapper.readTree(loginResponse).get("refreshToken").asText();
+        String refreshToken = objectMapper.readTree(loginOtpResponse).get("refreshToken").asText();
 
         // 4. refresh — must succeed once, and the old token must not be reusable
         String refreshResponse = mockMvc.perform(post("/api/v1/auth/refresh")
@@ -130,10 +141,10 @@ class AuthFlowIntegrationTest {
                 .andExpect(jsonPath("$.errors.password").exists());
     }
 
-    private String extractToken(String emailBody) {
-        Matcher matcher = Pattern.compile("token=([A-Za-z0-9_-]+)").matcher(emailBody);
+    private String extractOtp(String emailBody) {
+        Matcher matcher = Pattern.compile("\\b(\\d{6})\\b").matcher(emailBody);
         if (!matcher.find()) {
-            throw new IllegalStateException("No token found in email body: " + emailBody);
+            throw new IllegalStateException("No 6-digit OTP found in email body: " + emailBody);
         }
         return matcher.group(1);
     }
