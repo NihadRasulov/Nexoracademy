@@ -64,7 +64,9 @@ CORS_ALLOWED_ORIGINS=https://app.nexora-academy.com,https://admin.nexora-academy
 `application-prod.yml:29` — `app.jwt.secret: ${JWT_SECRET}` (placeholder-siz). `JwtProperties.java:15`-dəki `"change-me-change-me-..."` yalnız **dev fallback** kimi `application.yml:74`-də istifadə olunur (`${JWT_SECRET:change-me-...}`), prod profilində bu default keçərsiz olur. Kod səviyyəsində düzgün dizayn edilib.
 
 ### ❌ ÇATIŞMIR (KRİTİK) — hazırkı `.env`-dəki JWT_SECRET və DB_PASSWORD, git-ə commit olunmuş `.env.example` ilə **eynidir**
-`.env:12` və `.env.example:12`-dəki `JWT_SECRET` dəyəri (`asdghagkjasddjkasdfkasdkjadjkakjadsfjkadfbkvdaskbadskbhad...`) hərfi-hərfinə eynidir; eyni şəkildə `DB_PASSWORD=1234` da hər iki faylda eyni. `.env.example` `git log --all -p -- .env.example` ilə təsdiqləndi: bu fayl 3 commit-də (`e466ec7`, `a52c18f`, `c8cfc98`) dəyişdirilib və **hazırda repoda committed vəziyyətdədir**.
+`.env:12` və `.env.example:12`-dəki `JWT_SECRET` dəyəri [REDACTED — audit zamanı hər ikisində hərfi-hərfinə eyni idi, dəyərin özü qəsdən bu sənəddə saxlanılmır] hərfi-hərfinə eynidir; eyni şəkildə `DB_PASSWORD=1234` da hər iki faylda eyni idi. `.env.example` `git log --all -p -- .env.example` ilə təsdiqləndi: bu fayl 3 commit-də (`e466ec7`, `a52c18f`, `c8cfc98`) dəyişdirilib və **hazırda repoda committed vəziyyətdədir**.
+
+**Yenilənmə (2026-07-22, sonrakı commit):** bu iki dəyər artıq rotasiya edilib (bax "Yenilənmə qeydi" bölməsi) və `.env.example` git tracking-dən çıxarılıb — köhnə dəyərlər yalnız GitHub-un köhnə commit tarixçəsində qalır, hazırkı fayllarda deyil.
 
 **Niyə kritikdir:** `.env` özü `.gitignore`-dadır (`(.gitignore:37-39)`) və heç vaxt commit olunmayıb (git tarixçəsində yoxdur) — bu hissə düzgündür. Amma developer `.env.example`-i `.env`-ə köçürüb **heç vaxt real dəyərləri əvəz etməyib**. Nəticədə hazırkı "gizli" JWT imza açarı və DB şifrəsi əslində repo-nu klonlayan hər kəsə açıqdır. Bu dəyərlər production-a bu şəkildə aparılarsa, istənilən kəs `.env.example`-dəki JWT_SECRET-lə etibarlı access/refresh token saxtalaşdıra bilər (bax `JwtService.signingKey()`, sətir 97-98).
 
@@ -261,7 +263,7 @@ RUN addgroup -S spring && adduser -S spring -G spring
 USER spring:spring
 WORKDIR /app
 COPY --from=build /app/target/NexoraAcademy-0.0.1-SNAPSHOT.jar app.jar
-EXPOSE 8185
+EXPOSE 8081
 ENTRYPOINT ["java", "-jar", "app.jar"]
 ```
 və `docker-compose.yml`-a əlavə et:
@@ -274,7 +276,7 @@ və `docker-compose.yml`-a əlavə et:
     environment:
       SPRING_PROFILES_ACTIVE: prod
     ports:
-      - "8185:8185"
+      - "8081:8081"
     depends_on:
       flyway:
         condition: service_completed_successfully

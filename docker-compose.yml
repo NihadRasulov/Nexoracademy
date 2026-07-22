@@ -76,7 +76,7 @@ services:
       DB_HOST: postgres
       MAIL_HOST: mailhog
     ports:
-      - "8185:8185"
+      - "8081:8081"
     volumes:
       - nexora_app_logs:/app/logs
     depends_on:

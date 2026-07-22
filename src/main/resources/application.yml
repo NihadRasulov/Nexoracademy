@@ -1,5 +1,5 @@
 server:
-  port: 8185
+  port: 8081
 
 # application.yml — Spring Boot + PostgreSQL + Flyway konfiqurasiyası
 # Dəyərlər .env faylından (spring-dotenv vasitəsilə) və ya real ETX env

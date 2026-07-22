@@ -35,9 +35,9 @@ COPY --from=build --chown=spring:spring /app/target/app.jar app.jar
 ENV SPRING_PROFILES_ACTIVE=prod
 ENV JAVA_OPTS=""
 
-EXPOSE 8185
+EXPOSE 8081
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-    CMD wget -qO- http://localhost:8185/actuator/health | grep -q '"status":"UP"' || exit 1
+    CMD wget -qO- http://localhost:8081/actuator/health | grep -q '"status":"UP"' || exit 1
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

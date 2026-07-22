@@ -16,10 +16,10 @@ Bu tapşırığı yerinə yetirməzdən **əvvəl** repo kökündəki **`API_CON
 
 ## 1. Layihənin məqsədi
 
-NexoraAcademy — kurs/akademiya idarəetmə sistemidir. Backend artıq **Spring Boot (Java)** ilə yazılıb və işləyir (`localhost:8185`, dev mühitində). Sənin tapşırığın: bu backend-in üzərində **ASP.NET Core Web API BFF** qatı yazmaq ki, ayrıca bir **admin panel frontend**-i (hansı texnologiya ilə yazılacağı bu tapşırığın əhatəsində deyil — React/Angular/Blazor ola bilər) bu BFF ilə danışsın, BFF isə arxa planda Spring Boot backend-ə HTTP sorğuları göndərsin.
+NexoraAcademy — kurs/akademiya idarəetmə sistemidir. Backend artıq **Spring Boot (Java)** ilə yazılıb və işləyir (`localhost:8081`, dev mühitində). Sənin tapşırığın: bu backend-in üzərində **ASP.NET Core Web API BFF** qatı yazmaq ki, ayrıca bir **admin panel frontend**-i (hansı texnologiya ilə yazılacağı bu tapşırığın əhatəsində deyil — React/Angular/Blazor ola bilər) bu BFF ilə danışsın, BFF isə arxa planda Spring Boot backend-ə HTTP sorğuları göndərsin.
 
 ```
-[Admin Panel Frontend] <--HTTP/JSON--> [ASP.NET Core BFF (sənin işin)] <--HTTP/JSON--> [Spring Boot Backend (localhost:8185)]
+[Admin Panel Frontend] <--HTTP/JSON--> [ASP.NET Core BFF (sənin işin)] <--HTTP/JSON--> [Spring Boot Backend (localhost:8081)]
 ```
 
 **BFF-in məqsədi sadəcə "proxy" deyil** — aşağıdakı əlavə dəyəri verməlidir:
@@ -36,7 +36,7 @@ NexoraAcademy — kurs/akademiya idarəetmə sistemidir. Backend artıq **Spring
 - `System.Net.Http.HttpClient` (`IHttpClientFactory` ilə, typed client-lər) — Spring Boot backend-ə çağırışlar üçün. Refit və ya oxşar kitabxana istifadə oluna bilər, məcburi deyil.
 - `System.Text.Json` — serialization/deserialization (aşağı §6-ya bax, enum və case həssaslığı üçün vacib qeydlər var).
 - JWT emalı üçün: `System.IdentityModel.Tokens.Jwt` və ya `Microsoft.IdentityModel.JsonWebTokens` (BFF-in öz sessiya token-i üçün, **Spring Boot-un JWT-sini yenidən imzalamaq YOX** — sadəcə saxlamaq/ötürmək üçün).
-- Konfiqurasiya: `appsettings.json` + environment-specific override-lar. Backend base URL mütləq konfiqurasiya edilə bilən olmalıdır (məs. `NexoraApi:BaseUrl`, dev-də `http://localhost:8185`), heç vaxt hardcode edilməsin.
+- Konfiqurasiya: `appsettings.json` + environment-specific override-lar. Backend base URL mütləq konfiqurasiya edilə bilən olmalıdır (məs. `NexoraApi:BaseUrl`, dev-də `http://localhost:8081`), heç vaxt hardcode edilməsin.
 - Loglama: `ILogger<T>` ilə struktur loglama, xüsusilə backend-dən gələn 401/403/500 cavabları üçün (amma **JWT/parol dəyərlərini heç vaxt loglama**).
 
 ---
@@ -204,4 +204,4 @@ Bu sənəd (və istinad etdiyi `API_CONTRACT.md`) tam olmaya bilər. Əgər tət
 - `API_CONTRACT.md`-də "// TƏSDİQLƏNMƏYİB" işarəli bir yerə əsaslanmaq lazım gəlirsə,
 - və ya bu promptda əhatə olunmayan yeni bir ssenari ortaya çıxarsa —
 
-**uydurma qərar vermə.** Ya canlı backend-ə (`localhost:8185`) qarşı sınaq (`curl`/Postman) apararaq faktı yoxla, ya da tapşırığı verən şəxsdən aydınlaşdırma istə.
+**uydurma qərar vermə.** Ya canlı backend-ə (`localhost:8081`) qarşı sınaq (`curl`/Postman) apararaq faktı yoxla, ya da tapşırığı verən şəxsdən aydınlaşdırma istə.

@@ -4,7 +4,7 @@ Bu sənəd `D:\NexoraAcademy\NexoraAcademy\NexoraAcademy` repo-sunun mənbə kod
 
 **Stack:** Java 21, Spring Boot 4.1.0 (parent POM), Spring Security (stateless, JWT), Spring Data JPA + Hibernate ORM 7, PostgreSQL 16 (Flyway migrasiyaları), springdoc-openapi 2.7.0, jjwt 0.12.6.
 
-**Base URL (local dev):** `http://localhost:8185` (bax `src/main/resources/application.yml:2` — `server.port: 8185`). Global path prefiksi **yoxdur** (`server.servlet.context-path` heç yerdə təyin olunmayıb) — bütün endpoint-lər birbaşa `http://localhost:8185/api/v1/...` altındadır.
+**Base URL (local dev):** `http://localhost:8081` (bax `src/main/resources/application.yml:2` — `server.port: 8081`). Global path prefiksi **yoxdur** (`server.servlet.context-path` heç yerdə təyin olunmayıb) — bütün endpoint-lər birbaşa `http://localhost:8081/api/v1/...` altındadır.
 
 ---
 
@@ -667,7 +667,7 @@ Fayl: `config/CorsConfig.java` + `config/CorsProperties.java` (`@ConfigurationPr
 - `SecurityConfig.securityFilterChain()`-də `.cors(Customizer.withDefaults())` çağırılır, yəni yuxarıdakı `CorsConfigurationSource` bean-i Spring Security tərəfindən avtomatik istifadə olunur.
 
 ### 4.2 Port / base path
-- Port: **8185** (`server.port: 8185`, `application.yml:2`). `.env`/`SERVER_PORT` ilə override edilə bilən konfiqurasiya **tapılmadı** (hardcode-a yaxın, birbaşa `application.yml`-dədir, env variable-a bağlanmayıb).
+- Port: **8081** (`server.port: 8081`, `application.yml:2`). `.env`/`SERVER_PORT` ilə override edilə bilən konfiqurasiya **tapılmadı** (hardcode-a yaxın, birbaşa `application.yml`-dədir, env variable-a bağlanmayıb).
 - Global `context-path`/`/api` prefiksi Spring səviyyəsində **YOXDUR** — hər controller öz `@RequestMapping`-ində tam yolu yazır (`/api/v1/...`). Bütün domen endpoint-ləri konvensiya olaraq `/api/v1/` ilə başlayır, `TestMailController` isə istisnadır (`/test/mail`).
 - Bazadakı `default_schema: identity` və Flyway `schemas: identity,catalog,academics,billing,outcomes,crm,cms,ai,notify,platform,analytics` — bu, API path-lərinə təsir etmir, sırf PostgreSQL schema adlarıdır.
 
@@ -679,8 +679,8 @@ Fayl: `config/CorsConfig.java` + `config/CorsProperties.java` (`@ConfigurationPr
   - YAML variant (`GET /v3/api-docs.yaml`) — canlı test edilib, **401 qaytarır** (aşağı bax, `permitAll` deyil).
 - `/swagger-ui/**` və `/v3/api-docs/**` `SecurityConfig`-də `permitAll()`-dır (bax §2.0, qayda-4), **AMMA** bu Ant-pattern-lər `/v3/api-docs.yaml`-ı **əhatə etmir** (`/v3/api-docs/**` yalnız `/v3/api-docs` və altındakı `/` ilə ayrılan alt-path-lərə uyğun gəlir, `.yaml` suffiksli eyni-səviyyəli path-ə yox) — canlı test təsdiqlədi ki, `GET /v3/api-docs.yaml` **401** qaytarır (`anyRequest().authenticated()`-ə düşür). Yəni yalnız **JSON forması** (`/v3/api-docs`) publicdir, YAML forması authentication tələb edir.
 - **Real `openapi.yaml`/`openapi.json` faylı repo-da tapılmadı** (statik commit edilmiş fayl yoxdur) — sənəd **runtime-da generasiya olunur**. Onu əldə etmək üçün:
-  1. Tətbiqi işə salın (`./mvnw spring-boot:run` və ya cari işləyən instance, `localhost:8185`).
-  2. `curl http://localhost:8185/v3/api-docs -o openapi.json` (JSON) və ya brauzerdə `http://localhost:8185/swagger-ui/index.html` açın.
+  1. Tətbiqi işə salın (`./mvnw spring-boot:run` və ya cari işləyən instance, `localhost:8081`).
+  2. `curl http://localhost:8081/v3/api-docs -o openapi.json` (JSON) və ya brauzerdə `http://localhost:8081/swagger-ui/index.html` açın.
   3. Build-zamanı statik fayl kimi çıxarmaq üçün ayrıca Maven plugin (məs. `springdoc-openapi-maven-plugin`) **pom.xml-də tapılmadı** — belə bir `mvn` goal-ı YOXDUR, yalnız runtime endpoint mövcuddur.
 
 ### 4.4 Mail / xarici servislər (əlaqəli infrastruktur)
