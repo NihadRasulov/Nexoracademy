@@ -1,24 +1,20 @@
-spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/nexora_academy
-    username: nexora_app
-    password: change_me_in_dotenv   # ya da .env-dəki real şifrə
-    driver-class-name: org.postgresql.Driver
+# application-dev.yml — yalnız lokal development-ə xas override-lar.
+# DİQQƏT: datasource burada TƏKRAR təyin OLUNMUR — bax application.yml.
+# Əvvəllər burada url/username/password hardcode edilmişdi (username=nexora_app,
+# password=change_me_in_dotenv literal string kimi), bu isə "dev" profili aktiv
+# olanda .env-dən oxunan düzgün dəyərləri EZIR və eyni Postgres auth xətasına
+# səbəb olurdu. Base application.yml artıq ${DB_HOST}/${DB_USER}/${DB_PASSWORD}
+# ilə .env-i düzgün oxuyur — dev profili yalnız aşağıdakı develop-only
+# ayarları əlavə edir.
 
+spring:
   jpa:
-    hibernate:
-      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
         format_sql: true
         jdbc:
           time_zone: UTC
-
-  flyway:
-    enabled: true
-    locations: classpath:db/migration
-    baseline-on-migrate: true
 
 logging:
   level:

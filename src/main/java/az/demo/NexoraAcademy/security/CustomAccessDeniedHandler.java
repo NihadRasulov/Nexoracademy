@@ -1,6 +1,8 @@
 package az.demo.NexoraAcademy.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -16,6 +18,11 @@ import java.util.Map;
 
 @Component
 public class CustomAccessDeniedHandler implements AccessDeniedHandler {
+
+    // See JwtAuthenticationEntryPoint for why this is a local mapper, not an autowired bean.
+    private static final ObjectMapper MAPPER = new ObjectMapper()
+            .registerModule(new JavaTimeModule())
+            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
     @Override
     public void handle(HttpServletRequest request,
@@ -34,6 +41,6 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
         body.put("message", accessDeniedException.getMessage());
         body.put("path", request.getRequestURI());
 
-        new ObjectMapper().writeValue(response.getOutputStream(), body);
+        MAPPER.writeValue(response.getOutputStream(), body);
     }
 }

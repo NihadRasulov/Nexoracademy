@@ -1,8 +1,18 @@
+# application-prod.yml
+# DİQQƏT: burada HEÇ BİR dəyər üçün default yoxdur (bax "${VAR}" — placeholder-siz) —
+# əvvəllər DB_URL/DB_USERNAME/DB_PASSWORD kimi başqa adlar istifadə olunurdu, halbuki
+# .env/.env.example və application.yml (default profil) DB_HOST/DB_PORT/DB_NAME/
+# DB_USER/DB_PASSWORD adlandırmasını gözləyir — bu uyğunsuzluq sənədləşdirilməmiş
+# və qarışdırıcı idi. İndi eyni adlandırma istifadə olunur ki, .env.example-dəki
+# siyahı prod üçün də etibarlı olsun.
+
 spring:
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
+    # stringtype=unspecified: bax application.yml-dəki eyni qeyd (native ENUM/INET sütunları).
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}?stringtype=unspecified
+    username: ${DB_USER}
     password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
@@ -10,6 +20,13 @@ spring:
 
   flyway:
     enabled: true
+
+# Prod-da default/insecure JWT sirri ilə işə düşməsin deyə placeholder-siz —
+# JWT_SECRET təyin olunmayıbsa tətbiq başlamayacaq (əvəzinə sussuzca dev
+# default-u ilə işə düşüb istehsalatda saxta token qəbul etməkdənsə).
+app:
+  jwt:
+    secret: ${JWT_SECRET}
 
 logging:
   level:

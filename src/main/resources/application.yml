@@ -1,5 +1,5 @@
 server:
-  port: 4145
+  port: 8185
 
 # application.yml — Spring Boot + PostgreSQL + Flyway konfiqurasiyası
 # Dəyərlər .env faylından (spring-dotenv vasitəsilə) və ya real ETX env
@@ -7,7 +7,10 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:nexora_academy}
+    # stringtype=unspecified: Postgres native ENUM/INET sütunlarına String
+    # parametr bind edərkən JDBC-nin onları VARCHAR kimi göndərməsinin qarşısını alır
+    # (əks halda "column is of type X but expression is of type character varying" xətası olur).
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:nexora_academy}?stringtype=unspecified
     username: ${DB_USER:nexora_app}
     password: ${DB_PASSWORD:change_me_in_dotenv}
     driver-class-name: org.postgresql.Driver
@@ -40,3 +43,47 @@ spring:
     out-of-order: false
     # server-tərəfli CREATE EXTENSION icazəsi olan rol tələb olunur:
     # bax V1__init_extensions_and_schemas.sql (pgcrypto, citext, vector)
+
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:false}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS:false}
+        # EmailService bağlantı xətasını udur və log yazır — MAIL_HOST konfiqurasiya
+        # olunmayıbsa belə app işə düşür (bax service/notify/EmailService.java).
+        connectiontimeout: 3000
+        timeout: 3000
+        writetimeout: 3000
+
+# Mail göndərilməsi qəsdən "best-effort"dur (bax EmailService) — SMTP
+# konfiqurasiya olunmayanda /actuator/health-i "DOWN" göstərməsin.
+management:
+  health:
+    mail:
+      enabled: false
+
+app:
+  jwt:
+    # JWT_SECRET .env-də təyin olunmalıdır (Base64, min. 256 bit / 32 byte).
+    secret: ${JWT_SECRET:change-me-change-me-change-me-change-me-change-me!!}
+    issuer: ${JWT_ISSUER:nexora-academy}
+    access-token-expiration-ms: ${JWT_ACCESS_EXPIRATION_MS:900000}       # 15 dəqiqə
+    refresh-token-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:2592000000} # 30 gün
+
+  mail:
+    from: ${MAIL_FROM:no-reply@nexora-academy.local}
+    frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
+
+  auth:
+    password-reset-expiration-ms: ${PASSWORD_RESET_EXPIRATION_MS:3600000}     # 1 saat
+    email-verify-expiration-ms: ${EMAIL_VERIFY_EXPIRATION_MS:86400000}       # 24 saat
+
+  # CRUD/error logları harada saxlanılsın (bax logback-spring.xml).
+  # create/read/update/delete/error üçün ayrı alt-qovluqlar, 30 gün saxlama.
+  log-dir: ${LOG_DIR:logs}

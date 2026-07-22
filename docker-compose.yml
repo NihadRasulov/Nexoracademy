@@ -45,5 +45,16 @@ services:
       - ./src/main/resources/db/migration:/flyway/sql
     command: migrate
 
+  # Lokal SMTP tutucu — göndərilən e-poçtları real şəkildə görmək üçün.
+  # application.yml-dəki MAIL_HOST/MAIL_PORT default-ları (localhost:1025)
+  # məhz bu xidmətin standart portuna uyğundur. UI: http://localhost:8025
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: nexora-mailhog
+    restart: unless-stopped
+    ports:
+      - "${MAIL_PORT:-1025}:1025"   # SMTP
+      - "8025:8025"                 # Web UI
+
 volumes:
   nexora_pg_data:

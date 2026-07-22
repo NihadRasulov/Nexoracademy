@@ -1,6 +1,8 @@
 package az.demo.NexoraAcademy.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -16,6 +18,15 @@ import java.util.Map;
 
 @Component
 public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
+
+    // Deliberately a plain, locally-owned Jackson 2 mapper (not a Spring bean):
+    // this app's default JSON stack is Jackson 3 (tools.jackson.*, see
+    // spring-boot-starter-jackson), which is a different, unrelated
+    // ObjectMapper type — there is nothing of this type to autowire. The
+    // JavaTimeModule registration is required for Instant fields below.
+    private static final ObjectMapper MAPPER = new ObjectMapper()
+            .registerModule(new JavaTimeModule())
+            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
     @Override
     public void commence(HttpServletRequest request,
@@ -34,6 +45,6 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
         body.put("message", authException.getMessage());
         body.put("path", request.getRequestURI());
 
-        new ObjectMapper().writeValue(response.getOutputStream(), body);
+        MAPPER.writeValue(response.getOutputStream(), body);
     }
 }
