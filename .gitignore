@@ -38,6 +38,7 @@ build/
 .env.*
 !.env.example
 application-secrets.yml
+.env.example
 
 # --- Loglar (bax logback-spring.xml) ---
 /logs/
