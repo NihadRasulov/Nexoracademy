@@ -48,6 +48,8 @@ services:
   # Lokal SMTP tutucu — göndərilən e-poçtları real şəkildə görmək üçün.
   # application.yml-dəki MAIL_HOST/MAIL_PORT default-ları (localhost:1025)
   # məhz bu xidmətin standart portuna uyğundur. UI: http://localhost:8025
+  # DİQQƏT: yalnız dev/local üçündür — real production SMTP-yə keçəndə bu
+  # xidməti compose faylından çıxar (bax PRODUCTION_READINESS.md, Bölmə 6).
   mailhog:
     image: mailhog/mailhog:v1.0.1
     container_name: nexora-mailhog
@@ -56,5 +58,33 @@ services:
       - "${MAIL_PORT:-1025}:1025"   # SMTP
       - "8025:8025"                 # Web UI
 
+  # Spring Boot tətbiqinin özü (bax repo kökündəki Dockerfile).
+  # DİQQƏT: bu compose faylı MailHog ehtiva etdiyi üçün lokal/dev orkestrasiya
+  # məqsədlidir — ona görə profil "dev"dir. Real production deploy üçün
+  # MailHog-suz, "prod" profilli və real SMTP/JWT/CORS dəyərləri olan ayrıca
+  # bir compose/manifest lazımdır (bax PRODUCTION_READINESS.md, Bölmə 9).
+  app:
+    build: .
+    container_name: nexora-app
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      # Compose şəbəkəsinin daxilindən Postgres/MailHog-a servis adı ilə
+      # qoşulmaq lazımdır — .env-dəki DB_HOST=localhost/MAIL_HOST=localhost
+      # yalnız tətbiq host maşında (compose-suz) işə salınanda doğrudur.
+      DB_HOST: postgres
+      MAIL_HOST: mailhog
+    ports:
+      - "8185:8185"
+    volumes:
+      - nexora_app_logs:/app/logs
+    depends_on:
+      flyway:
+        condition: service_completed_successfully
+      mailhog:
+        condition: service_started
+
 volumes:
   nexora_pg_data:
+  nexora_app_logs:

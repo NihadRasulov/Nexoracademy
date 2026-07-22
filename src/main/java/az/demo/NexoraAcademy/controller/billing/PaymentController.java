@@ -64,9 +64,11 @@ public class PaymentController {
 
     /**
      * Gateway webhook target — see SecurityConfig, this path is intentionally
-     * public. There is no real payment gateway wired up, so there is no
-     * signature to verify here; a production integration MUST validate the
-     * gateway's signing header before trusting this payload.
+     * public (a gateway can't carry our JWT). PaymentCallbackSignatureFilter
+     * verifies the gateway's HMAC signature before this method is ever reached
+     * (bax PaymentGatewaySignatureVerifier) — but only once PAYMENT_GATEWAY_WEBHOOK_SECRET
+     * is actually configured. Until a real gateway is chosen and that secret is set,
+     * verification is bypassed (with a WARN log on every callback).
      */
     @PostMapping("/callback")
     public ResponseEntity<PaymentResponse> callback(@Valid @RequestBody PaymentCallbackRequest request) {

@@ -1,8 +1,10 @@
 package az.demo.NexoraAcademy.config;
 
+import az.demo.NexoraAcademy.security.AuthRateLimitingFilter;
 import az.demo.NexoraAcademy.security.CustomAccessDeniedHandler;
 import az.demo.NexoraAcademy.security.JwtAuthenticationEntryPoint;
 import az.demo.NexoraAcademy.security.JwtAuthenticationFilter;
+import az.demo.NexoraAcademy.security.PaymentCallbackSignatureFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,6 +28,8 @@ public class SecurityConfig {
     private final JwtAuthenticationEntryPoint authenticationEntryPoint;
     private final CustomAccessDeniedHandler accessDeniedHandler;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final AuthRateLimitingFilter authRateLimitingFilter;
+    private final PaymentCallbackSignatureFilter paymentCallbackSignatureFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -58,7 +62,8 @@ public class SecurityConfig {
                         ).permitAll()
 
                         // Payment gateway webhook — bax PaymentController.callback() qeydi:
-                        // real inteqrasiyada bura gateway-in imza yoxlanışı əlavə edilməlidir.
+                        // imza yoxlanışı PaymentCallbackSignatureFilter-də edilir (permitAll
+                        // burada yalnız rol/JWT tələbini aradan qaldırır, filter-i yox).
                         .requestMatchers(
                                 "/api/v1/payments/callback"
                         ).permitAll()
@@ -153,7 +158,11 @@ public class SecurityConfig {
                         .authenticated()
                 )
 
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                // Rate limiter runs before authentication so throttled requests never even
+                // reach JwtAuthenticationFilter / the authentication manager.
+                .addFilterBefore(authRateLimitingFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(paymentCallbackSignatureFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

@@ -18,6 +18,10 @@ spring:
       maximum-pool-size: 10
       minimum-idle: 2
       connection-timeout: 30000
+      # Bir bağlantı bu müddətdən çox "checked out" qalıb geri qaytarılmasa
+      # (kodda bağlanmamış Connection/Statement) log-a xəbərdarlıq yazılır —
+      # sızma yalnız sükutla connection pool-u tükətmək əvəzinə erkən aşkarlanır.
+      leak-detection-threshold: 30000
 
   jpa:
     hibernate:
@@ -69,6 +73,12 @@ management:
       enabled: false
 
 app:
+  cors:
+    # Vergüllə ayrılmış origin siyahısı (List<String>-ə avtomatik çevrilir).
+    # Prod-da default YOXDUR (bax application-prod.yml) — CORS_ALLOWED_ORIGINS
+    # təyin olunmayıbsa tətbiq açılmayacaq.
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+
   jwt:
     # JWT_SECRET .env-də təyin olunmalıdır (Base64, min. 256 bit / 32 byte).
     secret: ${JWT_SECRET:change-me-change-me-change-me-change-me-change-me!!}
@@ -90,3 +100,12 @@ app:
   # CRUD/error logları harada saxlanılsın (bax logback-spring.xml).
   # create/read/update/delete/error üçün ayrı alt-qovluqlar, 30 gün saxlama.
   log-dir: ${LOG_DIR:logs}
+
+  payment:
+    gateway:
+      # Real gateway seçilməyənə qədər boş qalır — PaymentGatewaySignatureVerifier
+      # bu halda imza yoxlanışını bypass edir (WARN logu ilə). Dəyər təyin
+      # olunan kimi /api/v1/payments/callback üçün imza məcburi olur.
+      webhook-secret: ${PAYMENT_GATEWAY_WEBHOOK_SECRET:}
+      # Gateway-in imzanı hansı HTTP başlığında göndərdiyi — provayderə görə dəyişə bilər.
+      signature-header: ${PAYMENT_GATEWAY_SIGNATURE_HEADER:X-Gateway-Signature}
