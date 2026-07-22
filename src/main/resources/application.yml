@@ -23,7 +23,7 @@ spring:
     hibernate:
       # DİQQƏT: schema idarəçiliyi tam Flyway-ə həvalə olunur.
       # Hibernate heç vaxt schema yaratmamalı/dəyişməməlidir.
-      ddl-auto: update
+      ddl-auto: validate
     properties:
       hibernate:
         # Yalnız default (@Table schema göstərilməyən entity-lər üçün) sxem.
