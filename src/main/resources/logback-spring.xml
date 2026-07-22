@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <!-- app.log-dir tənzimlənə bilər (bax application.yml); default "logs" -->
+    <springProperty scope="context" name="LOG_DIR" source="app.log-dir" defaultValue="logs"/>
+
+    <!--
+    Saxlama müddəti 30 gündür, amma qovluq strukturu saat-başı olduğu üçün
+    (aşağıya bax: .../yyyy-MM-dd/HH/...) rotasiya tezliyi saatlıqdır — ona görə
+    maxHistory burada "neçə saat" mənasındadır: 30 gün * 24 saat = 720.
+    -->
+    <property name="LOG_RETENTION_HOURS" value="720"/>
+
+    <!-- Hər sətir aydın oxunması üçün: tarix/saat, səviyyə, mesaj -->
+    <property name="FILE_LOG_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%level] %msg%n"/>
+
+    <!--
+    Qovluq strukturu: logs/<əməliyyat>/<YYYY-MM-DD>/<HH>/<əməliyyat>.log
+    Məsələn: logs/create/2026-07-21/14/create.log
+    <file> elementi qəsdən yoxdur — fileNamePattern həm "canlı" (bu saatın),
+    həm də arxivlənmiş fayl yolunu eyni şəkildə hesabladığı üçün ayrıca
+    rename addımına ehtiyac qalmır.
+    -->
+
+    <!-- ============ CREATE ============ -->
+    <appender name="CREATE_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/create/%d{yyyy-MM-dd}/%d{HH}/create.log</fileNamePattern>
+            <maxHistory>${LOG_RETENTION_HOURS}</maxHistory>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+    </appender>
+
+    <!-- ============ READ ============ -->
+    <appender name="READ_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/read/%d{yyyy-MM-dd}/%d{HH}/read.log</fileNamePattern>
+            <maxHistory>${LOG_RETENTION_HOURS}</maxHistory>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+    </appender>
+
+    <!-- ============ UPDATE ============ -->
+    <appender name="UPDATE_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/update/%d{yyyy-MM-dd}/%d{HH}/update.log</fileNamePattern>
+            <maxHistory>${LOG_RETENTION_HOURS}</maxHistory>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+    </appender>
+
+    <!-- ============ DELETE ============ -->
+    <appender name="DELETE_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/delete/%d{yyyy-MM-dd}/%d{HH}/delete.log</fileNamePattern>
+            <maxHistory>${LOG_RETENTION_HOURS}</maxHistory>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+    </appender>
+
+    <!-- ============ ERROR (bütün tətbiq üzrə, təkcə CRUD deyil) ============ -->
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_DIR}/error/%d{yyyy-MM-dd}/%d{HH}/error.log</fileNamePattern>
+            <maxHistory>${LOG_RETENTION_HOURS}</maxHistory>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+        </rollingPolicy>
+    </appender>
+
+    <!--
+    CRUD logger-ləri: CrudLoggingAspect bu adlarla logger götürür (bax
+    az.demo.NexoraAcademy.logging.CrudLoggingAspect). additivity="true" ki,
+    həm öz qovluğuna yazılsın, həm də normal konsol axınında görünsün.
+    -->
+    <logger name="AUDIT_CREATE" level="INFO" additivity="true">
+        <appender-ref ref="CREATE_FILE"/>
+    </logger>
+    <logger name="AUDIT_READ" level="INFO" additivity="true">
+        <appender-ref ref="READ_FILE"/>
+    </logger>
+    <logger name="AUDIT_UPDATE" level="INFO" additivity="true">
+        <appender-ref ref="UPDATE_FILE"/>
+    </logger>
+    <logger name="AUDIT_DELETE" level="INFO" additivity="true">
+        <appender-ref ref="DELETE_FILE"/>
+    </logger>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ERROR_FILE"/>
+    </root>
+
+</configuration>
