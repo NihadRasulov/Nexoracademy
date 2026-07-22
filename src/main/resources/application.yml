@@ -12,7 +12,7 @@ spring:
     # (əks halda "column is of type X but expression is of type character varying" xətası olur).
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:nexora_academy}?stringtype=unspecified
     username: ${DB_USER:nexora_app}
-    password: ${DB_PASSWORD:change_me_in_dotenv}
+    password: ${DB_PASSWORD:1234}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -23,7 +23,7 @@ spring:
     hibernate:
       # DİQQƏT: schema idarəçiliyi tam Flyway-ə həvalə olunur.
       # Hibernate heç vaxt schema yaratmamalı/dəyişməməlidir.
-      ddl-auto: validate
+      ddl-auto: update
     properties:
       hibernate:
         # Yalnız default (@Table schema göstərilməyən entity-lər üçün) sxem.
