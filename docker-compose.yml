@@ -63,27 +63,27 @@ services:
   # məqsədlidir — ona görə profil "dev"dir. Real production deploy üçün
   # MailHog-suz, "prod" profilli və real SMTP/JWT/CORS dəyərləri olan ayrıca
   # bir compose/manifest lazımdır (bax PRODUCTION_READINESS.md, Bölmə 9).
-  app:
-    build: .
-    container_name: nexora-app
-    restart: unless-stopped
-    env_file: .env
-    environment:
-      SPRING_PROFILES_ACTIVE: dev
-      # Compose şəbəkəsinin daxilindən Postgres/MailHog-a servis adı ilə
-      # qoşulmaq lazımdır — .env-dəki DB_HOST=localhost/MAIL_HOST=localhost
-      # yalnız tətbiq host maşında (compose-suz) işə salınanda doğrudur.
-      DB_HOST: postgres
-      MAIL_HOST: mailhog
-    ports:
-      - "8081:8081"
-    volumes:
-      - nexora_app_logs:/app/logs
-    depends_on:
-      flyway:
-        condition: service_completed_successfully
-      mailhog:
-        condition: service_started
+#  app:
+#    build: .
+#    container_name: nexora-app
+#    restart: unless-stopped
+#    env_file: .env
+#    environment:
+#      SPRING_PROFILES_ACTIVE: dev
+#      # Compose şəbəkəsinin daxilindən Postgres/MailHog-a servis adı ilə
+#      # qoşulmaq lazımdır — .env-dəki DB_HOST=localhost/MAIL_HOST=localhost
+#      # yalnız tətbiq host maşında (compose-suz) işə salınanda doğrudur.
+#      DB_HOST: postgres
+#      MAIL_HOST: mailhog
+#    ports:
+#      - "8081:8081"
+#    volumes:
+#      - nexora_app_logs:/app/logs
+#    depends_on:
+#      flyway:
+#        condition: service_completed_successfully
+#      mailhog:
+#        condition: service_started
 
 volumes:
   nexora_pg_data:
