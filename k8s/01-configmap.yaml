@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nexora-config
+  namespace: nexora-academy
+data:
+  SPRING_PROFILES_ACTIVE: "prod"
+  DB_HOST: "nexora-postgres"
+  DB_PORT: "5432"
+  DB_NAME: "nexora_academy"
+  DB_USER: "nexora_app"
+  JWT_ISSUER: "nexora-academy"
+  JWT_ACCESS_EXPIRATION_MS: "900000"
+  JWT_REFRESH_EXPIRATION_MS: "2592000000"
+  CORS_ALLOWED_ORIGINS: "https://admin.example.com"
+  MAIL_HOST: "smtp.example.com"
+  MAIL_PORT: "587"
+  MAIL_SMTP_AUTH: "true"
+  MAIL_SMTP_STARTTLS: "true"
+  MAIL_FROM: "noreply@nexora-academy.com"
+  FRONTEND_BASE_URL: "https://admin.example.com"
+  PASSWORD_RESET_EXPIRATION_MS: "3600000"
+  EMAIL_VERIFY_EXPIRATION_MS: "600000"
+  LOGIN_OTP_EXPIRATION_MS: "600000"
+  OTP_MAX_ATTEMPTS: "5"
+  LOG_DIR: "/app/logs"
+  PAYMENT_GATEWAY_SIGNATURE_HEADER: "X-Gateway-Signature"

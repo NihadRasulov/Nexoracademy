@@ -1,0 +1,33 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nexora-app
+  namespace: nexora-academy
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "30"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - api.nexora-academy.com
+      secretName: nexora-tls
+  rules:
+    - host: api.nexora-academy.com
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: nexora-app
+                port:
+                  number: 8081
+          - path: /actuator
+            pathType: Prefix
+            backend:
+              service:
+                name: nexora-app
+                port:
+                  number: 8081
