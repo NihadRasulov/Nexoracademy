@@ -5,10 +5,14 @@ NexoraAcademy backend-inə necə qoşmağı izah edir. Backend tərəfdəki büt
 artıq yazılıb — sənin yalnız bir neçə **env dəyəri** doldurmağın (SMTP-dəki kimi)
 və botun API formatına uyğun kiçik düzəlişlər etmən lazım gələ bilər.
 
-> ## ✅ Status: inteqrasiya işləyir (son yoxlama: 27.07.2026)
+> ## ⚠️ Status: inteqrasiya işləyir, amma **qeyri-sabitdir** (son yoxlama: 28.07.2026)
 >
 > Uçdan-uca test edilib — backend bota qoşulur, cavab alır və frontend-ə qaytarır.
-> Detallı test nəticələri üçün bax **§5 Test**, açıq qalan işlər üçün
+> **Lakin 28.07.2026 testində eyni sorğu bir dəfə 503, ikinci dəfə 200 verdi** —
+> səbəb §6.5-də izah olunub və düzəliş tələb edir.
+>
+> Detallı test nəticələri üçün bax **§5 Test**, iki tərəf arasındakı data
+> uyğunsuzluqlarının tam siyahısı üçün **§3.1**, açıq qalan işlər üçün
 > **§6 Açıq işlər** və **§7 Qrup yoldaşı üçün TODO**.
 
 ---
@@ -101,6 +105,53 @@ Bot (`uvicorn` / FastAPI) `POST /api/chat` üzərindən bu formatda cavab qaytar
   geri qaytarır ki, zəncir qırılmasın.
 - `state` / `actions` / `courses` / `capture` — bot qaytarır, amma backend hazırda
   bunları **atır** (`@JsonIgnoreProperties(ignoreUnknown = true)`). Bax **§6 Açıq işlər**.
+
+---
+
+## 3.1 İki tərəf arasındakı DATA UYĞUNSUZLUQLARI (28.07.2026 yoxlaması)
+
+Bu, ən çox qarışıqlıq yaradan bölmədir: **hər iki istiqamətdə** göndərilən, amma
+qarşı tərəfin qəbul etmədiyi sahələr var. Aşağıdakı iki cədvəl vəziyyəti dəqiq göstərir.
+
+### A) BİZ göndəririk — BOT qəbul etmir ⬇️
+
+`ChatbotService` hər sorğuda 3 sahə göndərir, botun isə yalnız birini istifadə etdiyi
+müşahidə olunub:
+
+| Sahə | Biz göndəririk | Bot istifadə edir? | Nəticə |
+|------|----------------|--------------------|--------|
+| `message`          | ✅ hər sorğuda | ✅ bəli | İşləyir |
+| `conversationId`   | ✅ hər sorğuda (frontend verirsə) | ❌ **yox** | Söhbət konteksti qorunmur — bax §7.1 |
+| `userId`           | ✅ login olmuş istifadəçinin UUID-si | ❌ **yox** | Bot kimin yazdığını bilmir; analitika/şəxsiləşdirmə mümkün deyil |
+
+**Praktik nəticəsi:** bot bütün istifadəçilər üçün **tək, qlobal söhbət vəziyyəti**
+saxlayır. İki nəfər eyni anda yazsa, cavablar bir-birinə qarışır. Bu, backend-dən
+düzəldilə bilməz — həlli tamamilə bot tərəfindədir (**§7.1**).
+
+### B) BOT göndərir — BİZ qəbul etmirik ⬆️
+
+Bot cavabında 5 sahə qaytarır, `ChatbotApiResponse` isə yalnız `reply` oxuyur.
+Qalanları `@JsonIgnoreProperties(ignoreUnknown = true)` səssizcə **atır**:
+
+| Sahə | Bot qaytarır | Biz oxuyuruq? | İtən funksionallıq |
+|------|--------------|---------------|--------------------|
+| `reply`     | ✅ | ✅ bəli | — |
+| `actions`   | ✅ düymələr massivi | ❌ **yox** | Widget-də **düymələr görünmür**, halbuki botun UX-i düymələr üzərində qurulub |
+| `courses`   | ✅ kurs siyahısı | ❌ **yox** | Bot kurs tövsiyə edir, frontend kart kimi göstərə bilmir |
+| `state`     | ✅ söhbət mərhələsi | ❌ **yox** | Frontend hansı addımda olduğunu bilmir |
+| `capture`   | ✅ `none` / lead tutma siqnalı | ❌ **yox** | Lid avtomatik CRM-ə yazıla bilmir |
+| `conversationId` | ❌ **qaytarmır** | ✅ oxumağa hazırıq | Sahə hazırdır, bot doldurmur |
+
+**Praktik nəticəsi:** frontend chat widget-ində yalnız **düz mətn** görünəcək —
+nə düymə, nə kurs kartı. Düzəliş backend tərəfdədir və kiçikdir (**§6.1**).
+
+### Xülasə — bir cümlə ilə
+
+> Bot bizim göndərdiyimiz `conversationId`/`userId`-ni **atır**,
+> biz isə botun göndərdiyi `actions`/`courses`/`state`/`capture`-i **atırıq**.
+> Hazırda uçdan-uca yalnız `message` → `reply` zənciri işləyir.
+
+---
 
 ### Sorğu (bizdən bota gedən JSON)
 
@@ -268,11 +319,37 @@ uçdan-uca işləyir.
 gecikməsi). Adi hal 3–8 saniyədir, amma ara-sıra uzanır. Cari
 `CHATBOT_READ_TIMEOUT_MS=20000` bu spike-larda 503 verəcək — bax **§6**.
 
+### Son test nəticələri — 28.07.2026
+
+Konfiqurasiya dəyişməyib. `CHATBOT_READ_TIMEOUT_MS` artıq **50000**-dir (§6.2 icra olunub).
+
+| # | Ssenari | Gözlənilən | Nəticə |
+|---|---------|-----------|--------|
+| 1 | `POST /api/v1/chatbot/message` — **1-ci cəhd** | 200 + `reply` | ❌ **503** — bax §6.5 |
+| 2 | Eyni sorğu — **2-ci cəhd** (heç nə dəyişmədən) | 200 + `reply` | ✅ 200, mənalı azərbaycanca cavab |
+| 3 | Bota **birbaşa** `POST /api/chat` (backend-siz) | 200 + `reply` | ✅ 200, `Content-Type: application/json` |
+| 4 | Birbaşa çağırış, `Accept: application/json` + `User-Agent: Java/21` | 200 | ✅ 200, `application/json` |
+| 5 | Azərbaycan hərfləri (UTF-8) düzgün ötürülür | `ə/ı/ş/ğ/ö/ü/ç` səhih | ✅ Problem yoxdur — `"Sizə necə kömək edə bilərəm?"` |
+| 6 | Cavabda `conversationId` gəlir | dolu | ❌ `null` — bot hələ də qaytarmır (§7.1 açıqdır) |
+
+Botun məzmun keyfiyyəti yaxşıdır — kursları, qiymətləri və istiqamətləri düzgün sadalayır
+(Full-Stack 890 AZN, Python və Data Analitika 750 AZN, Etik Hacker 980 AZN və s.).
+Bu qiymətlər `db/seed/dev_seed.sql` ilə bazaya yüklənən kurs kataloqu ilə **eynidir**,
+yəni bot cavabları ilə sayt kataloqu bir-birinə ziddiyyət təşkil etmir.
+
 ---
 
 ## 6. Açıq işlər (backend tərəfi)
 
-### 6.1 Botun `actions` / `courses` / `state` sahələri itir — 🔴 vacib
+### 6.1 Botun `actions` / `courses` / `state` sahələri itir — ✅ HƏLL OLUNDU (28.07.2026)
+
+> **İcra olundu.** `ChatbotApiResponse` və `ChatbotMessageResponse`-a `state`,
+> `actions`, `courses`, `capture` sahələri əlavə edildi, yeni `ChatbotAction`
+> record yaradıldı. Lokal stub ilə yoxlanılıb — düymələr və kurs siyahısı artıq
+> frontend-ə çatır. Aşağıdakı təsvir arayış üçün saxlanılır.
+
+<details>
+<summary>Problemin ilkin təsviri (arxiv)</summary>
 
 Bot cavabında istifadəçiyə göstəriləcək **düymələr** (`actions`) və kurs siyahısı
 (`courses`) gəlir, amma `ChatbotApiResponse` yalnız `reply` və `conversationId`
@@ -301,12 +378,15 @@ Bundan sonra `POST /api/v1/chatbot/message` cavabı belə olacaq:
 }
 ```
 
-### 6.2 `CHATBOT_READ_TIMEOUT_MS` azdır — 🟡 orta
+</details>
 
-`.env`-də `20000` → **`45000`** et. Səbəb: §5-dəki 25+ saniyəlik spike.
+### 6.2 `CHATBOT_READ_TIMEOUT_MS` azdır — ✅ HƏLL OLUNDU (28.07.2026)
+
+`.env`-də dəyər artıq **`50000`**-dir, §5-dəki 25+ saniyəlik spike-lar artıq
+timeout-a düşmür.
 
 ```dotenv
-CHATBOT_READ_TIMEOUT_MS=45000
+CHATBOT_READ_TIMEOUT_MS=50000
 ```
 
 ### 6.3 ngrok free URL sabit deyil — 🟡 orta
@@ -321,13 +401,97 @@ uyğundur, **prod üçün deyil**. Prod-da bot sabit domenə (və ya eyni k8s/do
 Endpoint public edilərsə (bax §8), IP üzrə rate-limit əlavə olunmalıdır —
 `security/AuthRateLimitingFilter` nümunə kimi götürülə bilər.
 
+### 6.5 Ara-sıra səbəbsiz 503 — `application/octet-stream` — ✅ HƏLL OLUNDU (28.07.2026)
+
+> **İcra olundu — Variant A seçildi.** `ChatbotService` cavabı artıq
+> `ChatbotApiResponse` kimi yox, **`String`** kimi alır və parse-i özü edir
+> (`objectMapper.readValue`). String konverteri istənilən media tipini qəbul
+> etdiyi üçün `application/octet-stream` problemi tamamilə aradan qalxdı.
+> Əlavə olaraq `ngrok-skip-browser-warning: true` başlığı göndərilir və parse
+> alınmayanda cavab gövdəsinin ilk 500 simvolu log-a yazılır.
+>
+> **Yoxlama:** qəsdən `application/octet-stream` qaytaran lokal stub qurulub —
+> əvvəlki kod 503 verirdi, yeni kod **200** qaytardı və `actions`/`courses`/
+> `state`/`capture` sahələrini frontend-ə ötürdü.
+>
+> **Qeyd:** `ObjectMapper` bean-i `tools.jackson.databind.ObjectMapper`-dir
+> (Spring Boot 4 Jackson 3-ə keçib). `com.fasterxml.jackson.databind.ObjectMapper`
+> hələ də classpath-dədir — Hibernate jsonb sütunları üçün ondan istifadə edir —
+> amma Spring bean kimi qeydiyyatdan keçmir, inject etməyə çalışsan tətbiq açılmır.
+
+<details>
+<summary>Problemin ilkin təsviri (arxiv)</summary>
+
+**Simptom:** eyni sorğu bəzən `503`, dərhal sonra təkrar edildikdə `200` verir.
+İstifadəçi üçün bu, "bot təsadüfi olaraq işləmir" kimi görünür.
+
+**Log-dakı dəqiq səbəb:**
+
+```
+Chat-bota çatmaq mümkün olmadı
+(baseUrl=https://customary-fading-sensuous.ngrok-free.dev, path=/api/chat):
+Error while extracting response for type [ChatbotApiResponse]
+and content type [application/octet-stream]
+```
+
+**Kök səbəb:** bot cavabı bəzən `Content-Type` başlığı **olmadan** qaytarır.
+Spring belə cavabı standart olaraq `application/octet-stream` sayır, Jackson isə
+bu media tipi üçün qeydiyyatdan keçmədiyindən deserialize etməkdən imtina edir.
+`RestClient` `RestClientException` atır, `ChatbotService.java`-dakı `catch` bloku
+isə bunu **birbaşa 503-ə** çevirir — heç bir təkrar cəhd (retry) yoxdur.
+
+> Diqqət: bu, botun özünün nasazlığı DEYİL. Birbaşa `curl`/PowerShell ilə çağırdıqda
+> bot hər dəfə `Content-Type: application/json` qaytarır (bax §5, test 3 və 4).
+> Problem yalnız ara-sıra, çox güman ngrok tuneli və ya botun soyuq başlanğıcı
+> səbəbindən yaranır.
+
+**Həll variantları (backend tərəfi — birini seç):**
+
+| Variant | Nə etməli | Qiymətləndirmə |
+|---------|-----------|----------------|
+| A) Cavabı `String` kimi al, özümüz parse et | `.body(String.class)` + `ObjectMapper.readValue(...)` | Ən sadə və zəmanətli — media tipindən tam asılısız |
+| B) Converter-ə `octet-stream`-i JSON kimi oxumağa icazə ver | `chatbotRestClient` bean-ində `MappingJackson2HttpMessageConverter.setSupportedMediaTypes(...)` siyahısına `APPLICATION_OCTET_STREAM` əlavə et | Kiçik dəyişiklik, amma qlobal converter-i çirkləndirmə riski var |
+| C) Retry əlavə et | 1 dəfə təkrar cəhd (yalnız parse xətasında, timeout-da yox) | A və ya B ilə birlikdə tövsiyə olunur |
+
+**Əlavə sığorta (ngrok üçün):** sorğuya `ngrok-skip-browser-warning: true`
+başlığını da əlavə et — ngrok-un ara xəbərdarlıq səhifəsi qayıtsa, o səhifə
+`text/html` gəlir və eyni cür partlayır.
+
+```java
+headers.set("ngrok-skip-browser-warning", "true");
+```
+
+</details>
+
+### 6.6 Botun ngrok tuneli offline düşür — 🟡 orta (28.07.2026-da müşahidə olundu)
+
+Testlər zamanı tunel tamamilə söndü və backend hər sorğuda 503 verdi. Yeni
+log-lama sayəsində səbəb dərhal göründü:
+
+```
+404 Not Found: "... The endpoint customary-fading-sensuous.ngrok-free.dev
+is offline. (ERR_NGROK_3200) ..."
+```
+
+Bu, §6.3-ün praktik təzahürüdür: **qrup yoldaşı botu bağlayanda və ya ngrok-u
+yenidən başladanda inteqrasiya dayanır.** Backend tərəfdən düzəldilə bilməz —
+bax §7.3 (sabit deploy).
+
+> Diaqnostika üçün: 503 alanda `logs/error/<tarix>/<saat>/error.log`-a bax.
+> Log artıq botun qaytardığı cavabın başlanğıcını da yazır, ona görə
+> "tunel offline", "yanlış path" və "format səhvi" hallarını bir-birindən
+> ayırmaq asandır.
+
 ---
 
 ## 7. Qrup yoldaşı üçün TODO (bot tərəfi)
 
 Aşağıdakılar **botun kodunda** həll olunmalıdır — backend tərəfdən düzəldilə bilməz.
 
-### 7.1 Sessiya ayrılığı yoxdur — 🔴 kritik
+### 7.1 Sessiya ayrılığı yoxdur — 🔴 kritik (28.07.2026-da **təkrar təsdiqləndi**)
+
+> 28.07.2026 testində cavabdakı `conversationId` yenə `null` gəldi — yəni bu
+> problem hələ də açıqdır. Tam mənzərə üçün bax **§3.1 (A) cədvəli**.
 
 **Problem:** bot `conversationId` (və ya `session_id`) sahəsini nə qəbul edir, nə də
 qaytarır. Testdə fərqli `conversationId` göndərilməsinə baxmayaraq botun `state`

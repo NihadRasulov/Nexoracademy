@@ -15,12 +15,12 @@ Bunların hamısı ya **real sirr/kimlik məlumatı** (mənim bilmədiyim/bilə 
 ### 🔴 Kritik (deploy-dan əvvəl mütləq)
 | # | Maddə | Hara | Niyə mən edə bilmirəm | Təxmini vaxt |
 |---|-------|------|------------------------|---------------|
-| 1 | `JWT_SECRET`-i yenidən generasiya et: `openssl rand -base64 48` | `.env` → `JWT_SECRET=` (real, commit olunmayan) | Canlı production imza açarıdır — mən yaradıb saxlasam belə, təhlükəsizlik baxımından mənasızdır: bunu yalnız sən/secret manager-in bilməlidir | ~10 dəqiqə |
-| 2 | `CORS_ALLOWED_ORIGINS`-i real prod frontend domeni ilə doldur | `.env` → `CORS_ALLOWED_ORIGINS=` (hazırda `http://localhost:5501, http://127.0.0.1:5501`) | Real domen adını bilmirəm | ~5 dəqiqə |
+| 1 | ~~`JWT_SECRET`-i yenidən generasiya et~~ **✅ 2026-07-28: rotasiya edildi** — 48 baytlıq təsadüfi dəyər (base64url, 64 simvol) `.env`-ə yazıldı. Köhnə (git tarixçəsinə sızmış) dəyər artıq istifadə olunmur. Qeyd: rotasiya bütün mövcud token-ləri etibarsız edir | `.env` → `JWT_SECRET=` | — | tamamlandı |
+| 2 | ~~`CORS_ALLOWED_ORIGINS`-i real domenlə doldur~~ **✅ 2026-07-28: lokal/müvəqqəti prod üçün dolduruldu** — Live Server/Vite/CRA portları (5500/5501/5173/3000 × localhost/127.0.0.1). **Qalan:** frontend real domenə deploy olunanda həmin domen əlavə edilməlidir | `.env` → `CORS_ALLOWED_ORIGINS=` | Real prod domeni hələ yoxdur | qismən |
 | 3 | ~~Real production SMTP provayderinə keç~~ **✅ 2026-07-25: Gmail SMTP qoşuldu** (`smtp.gmail.com:587`, App Password, STARTTLS). Yalnız gələcək qeyd: pulsuz Gmail gündə ~500 məktubla məhduddur — real yüklə SES/SendGrid/Postmark-a keçmək lazım gələcək | `.env` → `MAIL_*` | — | tamamlandı |
 | 4 | Real ödəniş gateway-i seçildikdən sonra webhook secret-i doldur | `.env` → `PAYMENT_GATEWAY_WEBHOOK_SECRET=` (hazırda **boşdur** → callback imzasız qəbul olunur) | Gateway seçimi biznes qərarıdır, secret həmin gateway-in paneldindən gəlir | Gateway seçimindən asılı |
-| 9 | `FRONTEND_BASE_URL`-i real domenlə əvəz et | `.env` → `FRONTEND_BASE_URL=` (hazırda `http://localhost:3000`) | Email təsdiq / şifrə-sıfırlama linkləri bu ünvana qurulur — prod-da localhost qalsa istifadəçiyə gedən linklər işləməyəcək. Real domen məndə yoxdur | ~2 dəqiqə |
-| 10 | Prod-da admin seed qərarı: `ADMIN_SEED_ENABLED=true` + güclü `ADMIN_SEED_*_PASSWORD` dəyərləri, ya da seed sönülü qalsın və admin əl ilə yaradılsın | `.env` (prod) → `ADMIN_SEED_*` | Real admin şifrələri sirrdir; kod tərəfi hazırdır (prod-da default sönülü, boş şifrə → fail-fast) | ~10 dəqiqə |
+| 9 | ~~`FRONTEND_BASE_URL`-i real domenlə əvəz et~~ **✅ 2026-07-28: müvəqqəti prod üçün `http://localhost:5500`** (frontend dostun öz maşınında Live Server ilə işləyir). **Qalan:** frontend deploy olunanda real domenlə əvəz et | `.env` → `FRONTEND_BASE_URL=` | Real prod domeni hələ yoxdur | qismən |
+| 10 | ~~Prod-da admin seed qərarı~~ **✅ 2026-07-28: `ADMIN_SEED_ENABLED=true` + 4 güclü təsadüfi şifrə (24 simvol)** `.env`-ə yazıldı və DB-dəki mövcud 4 hesabın `password_hash`-ı da yeniləndi (seeder mövcud hesaba toxunmadığı üçün ayrıca UPDATE lazım idi). Köhnə `admin1234` tipli şifrələr yoxlanılıb — **401** verir | `.env` → `ADMIN_SEED_*` | — | tamamlandı |
 
 ### 🟠 Vacib / İstəyə bağlı
 | # | Maddə | Hara | Niyə mən edə bilmirəm | Təxmini vaxt |

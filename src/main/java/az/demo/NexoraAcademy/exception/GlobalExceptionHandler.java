@@ -13,7 +13,9 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
@@ -100,6 +102,39 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(ErrorResponse.of(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI()));
+    }
+
+    /**
+     * Mövcud olmayan path üçün Spring {@link NoResourceFoundException} atır — bu,
+     * məntiqi olaraq 404-dür. Bu handler olmadan həmin xəta aşağıdakı ümumi
+     * {@code Exception} blokuna düşürdü və API səhv yazılmış hər URL üçün
+     * <b>500</b> qaytarırdı: frontend tərəfdə bu, "backend çöküb" kimi görünür və
+     * adamı öz URL-indəki səhv əvəzinə serveri debug etməyə yönləndirir.
+     *
+     * <p>Prod profilində springdoc söndürüldüyü üçün {@code /swagger-ui/**} və
+     * {@code /v3/api-docs/**} da məhz bu yolla 500 verirdi (bax
+     * application-prod.yml) — indi düzgün şəkildə 404 qaytarır.
+     *
+     * <p>Log səviyyəsi qəsdən {@code debug}-dır: naməlum path adi haldır
+     * (bot/skaner trafiki daxil olmaqla) və ERROR kimi loglanması prod log-larını
+     * mənasız yerə doldururdu.
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFound(NoResourceFoundException ex, HttpServletRequest request) {
+        log.debug("No handler for {} {}", request.getMethod(), request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.of(HttpStatus.NOT_FOUND, "Requested endpoint does not exist", request.getRequestURI()));
+    }
+
+    /**
+     * Yanlış HTTP metodu (məs. mövcud endpoint-ə POST əvəzinə GET) — 405.
+     * Bu da əvvəllər ümumi 500-ə düşürdü.
+     */
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex, HttpServletRequest request) {
+        log.debug("Method not supported: {} {}", request.getMethod(), request.getRequestURI());
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body(ErrorResponse.of(HttpStatus.METHOD_NOT_ALLOWED, ex.getMessage(), request.getRequestURI()));
     }
 
     @ExceptionHandler(Exception.class)

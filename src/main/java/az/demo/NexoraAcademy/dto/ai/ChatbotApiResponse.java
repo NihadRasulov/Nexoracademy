@@ -3,6 +3,9 @@ package az.demo.NexoraAcademy.dto.ai;
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import java.util.List;
+import java.util.Map;
+
 /**
  * KƏNAR botdan gələn JSON cavabın backend tərəfindəki qarşılığı.
  *
@@ -16,6 +19,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
  *
  * @param reply          botun mətn cavabı
  * @param conversationId botun qaytardığı söhbət id-si (varsa)
+ * @param state          söhbətin hansı mərhələdə olduğu (məs. "interest_selected")
+ * @param actions        istifadəçiyə göstəriləcək təklif düymələri
+ * @param courses        botun tövsiyə etdiyi kurslar (sərbəst struktur — bot nə
+ *                       göndərsə frontend-ə olduğu kimi ötürülür)
+ * @param capture        lid tutma siqnalı (məs. "none", "email", "phone")
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ChatbotApiResponse(
@@ -23,6 +31,14 @@ public record ChatbotApiResponse(
         String reply,
 
         @JsonAlias({"conversation_id", "session_id", "sessionId", "chatId", "chat_id"})
-        String conversationId
+        String conversationId,
+
+        String state,
+
+        List<ChatbotAction> actions,
+
+        List<Map<String, Object>> courses,
+
+        String capture
 ) {
 }
