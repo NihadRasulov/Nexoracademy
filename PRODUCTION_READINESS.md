@@ -1,376 +1,189 @@
 # NexoraAcademy — Production Readiness Audit
 
-**Tarix:** 2026-07-22
+**Tarix:** 2026-07-22 · **Son yenilənmə:** 2026-07-24
 **Əhatə dairəsi:** Spring Boot 4.1 / PostgreSQL / Flyway backend (`az.demo.NexoraAcademy`)
-**Metod:** Bütün `application*.yml`, `.env`/`.env.example`, `pom.xml`, `docker-compose.yml`, `CorsConfig`, `SecurityConfig`, `GlobalExceptionHandler`, `JwtService`/`JwtProperties`, `AuthService`/`AuthController`, `EmailService`, bütün 23 controller sinfi, `logback-spring.xml`, `CrudLoggingAspect`, git tarixçəsi bilavasitə oxunub.
+**Metod:** Bütün `application*.yml`, `.env`/`.env.example`, `pom.xml`, `docker-compose*.yml`, `CorsConfig`, `SecurityConfig`, `GlobalExceptionHandler`, `JwtService`/`JwtProperties`, `AuthService`/`AuthController`, `EmailService`, bütün controller sinifləri, `logback-spring.xml`, `CrudLoggingAspect`, git tarixçəsi bilavasitə oxunub.
 
-> Qeyd: `application-dev.yml`/`application-prod.yml`, `CorsConfig`, `@RestControllerAdvice`, Flyway strukturunun **mövcud olması** artıq qəbul edilib — aşağıda yalnız bunların **içindəki konfiqurasiyanın düzgünlüyü** qiymətləndirilir.
+> Bu sənəd iki hissədən ibarətdir: əvvəlcə **qalan işlər** (yalnız sən edə bilərsən), sonra **ətraflı texniki audit** (Bölmə 1-10, hər maddənin fayl/sətir referansı ilə), ən altda isə **tamamlanmış işlərin tarixçəsi**. Qarışıqlıq yaranmasın deyə, aşağıdakı "Qalan İşlər" siyahısı yeganə "nə qalıb" mənbəyidir — Bölmə 1-10-dakı ✅ işarələr artıq kod səviyyəsində tamamlanmış deməkdir, təkrar iş tələb etmir.
 
 ---
 
-## Yenilənmə qeydi (2026-07-22, ilkin audit-dən sonra)
+## ⬜ Qalan İşlər — Yalnız Sən Edə Bilərsən
 
-İlkin audit-də tapılan bir sıra maddə artıq kodda düzəldilib. Aşağıdakı "Bölmə 1-10" hissəsi **orijinal tapıntıları** əks etdirir (tarixi referans üçün saxlanılıb); faktiki hazırkı vəziyyət üçün ən aşağıdakı **"Prioritet Sıralı Checklist"** və **"Deploy Etməzdən Əvvəl"** bölmələrinə bax — onlar yenilənib.
+Bunların hamısı ya **real sirr/kimlik məlumatı** (mənim bilmədiyim/bilə bilmədiyim dəyərlər), ya **biznes qərarı**, ya da **geri dönməz/paylaşılan əməliyyatdır**. Kod tərəfi bunların hamısı üçün artıq hazırdır — yalnız dəyəri doldurmaq/qərar vermək qalır.
 
-**Bu sessiyada görülən işlər:**
+### 🔴 Kritik (deploy-dan əvvəl mütləq)
+| # | Maddə | Hara | Niyə mən edə bilmirəm | Təxmini vaxt |
+|---|-------|------|------------------------|---------------|
+| 1 | `JWT_SECRET`-i yenidən generasiya et: `openssl rand -base64 48` | `.env` → `JWT_SECRET=` (real, commit olunmayan) | Canlı production imza açarıdır — mən yaradıb saxlasam belə, təhlükəsizlik baxımından mənasızdır: bunu yalnız sən/secret manager-in bilməlidir | ~10 dəqiqə |
+| 2 | `CORS_ALLOWED_ORIGINS`-i real prod frontend domeni ilə doldur | `.env` → `CORS_ALLOWED_ORIGINS=` (hazırda `http://localhost:5501, http://127.0.0.1:5501`) | Real domen adını bilmirəm | ~5 dəqiqə |
+| 3 | ~~Real production SMTP provayderinə keç~~ **✅ 2026-07-25: Gmail SMTP qoşuldu** (`smtp.gmail.com:587`, App Password, STARTTLS). Yalnız gələcək qeyd: pulsuz Gmail gündə ~500 məktubla məhduddur — real yüklə SES/SendGrid/Postmark-a keçmək lazım gələcək | `.env` → `MAIL_*` | — | tamamlandı |
+| 4 | Real ödəniş gateway-i seçildikdən sonra webhook secret-i doldur | `.env` → `PAYMENT_GATEWAY_WEBHOOK_SECRET=` (hazırda **boşdur** → callback imzasız qəbul olunur) | Gateway seçimi biznes qərarıdır, secret həmin gateway-in paneldindən gəlir | Gateway seçimindən asılı |
+| 9 | `FRONTEND_BASE_URL`-i real domenlə əvəz et | `.env` → `FRONTEND_BASE_URL=` (hazırda `http://localhost:3000`) | Email təsdiq / şifrə-sıfırlama linkləri bu ünvana qurulur — prod-da localhost qalsa istifadəçiyə gedən linklər işləməyəcək. Real domen məndə yoxdur | ~2 dəqiqə |
+| 10 | Prod-da admin seed qərarı: `ADMIN_SEED_ENABLED=true` + güclü `ADMIN_SEED_*_PASSWORD` dəyərləri, ya da seed sönülü qalsın və admin əl ilə yaradılsın | `.env` (prod) → `ADMIN_SEED_*` | Real admin şifrələri sirrdir; kod tərəfi hazırdır (prod-da default sönülü, boş şifrə → fail-fast) | ~10 dəqiqə |
+
+### 🟠 Vacib / İstəyə bağlı
+| # | Maddə | Hara | Niyə mən edə bilmirəm | Təxmini vaxt |
+|---|-------|------|------------------------|---------------|
+| 5 | GitHub tarixçəsindən köhnə `.env.example` commit-lərini (`e466ec7`, `a52c18f`, `c8cfc98`) BFG/`git filter-repo` ilə təmizlə, force-push et | — | Tarixçəni yenidən yazan, komanda ilə koordinasiya və force-push tələb edən geri dönməz əməliyyatdır. JWT_SECRET rotasiya edildikdən sonra prioritet aşağıdır | ~30-60 dəqiqə |
+| 6 | (İstəyə bağlı) `@PreAuthorize` metod-səviyyəli qorunma əlavə et | müxtəlif service-lər | Funksional boşluq deyil (URL-pattern qaydaları artıq hər şeyi əhatə edir, bax Bölmə 2) — hansı metodun hansı rola bağlanacağı məhsul qərarıdır | ~2 saat |
+| 7 | Login/register/OTP rate-limit üçün inteqrasiya testi yaz və canlı DB-yə qarşı doğrula | `src/test/.../integration` | Bu sessiyada canlı Postgres/Testcontainers mühiti yox idi — sınanmamış test commit etmək istəmədim | ~1 saat |
+| 8 | Prod deploy-dan sonra `/actuator/health`-in real DB/Mail vəziyyətini düzgün göstərdiyini yoxla | — | Canlı deploy mühitinə çıxışım yoxdur | ~10 dəqiqə |
+
+---
+
+## Ətraflı Texniki Audit
+
+### 1. Environment / Config
+
+**✅ HAZIR — `ddl-auto=validate`, heç bir `update`/`create` yoxdur.** `application.yml:26`, `application-prod.yml:19` — schema idarəçiliyi tam Flyway-ə həvalə olunub.
+
+**✅ HAZIR — `show-sql` yalnız dev profilində aktivdir.** `application-dev.yml:12`.
+
+**✅ HAZIR — Flyway `validate-on-migrate=true`, `out-of-order=false`.** `application.yml:42-43`.
+
+**✅ HAZIR — Prod profili üçün default dəyər yoxdur (fail-fast).** `application-prod.yml:12-14` — `DB_*` dəyişənləri prod-da təyin olunmasa açılış zamanı xəta verib dayanır.
+
+**✅ HAZIR — `app.cors.allowed-origins` `CORS_ALLOWED_ORIGINS` env-dəyişəninə bağlıdır.** `application.yml:83` (dev fallback: `http://localhost:3000`), `application-prod.yml:34-35` (placeholder-siz — dəyər verilməzsə app açılmır). `CorsProperties`/`CorsConfig` bunu birbaşa `setAllowedOrigins()`-ə ötürür. Kod tərəfi tamamdır — qalan yalnız **real dəyər** (bax "Qalan İşlər" #2).
+
+---
+
+### 2. Security
+
+**✅ HAZIR — JWT secret prod-da hardcode deyil, default-suzdur.** `application-prod.yml:29` — `app.jwt.secret: ${JWT_SECRET}` (placeholder-siz). `JwtProperties.java:15`-dəki dev fallback yalnız `application.yml`-da aktivdir.
+
+**✅ HAZIR (kod) / ⬜ real dəyər qalır — `.env.example`-dəki nümunə `JWT_SECRET`/`DB_PASSWORD` artıq işlək sirr deyil.** Əvvəllər `.env.example`-dəki `JWT_SECRET`/`DB_PASSWORD` hazırkı `.env` ilə hərfi-hərfinə eyni idi (developer nümunəni köçürüb heç vaxt əvəz etməmişdi) — bu, repo-nu klonlayan hər kəsə etibarlı JWT token saxtalaşdırmaq imkanı verirdi (bax `JwtService.signingKey()`). Bu, 2026-07-24-də düzəldildi: `.env.example`-dəki hər iki dəyər açıq placeholder mətninə çevrildi (`REPLACE_WITH_OUTPUT_OF__openssl_rand_base64_48`, `REPLACE_ME_STRONG_UNIQUE_PASSWORD`). `DB_PASSWORD` real Postgres instansında artıq rotasiya edilib və doğrulanıb (2026-07-22). **Qalan:** `JWT_SECRET`-in real dəyəri hələ köhnə (sızmış) dəyərdir — bax "Qalan İşlər" #1, bu, yalnız sənin edə biləcəyin son addımdır.
+
+**✅ HAZIR — Şifrələr BCrypt ilə hash-lənir.** `SecurityConfig.java:162-164`, `AuthService.register()`.
+
+**✅ HAZIR — Admin/həssas endpoint-lər `SecurityConfig`-də rol əsaslı qorunur.** `SecurityConfig.java:93-147` — `anyRequest().authenticated()` qalanları default bağlayır, struktur məntiqli, sızma yoxdur.
+
+**✅ HAZIR — `PaymentController.callback()` üçün imza doğrulama mexanizmi mövcuddur.** `PaymentCallbackSignatureFilter` (bax `security/PaymentCallbackSignatureFilter.java`) `PaymentGatewaySignatureVerifier` vasitəsilə HMAC-SHA256 imzanı controller-ə çatmazdan **əvvəl** yoxlayır (controller metodunun özündə deyil — filter-based dizayn). `PAYMENT_GATEWAY_WEBHOOK_SECRET` boş olduğu müddətcə yoxlama bypass olunur (hər callback-də WARN logu ilə), dəyər veriləndə məcburiləşir. **Qalan:** real gateway seçilib webhook secret-i doldurulmayınca bu endpoint funksional olaraq açıqdır — bax "Qalan İşlər" #4.
+
+**✅ HAZIR (2026-07-25) — Default admin hesablarının şifrələri artıq hardcode deyil.** `AdminSeeder` əvvəllər hər profildə, o cümlədən prod-da, dörd admin hesabını koda yazılmış zəif şifrələrlə (`admin1234`, `system-admin1234` və s.) yaradırdı — kodu görən hər kəs canlı sistemə SYSTEM_ADMIN kimi girə bilərdi. İndi dəyərlər `AdminSeederProperties` (`app.admin-seed.*`) üzərindən gəlir: `application.yml`-da yalnız dev default-ları, `application-prod.yml`-da isə `enabled: ${ADMIN_SEED_ENABLED:false}` + boş şifrə default-ları var. Seed prod-da açılarsa və şifrə verilməyibsə tətbiq açılışda `IllegalStateException` ilə dayanır (fail-fast); 12 simvoldan qısa şifrə WARN loglayır. **Qalan:** prod üçün qərar/şifrələr — bax "Qalan İşlər" #10.
+
+**✅ HAZIR — Dev-only test controller silinib.** `TestMailController` (`/test/mail`) 2026-07-22-də tam silindi, kod bazasında qalıq yoxdur.
+
+**✅ HAZIR — Swagger UI / OpenAPI docs prod-da söndürülüb.** `SecurityConfig.java:75-78` `/swagger-ui/**`/`/v3/api-docs/**`-i profil fərqi qoymadan `permitAll()` edir (dev üçün doğrudur), amma `application-prod.yml`-a 2026-07-24-də `springdoc.api-docs.enabled=false` və `springdoc.swagger-ui.enabled=false` əlavə olundu — springdoc auto-config prod-da bu endpoint-ləri özü qeydiyyatdan çıxarır.
+
+---
+
+### 3. CORS konfigurasiyası
+
+`CorsConfig.java` tam oxundu:
+- **✅ HAZIR** — `allowedOrigins` hardcode `localhost`/`"*"` deyil, `CorsProperties` üzərindən xarici konfiqurasiyaya bağlıdır.
+- **✅ HAZIR** — `allowCredentials(true)` wildcard origin ilə birgə istifadə olunmayıb.
+- **✅ HAZIR (kod) / ⬜ real dəyər qalır** — bax Bölmə 1: mexanizm tamamdır, `.env`-də hələ dev dəyəri (`http://localhost:3000`) var — real domenlə əvəz olunmalıdır (bax "Qalan İşlər" #2).
+
+---
+
+### 4. Exception Handling
+
+`GlobalExceptionHandler.java` (112 sətir) tam oxundu — **bu bölmə tam production-ready-dir, əlavə iş tələb olunmur.**
+
+- Stack trace/daxili sinif adları response-da sızmır (`handleUnexpected`, `handleDataIntegrityViolation`).
+- `handleBadCredentials()` generic mesaj qaytarır — user enumeration-a qarşı düzgün.
+- `JwtAuthenticationEntryPoint`/`CustomAccessDeniedHandler` eyni minimal JSON formasını istifadə edir.
+
+---
+
+### 5. Rate Limiting / Brute-force qorunması
+
+**✅ HAZIR — `/api/v1/auth/**` üçün IP-əsaslı rate limiting mövcuddur.** `AuthRateLimitingFilter` (in-memory, per-IP, fixed-window) `/register`, `/login`, `/login/verify-otp`, `/forgot-password`, `/resend-verification` üçün dəqiqəlik limit tətbiq edir, `SecurityConfig`-də JWT filter-dən əvvəl zəncirə əlavə olunub. Tək instans üçün kifayətdir; horizontal scale olunarsa paylaşılan store (Redis) ilə əvəz edilməlidir (kodda qeyd olunub).
+
+**✅ HAZIR — OTP-nin cəhd limiti mövcuddur.** `AuthProperties.java:23` (`otpMaxAttempts = 5`), `AuthService.verifyOtp()` limitə çatanda sessiyanı ləğv edir.
+
+**✅ HAZIR — OTP-nin etibarlılıq müddəti təyin olunub.** `AuthProperties.java:17,20` — 10 dəqiqə, `verifyOtp()` keçmiş OTP-ni rədd edir.
+
+---
+
+### 6. Email / OTP
+
+**✅ HAZIR — OTP kodu log-a yazılmır.** `EmailService.send()` yalnız göndərmə statusunu loglayır, body-ni yox.
+
+**✅ HAZIR — "From" ünvanı kodda düzgün konfiqurasiya olunub.** `MailProperties`/`app.mail.from`, hardcode yoxdur.
+
+**✅ HAZIR (2026-07-25) — Production SMTP qoşulub (Gmail).** `.env` → `smtp.gmail.com:587`, `MAIL_SMTP_AUTH=true`, `MAIL_SMTP_STARTTLS=true`, `MAIL_PASSWORD` = Google App Password, `MAIL_FROM` = autentifikasiya olunan hesab.
+
+**✅ HAZIR (2026-07-25) — SMTP timeout-ları real provayder üçün uyğunlaşdırıldı.** `application.yml`-dəki `connectiontimeout/timeout/writetimeout` MailHog üçün 3000 ms idi; Gmail-in STARTTLS handshake-i bunu tez-tez keçir və `EmailService` xətanı uddugu üçün məktub səssizcə itirdi. İndi default 10000 ms (`MAIL_CONNECTION_TIMEOUT_MS`/`MAIL_READ_TIMEOUT_MS`/`MAIL_WRITE_TIMEOUT_MS` ilə tənzimlənir).
+
+**✅ HAZIR (2026-07-25) — Email göndərmə artıq sorğunu bloklamır.** `EmailService.send()` `@Async`-dir (`config/AsyncConfig`, `@EnableAsync`) — əvvəllər Gmail-in 1-3 saniyəlik cavabı birbaşa `register`/`login`/`forgot-password` sorğusunun müddətinə əlavə olunurdu. `TaskDecorator` MDC-ni (correlation-id) arxa-fon thread-inə köçürür ki, async loglar da korrelyasiya olunsun.
+
+**⚠️ Bilinən məhdudiyyət — Gmail kvotası.** Pulsuz Gmail hesabı gündə ~500 məktub göndərə bilir və `From` autentifikasiya olunan ünvandan fərqli ola bilmir. Test/erkən istifadə üçün kifayətdir; real yükdə SES/SendGrid/Postmark-a keçid lazım olacaq (yalnız `.env` dəyişikliyi — kodda dəyişiklik tələb olunmur).
+
+---
+
+### 7. Logging
+
+**✅ HAZIR — Prod-da root log səviyyəsi WARN-dır.** `application-prod.yml:32-33`.
+
+**✅ HAZIR — Həssas data (şifrə/token/OTP) log-a yazılmır.** `CrudLoggingAspect.java` DTO field dəyərlərini heç vaxt loglamır, yalnız sinif adı/UUID/enum kimi "təhlükəsiz" tipləri.
+
+**⚠️ Qəsdəndir, əlavə iş lazım deyil — CRUD audit logger-ləri prod-da da INFO səviyyəsində qalır.** `logback-spring.xml:97-108` — audit trail məqsədilə qəsdən belədir, `root: WARN` bunlara təsir etmir. DevOps komandası `logs/create|read|update|delete/` qovluqlarının prod-da da böyüyəcəyinin fərqinə varmalıdır (30 günlük saxlama `LOG_RETENTION_HOURS=720` ilə tənzimlənib).
+
+**✅ HAZIR — Correlation-id ilə mərkəzləşdirilmiş log korrelyasiyası.** `logging/CorrelationIdFilter.java` + `config/WebFilterConfig.java` (2026-07-24) — hər HTTP request-ə MDC-based correlation-id təyin edilir (`X-Correlation-Id` — client göndərsə saxlanılır, göndərməsə UUID yaradılır), response header-ə qaytarılır, `HIGHEST_PRECEDENCE`-də Spring Security-dən əvvəl işə düşür (rədd olunan 401/429 sorğular da loglanır). `logback-spring.xml`/`application.yml` bu id-ni fayl və konsol log-larında göstərir.
+
+---
+
+### 8. Database
+
+**✅ HAZIR — HikariCP ayarları default deyil, açıq təyin olunub.** `application.yml:17-20` — `maximum-pool-size: 10`, `minimum-idle: 2`, `connection-timeout: 30000`.
+
+**✅ HAZIR — `leak-detection-threshold` təyin olunub.** `application.yml:24` — `30000` ms (2026-07-22 əlavə olundu).
+
+**✅ HAZIR — Flyway migration-lar ardıcıl və düzgün nömrələnib.** `V1`–`V13`, `out-of-order: false`, `validate-on-migrate: true`, `baseline-on-migrate: true`. `spring-boot-starter-flyway` asılılığı `pom.xml`-də mövcuddur (Spring Boot 4.x-də migration-ları avtomatik işə salmaq üçün tələb olunur).
+
+---
+
+### 9. Docker / Deploy
+
+**✅ HAZIR — Production Dockerfile mövcuddur və test olunub.** Repo kökündəki `Dockerfile` — multi-stage build (`eclipse-temurin:21-jdk-alpine` → `-jre-alpine`), non-root `spring` istifadəçisi, `/app/logs` icazəsi əvvəlcədən düzəldilib, `HEALTHCHECK` `/actuator/health`-ə qarşı. Real `docker compose build/up` ilə test olunub — `/actuator/health` → `UP`.
+
+**✅ HAZIR — `docker-compose.prod.yml` mövcuddur (2026-07-24).** MailHog **yoxdur**, `app` servisi `SPRING_PROFILES_ACTIVE=prod` ilə aktivdir, Postgres portu host-a çıxarılmır. İşə salmaq: `docker compose -f docker-compose.prod.yml up -d --build`. Əsas `docker-compose.yml` dəyişməz qalıb (dev/local, MailHog ilə; `app` servisi orada şərh xanasında saxlanılıb ki, dev üçün compose-suz işə salına bilsin).
+
+**✅ HAZIR — Health check endpoint aktivdir və düzgün açıqdır.** `spring-boot-starter-actuator`, `/actuator/health` `permitAll()`, `management.health.mail.enabled: false` (SMTP olmayanda DOWN göstərməsin deyə), `management.endpoints.web.exposure.include` genişləndirilməyib (yalnız `health`/`info` açıqdır — `/actuator/env`, `/actuator/beans` ifşa olunmayıb).
+
+**✅ HAZIR (2026-07-25) — Reverse proxy arxasında düzgün sxem/host.** `application-prod.yml` → `server.forward-headers-strategy: framework`. Bu ayar olmadan nginx/ingress arxasında Spring bağlantını `http://<container-ip>:8081` kimi görürdü: redirect-lər və generasiya olunan mütləq URL-lər `http://` olurdu.
+
+**✅ HAZIR — k8s liveness/readiness probe dəstəyi (2026-07-24).** `application-prod.yml` → `management.endpoint.health.probes.enabled=true` + `livenessstate`/`readinessstate` — `/actuator/health/liveness` və `/actuator/health/readiness` ayrıca sorğulana bilər (mövcud `permitAll()` qaydası bunları da əhatə edir).
+
+---
+
+### 10. Secrets İdarəetməsi
+
+**✅ HAZIR — `.env` `.gitignore`-dadır və heç vaxt commit olunmayıb.** `.gitignore:37-39`, `git log --all -- .env` boş nəticə.
+
+**✅ HAZIR (kod/repo) / ⬜ tarixçə qalır — `.env.example` artıq işlək sirr saxlamır, git tracking-dən çıxarılıb.** Əvvəllər `.env.example`-də real görünüşlü secret-lar committed idi (`e466ec7`, `a52c18f`, `c8cfc98`) və hazırkı `.env` bunları hərfi-hərfinə təkrarlayırdı. Hər ikisi düzəldildi: dəyərlər placeholder-ə çevrildi (2026-07-24), fayl `git ls-tree HEAD`-də artıq görünmür (tracking-dən çıxarılıb, əvvəlki commit-də tamamlanıb). **Qalan:** köhnə sızmış dəyərlər hələ GitHub-un köhnə commit tarixçəsində qalır — bax "Qalan İşlər" #5 (BFG/`git filter-repo`, aşağı prioritet, JWT_SECRET rotasiya edildikdən sonra).
+
+---
+
+## ✅ Edilmiş İşlərin Tam Siyahısı (Dəyişiklik Tarixçəsi)
+
+### 2026-07-22
 - Production Dockerfile (+ `.dockerignore`) yaradıldı, non-root user permission bug-ı (log qovluğu yazma icazəsi) tapılıb düzəldildi, real `docker compose build/up` ilə test olundu — `/actuator/health` → `UP`.
-- `docker-compose.yml`-a `app` servisi əlavə olundu (build, `DB_HOST=postgres`/`MAIL_HOST=mailhog` override, log-lar üçün named volume).
-- `.gitignore` korlanmış vəziyyətdən təmizləndi; `.env` və `.env.example` hər ikisi artıq ignore olunur; `.env.example` git tracking-dən çıxarıldı (commit gözləyir).
+- `docker-compose.yml`-a `app` servisi əlavə olundu (dev üçün, MailHog ilə).
+- `.gitignore` korlanmış vəziyyətdən təmizləndi; `.env` və `.env.example` hər ikisi ignore olundu; `.env.example` git tracking-dən çıxarıldı.
 - `app.cors.allowed-origins` `CORS_ALLOWED_ORIGINS` env-dəyişəninə bağlandı (dev-də localhost default-u, prod-da default yoxdur — fail-fast).
 - `/api/v1/auth/register|login|login/verify-otp|forgot-password|resend-verification` üçün IP-əsaslı rate limiting əlavə olundu (`AuthRateLimitingFilter`).
 - `TestMailController` silindi.
 - Hikari `leak-detection-threshold: 30000` əlavə olundu.
-- Ödəniş gateway-i üçün HMAC-SHA256 imza doğrulama mexanizmi yazıldı (`PaymentGatewayProperties`/`PaymentGatewaySignatureVerifier`/`PaymentCallbackSignatureFilter`) — `PAYMENT_GATEWAY_WEBHOOK_SECRET` boş olduğu müddətcə bypass olunur (WARN logu ilə), dəyər veriləndə məcburiləşir.
-- `DB_PASSWORD` istifadəçi tərəfindən rotasiya edildi (`docker compose down -v` → `.env` yeniləndi → `up -d`) və doğrulandı.
-
----
-
-## 1. Environment / Config
-
-### ✅ HAZIR — `ddl-auto=validate`, heç bir `update`/`create` yoxdur
-`src/main/resources/application.yml:26` və `src/main/resources/application-prod.yml:19` — hər ikisi `hibernate.ddl-auto: validate`. Schema idarəçiliyi tam Flyway-ə həvalə olunub (yorum sətri: "Hibernate heç vaxt schema yaratmamalı/dəyişməməlidir"). Düzgün konfiqurasiya, əlavə iş lazım deyil.
-
-### ✅ HAZIR — `show-sql` yalnız dev profilində aktivdir
-`src/main/resources/application-dev.yml:12` (`spring.jpa.show-sql: true`) — bu açar `application.yml` və `application-prod.yml`-da yoxdur, yəni default `false` qalır. Prod-da SQL konsola/log-a yazılmır.
-
-### ✅ HAZIR — Flyway `validate-on-migrate=true`, `out-of-order=false`
-`src/main/resources/application.yml:42-43`. `application-prod.yml:21-22` yalnız `enabled: true` təkrarlayır, digər Flyway ayarları base `application.yml`-dan miras qalır (`baseline-on-migrate`, `validate-on-migrate`, `schemas` s.) — düzgündür, təkrar tərif lazım deyil.
-
-### ✅ HAZIR — Prod profili üçün default dəyər yoxdur (fail-fast)
-`application-prod.yml:12-14` — `${DB_HOST}`, `${DB_PORT}`, `${DB_NAME}`, `${DB_USER}`, `${DB_PASSWORD}` üçün heç bir `:default` placeholder yoxdur. Bu dəyişənlər prod-da təyin olunmasa Spring Boot açılış zamanı xəta verib dayanacaq — dev default-ları (`DB_PASSWORD:1234`, bax `application.yml:15`) təsadüfən prod-a sızmayacaq. Fayl başındakı şərh bunu izah edir və düzgündür.
-
-### ❌ ÇATIŞMIR — `app.cors.allowed-origins` heç bir yml faylında təyin olunmayıb
-`CorsProperties` (`src/main/java/az/demo/NexoraAcademy/config/CorsProperties.java:14-17`) `app.cors.allowed-origins`-i `ConfigurationProperties` kimi oxuyur və default olaraq **boş `ArrayList`** ilə başlayır. Amma bu açar nə `application.yml`-da, nə `application-prod.yml`-da, nə `.env`/`.env.example`-də mövcud deyil (yoxlanıldı — heç bir faylda `cors` sözü keçmir).
-
-**Niyə problemdir:** `CorsConfig.corsConfigurationSource()` (`CorsConfig.java:24`) `corsProperties.getAllowedOrigins()`-i birbaşa `setAllowedOrigins()`-ə ötürür. Boş siyahı ilə brauzer heç bir origin-ə `Access-Control-Allow-Origin` başlığı qaytarmayacaq — yəni frontend prod-da **hər origin-dən** bloklanacaq (bu, wildcard-dan fərqli, əks istiqamətli bir problemdir: təhlükəsiz, amma tətbiq işləməyəcək).
-
-**Düzəliş** — `application-prod.yml`-a əlavə et:
-```yaml
-app:
-  cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS}
-```
-və `.env.example` / prod `.env`-ə:
-```
-CORS_ALLOWED_ORIGINS=https://app.nexora-academy.com,https://admin.nexora-academy.com
-```
-(Spring `List<String>` üçün vergüllə ayrılmış env-dəyəri avtomatik siyahıya çevirir.)
-
----
-
-## 2. Security
-
-### ✅ HAZIR — JWT secret prod-da hardcode deyil, default-suzdur
-`application-prod.yml:29` — `app.jwt.secret: ${JWT_SECRET}` (placeholder-siz). `JwtProperties.java:15`-dəki `"change-me-change-me-..."` yalnız **dev fallback** kimi `application.yml:74`-də istifadə olunur (`${JWT_SECRET:change-me-...}`), prod profilində bu default keçərsiz olur. Kod səviyyəsində düzgün dizayn edilib.
-
-### ❌ ÇATIŞMIR (KRİTİK) — hazırkı `.env`-dəki JWT_SECRET və DB_PASSWORD, git-ə commit olunmuş `.env.example` ilə **eynidir**
-`.env:12` və `.env.example:12`-dəki `JWT_SECRET` dəyəri [REDACTED — audit zamanı hər ikisində hərfi-hərfinə eyni idi, dəyərin özü qəsdən bu sənəddə saxlanılmır] hərfi-hərfinə eynidir; eyni şəkildə `DB_PASSWORD=1234` da hər iki faylda eyni idi. `.env.example` `git log --all -p -- .env.example` ilə təsdiqləndi: bu fayl 3 commit-də (`e466ec7`, `a52c18f`, `c8cfc98`) dəyişdirilib və **hazırda repoda committed vəziyyətdədir**.
-
-**Yenilənmə (2026-07-22, sonrakı commit):** bu iki dəyər artıq rotasiya edilib (bax "Yenilənmə qeydi" bölməsi) və `.env.example` git tracking-dən çıxarılıb — köhnə dəyərlər yalnız GitHub-un köhnə commit tarixçəsində qalır, hazırkı fayllarda deyil.
-
-**Niyə kritikdir:** `.env` özü `.gitignore`-dadır (`(.gitignore:37-39)`) və heç vaxt commit olunmayıb (git tarixçəsində yoxdur) — bu hissə düzgündür. Amma developer `.env.example`-i `.env`-ə köçürüb **heç vaxt real dəyərləri əvəz etməyib**. Nəticədə hazırkı "gizli" JWT imza açarı və DB şifrəsi əslində repo-nu klonlayan hər kəsə açıqdır. Bu dəyərlər production-a bu şəkildə aparılarsa, istənilən kəs `.env.example`-dəki JWT_SECRET-lə etibarlı access/refresh token saxtalaşdıra bilər (bax `JwtService.signingKey()`, sətir 97-98).
-
-**Düzəliş:**
-1. Yeni JWT secret generasiya et: `openssl rand -base64 48` və nəticəni yalnız real, commit olunmayan prod `.env`/secret manager-ə yaz.
-2. `DB_PASSWORD`-u da real, güclü şifrə ilə dəyiş (prod Postgres instansında).
-3. `.env.example`-dəki nümunə dəyərləri açıq şəkildə "əvəz edilməli" placeholder-lərə çevir, məsələn:
-   ```
-   JWT_SECRET=REPLACE_WITH_OUTPUT_OF__openssl_rand_base64_48
-   DB_PASSWORD=REPLACE_ME
-   ```
-4. Bu commit-dən sonra, əgər bu JWT_SECRET hər hansı canlı/staging mühitdə istifadə olunubsa, o mühitdəki bütün açıq sessiyaları/refresh token-ləri etibarsız hesab et.
-
-### ✅ HAZIR — Şifrələr BCrypt ilə hash-lənir
-`SecurityConfig.java:162-164` — `BCryptPasswordEncoder` bean-i. `AuthService.register()` (`AuthService.java:76`) `passwordEncoder.encode(request.password())` çağırır, plain-text saxlanma yoxdur.
-
-### ✅ HAZIR — Admin/həssas endpoint-lər `SecurityConfig`-də rol əsaslı qorunur
-`SecurityConfig.java:93-147` — `/api/v1/admin/**`, `/api/v1/users/**`, `/api/v1/payments/**`, `/api/v1/scholarships/**`, `/api/v1/sessions/**`, `/api/v1/oauth-accounts/**`, `/api/v1/notifications/**` `hasAnyRole("ADMIN","SYSTEM_ADMIN")`-ə bağlanıb; `content/courses/categories/instructors` yazma əməliyyatları `CONTENT_MANAGER`-ə açılır. `anyRequest().authenticated()` (sətir 152-153) qalanları default-olaraq bağlayır. Struktur məntiqli və sızma yoxdur.
-
-### ⚠️ QİSMƏN HAZIR — `PaymentController.callback()` imza doğrulaması olmadan public-dir
-`SecurityConfig.java:62-64` `/api/v1/payments/callback`-i `permitAll()` edir, `PaymentController.java:65-70`-dəki şərh bunu özü etiraf edir: *"real inteqrasiyada bura gateway-in imza yoxlanışı əlavə edilməlidir"*. Hazırda real gateway bağlanmadığı üçün funksional olaraq problemsizdir, amma **real ödəniş provayderi qoşulmadan bu endpoint production-a çıxarılmamalıdır** — hər kəs saxta callback göndərib `PaymentService.handleCallback()`-i işə sala bilər.
-
-**Düzəliş (gateway seçildikdən sonra):** `PaymentController.callback()`-ə HMAC/imza başlığı yoxlaması əlavə et, məsələn:
-```java
-@PostMapping("/callback")
-public ResponseEntity<PaymentResponse> callback(
-        @RequestHeader("X-Gateway-Signature") String signature,
-        @Valid @RequestBody PaymentCallbackRequest request) {
-    paymentGatewaySignatureVerifier.verify(signature, request);
-    return ResponseEntity.ok(paymentService.handleCallback(request));
-}
-```
-
-### ⚠️ QİSMƏN HAZIR — Dev-only test controller production build-ə daxildir
-`src/main/java/az/demo/NexoraAcademy/controller/test/TestMailController.java` — `/test/mail` endpoint-i `EmailService.send()`-i istənilən vaxt işə salır. `SecurityConfig`-də `/test/**` üçün ayrıca qayda yoxdur, ona görə `anyRequest().authenticated()` onu tutur (tam açıq deyil), amma bu, istehsalat kod bazasında qalmamalı debug artefaktıdır.
-
-**Düzəliş:** Faylı sil, ya da `@Profile("dev")` ilə işarələ:
-```java
-@Profile("dev")
-@RestController
-@RequestMapping("/test")
-public class TestMailController { ... }
-```
-
-### ⚠️ QİSMƏN HAZIR — Swagger UI / OpenAPI docs prod-da da açıqdır
-`SecurityConfig.java:75-78` `/swagger-ui/**` və `/v3/api-docs/**`-i profil fərqi qoymadan `permitAll()` edir; `application-prod.yml`-da bunları söndürən heç bir `springdoc.*` ayarı yoxdur. `OpenApiConfig.java` boş bir stub sinifdir (heç bir `@Bean` yoxdur), yəni springdoc auto-config default rejimdə işləyir və bütün endpoint sxemini/DTO strukturunu ictimaiyyətə açır.
-
-**Düzəliş** — `application-prod.yml`-a əlavə et:
-```yaml
-springdoc:
-  api-docs:
-    enabled: false
-  swagger-ui:
-    enabled: false
-```
-
----
-
-## 3. CORS konfigurasiyası
-
-`CorsConfig.java` tam oxundu:
-
-- ✅ **HAZIR** — `allowedOrigins` hardcode `localhost` və ya `"*"` DEYİL, `CorsProperties` üzərindən xarici konfiqurasiyaya bağlıdır (`CorsConfig.java:24`).
-- ✅ **HAZIR** — `allowCredentials(true)` (sətir 42) ilə birgə wildcard origin istifadə olunmayıb — Spring bu kombinasiyanı zatən qadağan edir, amma kod da onu tətbiq etmir.
-- ❌ **ÇATIŞMIR** — bax yuxarı, Bölmə 1: `app.cors.allowed-origins` heç yerdə dəyər almayıb, ona görə hazırkı vəziyyətdə origin siyahısı **boşdur**, yəni bütün cross-origin sorğular rədd olunacaq. Kodun özündə "localhost qalıb" problemi YOXDUR — problem, dəyərin heç təyin olunmamasıdır.
-
----
-
-## 4. Exception Handling
-
-`GlobalExceptionHandler.java` (112 sətir) tam oxundu:
-
-### ✅ HAZIR — Stack trace və ya daxili sinif adları response-da sızmır
-- `handleUnexpected()` (sətir 105-110): istənilən gözlənilməz `Exception` tutulur, `log.error(...)` ilə **serverdə** loglanır, amma client-ə yalnız generic `"An unexpected error occurred"` (500) qaytarılır — stack trace, exception sinif adı və ya mesajı response-a düşmür.
-- `handleDataIntegrityViolation()` (sətir 77-83): Postgres constraint xətasının daxili mesajı yalnız `log.warn`-a yazılır, client-ə generic `"The request conflicts with existing data"` gedir.
-- `handleBadCredentials()` (sətir 85-89): "hansı sahə səhvdir" deyil, generic `"Invalid email or password"` — user enumeration-a qarşı düzgün.
-- `ErrorResponse` record-u (`exception/ErrorResponse.java`) yalnız `timestamp/status/error/message/path/errors` saxlayır — `cause`, `stackTrace` və ya exception sinifi field-ları yoxdur.
-
-Bu bölmə tam production-ready-dir, əlavə iş tələb olunmur.
-
-### ✅ HAZIR — Auth/AccessDenied JSON forması eynidir və sızıntısızdır
-`JwtAuthenticationEntryPoint.java` və `CustomAccessDeniedHandler.java` da eyni minimal JSON strukturunu (`timestamp/status/error/message/path`) qaytarır, `GlobalExceptionHandler`-in şərhi (sətir 26-28) bunu qəsdən izah edir. Uyğunluq var, əlavə iş lazım deyil.
-
----
-
-## 5. Rate Limiting / Brute-force qorunması
-
-### ❌ ÇATIŞMIR — Heç bir endpoint-də IP/istifadəçi əsaslı rate limit yoxdur
-`pom.xml`-də `bucket4j`, `resilience4j`, `spring-cloud-gateway` və ya bənzər heç bir rate-limit kitabxanası yoxdur (bütün 22 asılılıq yoxlanıldı). `AuthController.java`-dakı `/register`, `/login`, `/forgot-password`, `/resend-verification` endpoint-lərinin heç birində throttle/interceptor yoxdur.
-
-**Niyə problemdir:** `AuthService.login()` (`AuthService.java:96-111`) hər sorğuda `authenticationManager.authenticate()` çağırır — bu, sonsuz sayda şifrə təxmini cəhdinə imkan verir (OTP addımına çatmadan). `register()` və `resendVerification()` sonsuz spam email göndərilməsinə açıqdır.
-
-**Düzəliş** — minimal IP-əsaslı limit üçün Bucket4j əlavə et:
-```xml
-<dependency>
-    <groupId>com.bucket4j</groupId>
-    <artifactId>bucket4j_jdk17-core</artifactId>
-    <version>8.10.1</version>
-</dependency>
-```
-və `/api/v1/auth/**` üçün `OncePerRequestFilter` (məs. `RateLimitingFilter`) yazıb `SecurityConfig.addFilterBefore(jwtAuthenticationFilter, ...)` sətirindən əvvəl zəncirə əlavə et — məsələn login/register/resend-verification üçün IP başına dəqiqədə 5 sorğu.
-
-### ✅ HAZIR — OTP-nin cəhd limiti mövcuddur
-`AuthProperties.java:23` (`otpMaxAttempts = 5`, `.env.example:33`-də `OTP_MAX_ATTEMPTS=5` kimi konfiqurasiya olunur) və `AuthService.verifyOtp()` (`AuthService.java:275-297`) hər səhv təxmində `session.attempts`-i artırır, limitə çatanda `session.setRevokedAt()` ilə kodu ləğv edir. Doğru tətbiq olunub.
-
-### ✅ HAZIR — OTP-nin etibarlılıq müddəti təyin olunub
-`AuthProperties.java:17,20` — email-verify 10 dəqiqə, login-otp 10 dəqiqə (`application.yml:86-87`). `verifyOtp()` (sətir 280-284) `expiresAt`-i keçmiş OTP-ni ayrıca rədd edir və sessiyanı ləğv edir. Doğru tətbiq olunub.
-
----
-
-## 6. Email / OTP
-
-### ✅ HAZIR — OTP kodu log-a yazılmır
-`EmailService.send()` (`EmailService.java:27-46`) yalnız `log.info("Email sent successfully to {}", to)` yazır — email **body**-si (OTP kodunun özü) heç bir log sətrinə düşmür. `AuthService.sendVerificationOtp()`/`sendLoginOtp()` (sətir 226-243) OTP-ni yalnız e-poçt body-sinə qoyur, `log.*` çağırışına ötürmür. Bütün `src/main/java` daxilində `log.*(...)` çağırışları arasında `password|otp|token|secret` sözlərini ehtiva edən heç bir sətir tapılmadı (grep ilə yoxlanıldı).
-
-### ✅ HAZIR — "From" ünvanı kodda düzgün konfiqurasiya olunub
-`MailProperties.java` → `app.mail.from: ${MAIL_FROM:no-reply@nexora-academy.local}` (`application.yml:80`) — `EmailService.send()` sətir 31-də `mailProperties.getFrom()` istifadə edir, hardcode ünvan yoxdur.
-
-### ⚠️ QİSMƏN HAZIR — Production SMTP-yə keçid üçün .env dəyərləri hazırkı struktur üzərində dəyişdirilməlidir
-Hazırkı `.env`/`.env.example`: `MAIL_HOST=localhost`, `MAIL_PORT=1025`, `MAIL_SMTP_AUTH=false`, `MAIL_SMTP_STARTTLS=false`, boş `MAIL_USERNAME`/`MAIL_PASSWORD` — bunlar yalnız MailHog üçün işləyir, real SMTP provayderi (SendGrid/SES/Postmark s.) `auth=true` və TLS tələb edir. Kodda dəyişiklik lazım deyil, çünki `application.yml:47-57` bu dəyərləri artıq env-dən oxuyur — sadəcə prod `.env`-də real dəyərlər lazımdır:
-```
-MAIL_HOST=smtp.sendgrid.net
-MAIL_PORT=587
-MAIL_USERNAME=apikey
-MAIL_PASSWORD=<SendGrid API açarı>
-MAIL_SMTP_AUTH=true
-MAIL_SMTP_STARTTLS=true
-MAIL_FROM=no-reply@nexora-academy.com
-```
-Bunu "çatışmır" yox, "əməliyyat addımı" kimi qeyd edirəm, çünki kod strukturu artıq bunu dəstəkləyir.
-
----
-
-## 7. Logging
-
-### ✅ HAZIR — Prod-da root log səviyyəsi WARN-dır
-`application-prod.yml:32-33` — `logging.level.root: WARN`. Dev-də isə `application-dev.yml:20-22` `org.hibernate.SQL: DEBUG` və `org.hibernate.orm.jdbc.bind: TRACE` aktivdir (yalnız `dev` profilində) — düzgün ayrım.
-
-### ✅ HAZIR — Həssas data (şifrə/token/OTP) log-a yazılmır
-Bax Bölmə 6. Əlavə olaraq `CrudLoggingAspect.java` (`logging/CrudLoggingAspect.java:101-112`) sözlə qeyd edir ki, request DTO-larının **field dəyərləri heç vaxt** loglanmır — yalnız DTO-nun sinif adı (`summarizeArg()`), UUID/String/Number/enum kimi "təhlükəsiz" tiplər istisnadır. Bu, `RegisterRequest`/`LoginRequest` kimi şifrə saxlayan DTO-ların `toString()`-inin log-a düşməsinin qarşısını düzgün şəkildə alır.
-
-### ⚠️ QİSMƏN HAZIR — CRUD audit logger-ləri prod-da da INFO səviyyəsində qalır (qəsdəndir, amma sənədləşdirilməli)
-`logback-spring.xml:97-108` — `AUDIT_CREATE/READ/UPDATE/DELETE` logger-ləri açıq şəkildə `level="INFO"` təyin edilib. Logback-də adlandırılmış logger-in açıq səviyyəsi `root`-dan miras almır, ona görə `application-prod.yml:32`-dəki `root: WARN` bunlara **təsir etmir** — hər CRUD çağırışı prod-da da fayla yazılmağa davam edəcək. Bu, dizayn baxımından düzgündür (audit trail məqsədilə), sadəcə "prod-da log səviyyəsi INFO deyil WARN-dır" tələbini hərfi mənada yoxlayanda qeyd olunmalıdır — root DEBUG/INFO axını WARN-a düşür, amma xüsusi audit axını qəsdən INFO saxlanılır. Əlavə iş tələb olunmur, sadəcə DevOps komandası bunun fərqinə varmalıdır ki, `logs/create|read|update|delete/` qovluqları prod-da da böyüyəcək (30 günlük saxlama artıq `LOG_RETENTION_HOURS=720` ilə tənzimlənib — `logback-spring.xml:15`).
-
----
-
-## 8. Database
-
-### ✅ HAZIR — HikariCP ayarları default deyil, açıq təyin olunub
-`application.yml:17-20`:
-```yaml
-hikari:
-  maximum-pool-size: 10
-  minimum-idle: 2
-  connection-timeout: 30000
-```
-`application-prod.yml` bunları override etmir (baza dəyərlər prod-da da tətbiq olunur). Kiçik/orta yük üçün məqbuldur.
-
-### ⚠️ QİSMƏN HAZIR — `leak-detection-threshold` təyin olunmayıb
-Hazırkı Hikari konfiqurasiyasında connection-leak aşkarlanması yoxdur. Kritik deyil, amma prod-a çıxmazdan əvvəl əlavə etmək tövsiyə olunur:
-```yaml
-spring:
-  datasource:
-    hikari:
-      leak-detection-threshold: 30000
-```
-
-### ✅ HAZIR — Flyway migration-lar ardıcıl və düzgün nömrələnib
-`src/main/resources/db/migration/` — `V1` – `V13`, boşluq/təkrar versiya nömrəsi yoxdur (`V1__init_extensions_and_schemas.sql` → `V13__add_login_otp_and_session_attempts.sql`). `out-of-order: false`, `validate-on-migrate: true`, `baseline-on-migrate: true` (`application.yml:40-43`) checksum uyğunsuzluğunun sakitcə keçilməsinin qarşısını alır. Migration adları modul-sxemlərlə (`identity`, `catalog`, `academics`...) uyğundur.
-
-**Diqqət (pom.xml şərhi, sətir 93-98):** `flyway-core`/`flyway-database-postgresql` təkbaşına Spring Boot 4.x-də migration-ları avtomatik işə salmır — ayrıca `spring-boot-starter-flyway` asılılığı tələb olunur. Bu asılılıq artıq `pom.xml:99-102`-də mövcuddur, ona görə bu bənd `✅ HAZIR`, sadəcə gələcəkdə bu asılılığı təsadüfən silməmək üçün qeyd edirəm.
-
----
-
-## 9. Docker / Deploy
-
-### ❌ ÇATIŞMIR — Spring Boot tətbiqi üçün Dockerfile mövcud deyil
-Repo kökündə (və heç bir alt-qovluqda) `Dockerfile` tapılmadı. `docker-compose.yml` yalnız `postgres`, `flyway` (bir dəfəlik migration runner) və `mailhog` xidmətlərini ehtiva edir — tətbiqin özünü build/run edən heç bir servis yoxdur.
-
-**Tövsiyə olunan multi-stage Dockerfile** (`Dockerfile`, repo kökündə):
-```dockerfile
-# --- Build stage ---
-FROM eclipse-temurin:21-jdk-alpine AS build
-WORKDIR /app
-COPY .mvn/ .mvn/
-COPY mvnw pom.xml ./
-RUN ./mvnw dependency:go-offline -B
-COPY src ./src
-RUN ./mvnw clean package -DskipTests -B
-
-# --- Runtime stage ---
-FROM eclipse-temurin:21-jre-alpine
-RUN addgroup -S spring && adduser -S spring -G spring
-USER spring:spring
-WORKDIR /app
-COPY --from=build /app/target/NexoraAcademy-0.0.1-SNAPSHOT.jar app.jar
-EXPOSE 8081
-ENTRYPOINT ["java", "-jar", "app.jar"]
-```
-və `docker-compose.yml`-a əlavə et:
-```yaml
-  app:
-    build: .
-    container_name: nexora-app
-    restart: unless-stopped
-    env_file: .env
-    environment:
-      SPRING_PROFILES_ACTIVE: prod
-    ports:
-      - "8081:8081"
-    depends_on:
-      flyway:
-        condition: service_completed_successfully
-```
-
-### ❌ ÇATIŞMIR — docker-compose.yml-də prod üçün ayrıca `.env` strukturu yoxdur (app servisi olmadığı üçün)
-Hazırkı `docker-compose.yml` yalnız Postgres/Flyway/MailHog-un `.env`-dən oxuduğu dəyişənləri istifadə edir (`${DB_NAME:-...}` s.). Yuxarıdakı `app` servisi əlavə olunduqdan sonra, prod üçün ayrıca `docker-compose.prod.yml` (MailHog-suz, `SPRING_PROFILES_ACTIVE=prod` ilə) hazırlanması tövsiyə olunur, çünki MailHog production-da istifadə edilməməlidir (bax Bölmə 6).
-
-### ✅ HAZIR — Health check endpoint aktivdir və düzgün açıqdır
-`pom.xml:44-47` — `spring-boot-starter-actuator` mövcuddur (şərh qeyd edir ki, əvvəllər `SecurityConfig` bunu `permitAll` edib, amma asılılıq olmadığı üçün faktiki 404 verirdi — indi asılılıq var). `SecurityConfig.java:81-83` `/actuator/health`-i `permitAll()` edir. `application.yml:66-69` `management.health.mail.enabled: false` ilə SMTP olmayanda health-in "DOWN" görünməsinin qarşısını alır. `management.endpoints.web.exposure.include` heç yerdə genişləndirilməyib, yəni Spring Boot default-una görə yalnız `health` (və `info`) web üzərindən açıqdır — `/actuator/env`, `/actuator/beans` kimi həssas endpoint-lər ifşa olunmayıb. Bu bölmə tam hazırdır.
-
----
-
-## 10. Secrets İdarəetməsi
-
-### ✅ HAZIR — `.env` `.gitignore`-dadır və heç vaxt commit olunmayıb
-`.gitignore:37-39`:
-```
-.env
-.env.*
-!.env.example
-```
-`git log --all -- .env` **boş nəticə** qaytardı — `.env` faylı git tarixçəsində heç vaxt olmayıb. Bu bölmənin mexanizmi düzgündür.
-
-### ❌ ÇATIŞMIR (KRİTİK, Bölmə 2 ilə eyni tapıntı) — `.env.example`-də real görünüşlü secret-lar commit olunub və hazırkı `.env` bunları hərfi-hərfinə təkrarlayır
-Bax Bölmə 2-dəki tam izahat. Bu, "git history-də təsadüfən commit olunmuş şifrə" sualının cavabıdır: birbaşa `.env` heç vaxt commit olunmayıb, amma funksional olaraq eyni nəticəyə gəlinib — çünki nümunə faylındakı "placeholder" əslində işlək bir sirdir və developer onu olduğu kimi köçürüb istifadə edib.
-
----
-
-## Prioritet Sıralı Checklist (2026-07-22 yeniləndi)
-
-### 🔴 KRİTİK (deploy-dan əvvəl mütləq)
-| # | Maddə | Status | Fayl / hara | Təxmini vaxt |
-|---|-------|--------|------|---------------|
-| 1 | JWT_SECRET-i yenidən generasiya et (`openssl rand -base64 48`) | ⬜ Sən edəcəksən | `.env` → `JWT_SECRET=` | ~10 dəqiqə |
-| 2 | DB_PASSWORD-u real, unikal şifrə ilə dəyiş | ✅ Edildi (`nexoracademy-1234`, doğrulandı) | `.env` | — |
-| 3 | `.env.example`-dəki köhnə `JWT_SECRET`/`DB_PASSWORD` nümunə dəyərlərini placeholder-ə çevir | ⬜ Sən edəcəksən (JWT_SECRET-i dəyişəndə eyni anda et) | `.env.example` | ~5 dəqiqə |
-| 4 | `app.cors.allowed-origins` prod domenlərinə təyin et | ⬜ Sən edəcəksən (dəyər lazımdır) | `.env` → `CORS_ALLOWED_ORIGINS=` (hazırda `http://localhost:3000` — real domenlə əvəz et, məs. `https://app.nexora-academy.com`) | ~5 dəqiqə |
-| 5 | Real production SMTP provayderinə keç (MailHog-u əvəz et) | ⬜ Sən edəcəksən (dəyərlər lazımdır) | `.env` → `MAIL_HOST`/`MAIL_PORT`/`MAIL_USERNAME`/`MAIL_PASSWORD`/`MAIL_SMTP_AUTH=true`/`MAIL_SMTP_STARTTLS=true`/`MAIL_FROM` | ~30 dəqiqə |
-| 6 | `/api/v1/auth/**` üçün rate limiting | ✅ Edildi (`AuthRateLimitingFilter`) | — | — |
-| 7 | Spring Boot tətbiqi üçün Dockerfile + `docker-compose.yml`-a `app` servisi | ✅ Edildi (test olundu, `/actuator/health` → UP) | `Dockerfile`, `docker-compose.yml` | — |
-
-### 🟠 VACİB
-| # | Maddə | Status | Fayl / hara | Təxmini vaxt |
-|---|-------|--------|------|---------------|
-| 8 | Swagger UI / OpenAPI docs-u prod-da söndür | ⬜ Sən edəcəksən | `application-prod.yml`-a əlavə et: `springdoc.api-docs.enabled=false`, `springdoc.swagger-ui.enabled=false` | ~15 dəqiqə |
-| 9 | `TestMailController`-i sil | ✅ Edildi (fayl silindi) | — | — |
-| 10 | Real ödəniş gateway-i qoşulmazdan əvvəl `/payments/callback`-ə imza doğrulaması | ✅ Mexanizm yazıldı, ⬜ real dəyər sən əlavə edəcəksən | `.env` → `PAYMENT_GATEWAY_WEBHOOK_SECRET=` (gateway-in webhook signing secret-i), lazım olsa `PAYMENT_GATEWAY_SIGNATURE_HEADER=` (default `X-Gateway-Signature`, gateway fərqli header adı istifadə edirsə dəyiş) | Gateway seçimindən asılı |
-| 11 | Hikari `leak-detection-threshold` təyin et | ✅ Edildi (`30000` ms) | `application.yml` | — |
-| 12 | Prod üçün ayrıca `docker-compose.prod.yml` (MailHog-suz, `prod` profilli) hazırla | ⬜ Sən edəcəksən (hazırkı fayl dev-yönümlüdür) | yeni fayl | ~30 dəqiqə |
-| 13 | `.env.example`-in git tracking-dən çıxarılması commit/push edilsin | ⬜ Sən edəcəksən (kodlar aşağıda) | — | ~5 dəqiqə |
-
-### 🟢 TÖVSİYƏ OLUNUR
-| # | Maddə | Fayl | Təxmini vaxt |
-|---|-------|------|---------------|
-| 14 | Struktur/JSON logging və ya correlation-id əlavə et (mərkəzləşdirilmiş log toplama üçün) | `logback-spring.xml` | ~1-2 saat |
-| 15 | URL-pattern təhlükəsizliyinə əlavə olaraq `@PreAuthorize` metod-səviyyəli qorunma | müxtəlif service-lər | ~2 saat |
-| 16 | Login/register/OTP rate-limit üçün inteqrasiya testi yaz | `src/test/.../integration` | ~1 saat |
-| 17 | k8s/orkestrasiya üçün ayrıca readiness/liveness prob strategiyası (əgər tətbiq olunacaqsa) | `application-prod.yml` | ~30 dəqiqə |
-| 18 | GitHub tarixçəsindən köhnə `.env.example` commit-lərini təmizləmək (BFG/`git filter-repo` + force-push) — JWT_SECRET rotasiya edildikdən sonra prioritet aşağıdır | — | ~30-60 dəqiqə |
-
----
-
-## "Deploy Etməzdən Əvvəl Mütləq Et" — Checklist
-
-- [x] ~~DB_PASSWORD-u real, unikal şifrə ilə dəyiş~~ — edildi, doğrulandı (`docker compose down -v` → `.env` → `up -d`, `/actuator/health` → UP)
-- [x] ~~`/api/v1/auth/**` üçün rate limiting~~ — `AuthRateLimitingFilter` ilə edildi
-- [x] ~~`TestMailController`-i sil~~ — edildi
-- [x] ~~Production Dockerfile yaz və test et~~ — edildi (permission bug tapılıb düzəldildi)
-- [x] ~~`docker-compose.yml`-a `app` servisi əlavə et~~ — edildi
-- [x] ~~Hikari `leak-detection-threshold` əlavə et~~ — edildi (`30000` ms)
-- [x] ~~Real ödəniş gateway-i üçün imza doğrulama mexanizmi~~ — kod hazır, dəyər lazımdır (aşağı bax)
-- [ ] JWT_SECRET-i `openssl rand -base64 48` ilə yenidən generasiya et, `.env`-ə yaz *(~10 dəqiqə)*
-- [ ] `.env.example`-dəki `JWT_SECRET`/`DB_PASSWORD` nümunə dəyərlərini placeholder mətninə çevir (məs. `REPLACE_ME`) *(~5 dəqiqə)*
-- [ ] `.env`-də `CORS_ALLOWED_ORIGINS`-i real prod frontend domenləri ilə doldur *(~5 dəqiqə)*
-- [ ] Real SMTP provayderi (SendGrid/SES/Postmark) məlumatlarını `.env`-ə yaz, `MAIL_SMTP_AUTH=true`, `MAIL_SMTP_STARTTLS=true` təyin et *(~30 dəqiqə)*
-- [ ] Real ödəniş gateway-i seçildikdən sonra `.env`-də `PAYMENT_GATEWAY_WEBHOOK_SECRET` (və lazım olsa `PAYMENT_GATEWAY_SIGNATURE_HEADER`) doldur *(gateway-dən asılı)*
-- [ ] `springdoc.api-docs.enabled=false` və `springdoc.swagger-ui.enabled=false`-u `application-prod.yml`-a əlavə et *(~15 dəqiqə)*
-- [ ] Prod üçün ayrıca `docker-compose.prod.yml` (MailHog-suz) hazırla *(~30 dəqiqə)*
-- [ ] `.env.example`-in git tracking-dən çıxarılmasını commit/push et:
-  ```bash
-  git add .gitignore Dockerfile .dockerignore PRODUCTION_READINESS.md docker-compose.yml \
-    src/main/resources/application.yml src/main/resources/application-prod.yml \
-    src/main/java/az/demo/NexoraAcademy/config/SecurityConfig.java \
-    src/main/java/az/demo/NexoraAcademy/config/PaymentGatewayProperties.java \
-    src/main/java/az/demo/NexoraAcademy/security/AuthRateLimitingFilter.java \
-    src/main/java/az/demo/NexoraAcademy/security/PaymentCallbackSignatureFilter.java \
-    src/main/java/az/demo/NexoraAcademy/security/PaymentGatewaySignatureVerifier.java \
-    src/main/java/az/demo/NexoraAcademy/security/CachedBodyHttpServletRequest.java \
-    src/main/java/az/demo/NexoraAcademy/controller/billing/PaymentController.java
-
-  git commit -m "Add production Dockerfile, CORS/rate-limit/payment-signature config; stop tracking .env.example"
-  git push
-  ```
-  *(~5 dəqiqə)*
-- [ ] (İstəyə bağlı, aşağı prioritet) GitHub tarixçəsindən köhnə `.env.example` commit-lərini BFG/`git filter-repo` ilə təmizlə *(~30-60 dəqiqə)*
-- [ ] Prod deploy-dan sonra `/actuator/health`-in real DB/Mail vəziyyətini düzgün göstərdiyini yoxla *(~10 dəqiqə)*
+- Ödəniş gateway-i üçün HMAC-SHA256 imza doğrulama mexanizmi yazıldı (`PaymentGatewayProperties`/`PaymentGatewaySignatureVerifier`/`PaymentCallbackSignatureFilter`).
+- `DB_PASSWORD` real Postgres instansında rotasiya edildi və doğrulandı.
+
+### 2026-07-24
+- `.env.example`-dəki `JWT_SECRET`/`DB_PASSWORD` nümunə dəyərləri (əvvəlki sızmış dəyərlərlə eyni idi) açıq placeholder mətninə çevrildi.
+- `application-prod.yml`-a `springdoc.api-docs.enabled=false`/`springdoc.swagger-ui.enabled=false` əlavə olundu.
+- `application-prod.yml`-a k8s liveness/readiness probe dəstəyi əlavə olundu (`management.endpoint.health.probes`, `livenessstate`/`readinessstate`).
+- `docker-compose.prod.yml` yaradıldı (MailHog-suz, `app` servisi aktiv, `SPRING_PROFILES_ACTIVE=prod`).
+- Correlation-id filter (`logging/CorrelationIdFilter.java` + `config/WebFilterConfig.java`) əlavə olundu, `logback-spring.xml`/`application.yml` log pattern-ləri buna uyğun yeniləndi.
+- Bütün dəyişikliklər `./mvnw compile` ilə yoxlanıldı — xəta yoxdur (canlı Postgres olmadığı üçün tam inteqrasiya testi bu mühitdə işə salınmadı).
+- Sənəd yenidən strukturlaşdırıldı (2026-07-24): köhnəlmiş (artıq kodda həll olunmuş) tapıntılar ✅-ə yeniləndi, təkrarlanan checklist cədvəlləri birləşdirildi, yalnız "Qalan İşlər" bölməsi yeganə "nə qalıb" mənbəyi olaraq ən yuxarıya çıxarıldı.
+
+### 2026-07-25
+- **Gmail SMTP qoşuldu** (`.env` → `smtp.gmail.com:587`, App Password, AUTH+STARTTLS).
+- **`AdminSeeder` təhlükəsizlik düzəlişi:** hardcode admin şifrələri (`admin1234` və s.) `AdminSeederProperties`-ə (`app.admin-seed.*`) köçürüldü; prod profilində seed default olaraq söndürüldü (`ADMIN_SEED_ENABLED:false`) və şifrə default-ları boşdur; seed açıq, şifrə boş olarsa açılışda fail-fast; zəif (12 simvoldan qısa) şifrə üçün WARN.
+- **SMTP timeout-ları** 3000 → 10000 ms (env ilə tənzimlənən: `MAIL_CONNECTION_TIMEOUT_MS`/`MAIL_READ_TIMEOUT_MS`/`MAIL_WRITE_TIMEOUT_MS`) — Gmail handshake-i əvvəlki limitə sığmırdı və məktub səssizcə itirdi.
+- **`EmailService.send()` `@Async` edildi** (`config/AsyncConfig` — `@EnableAsync` + MDC-köçürən `TaskDecorator`), beləliklə SMTP gecikməsi qeydiyyat/login cavab müddətinə əlavə olunmur və correlation-id async loglarda saxlanılır.
+- `application-prod.yml`-a `server.forward-headers-strategy: framework` əlavə olundu (reverse proxy arxasında düzgün sxem/host).
+- `.env` və `.env.example` yeni dəyişənlərlə (`ADMIN_SEED_*`, `MAIL_*_TIMEOUT_MS`) və Gmail qeydləri ilə yeniləndi; `.env`-dəki köhnə "MailHog" şərhi düzəldildi.
+- Dəyişikliklər `./mvnw compile` ilə yoxlanıldı — xəta yoxdur (canlı Postgres/Docker bu mühitdə işləmirdi, ona görə boot/inteqrasiya testi hələ icra olunmayıb).

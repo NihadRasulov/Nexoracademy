@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 /**
@@ -14,6 +15,11 @@ import org.springframework.stereotype.Service;
  * (no SMTP server configured is the default/dev state) — email delivery is
  * a best-effort side channel and must never block registration, password
  * reset, or notification flows whose real state already lives in the DB.
+ *
+ * <p>Göndərmə {@code @Async}-dir (bax {@link az.demo.NexoraAcademy.config.AsyncConfig}):
+ * real SMTP provayderi (Gmail) sorğu başına 1-3 saniyə çəkir və bu, əvvəllər birbaşa
+ * qeydiyyat/login cavab müddətinə əlavə olunurdu. Çağıran kod onsuz da nəticəni
+ * gözləmir — uğursuzluq burada loglanır, axın isə davam edir.
  */
 @Service
 @RequiredArgsConstructor
@@ -24,6 +30,7 @@ public class EmailService {
     private final JavaMailSender mailSender;
     private final MailProperties mailProperties;
 
+    @Async
     public void send(String to, String subject, String body) {
 
         SimpleMailMessage message = new SimpleMailMessage();

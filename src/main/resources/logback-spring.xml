@@ -14,9 +14,15 @@
     -->
     <property name="LOG_RETENTION_HOURS" value="720"/>
 
-    <!-- Hər sətir aydın oxunması üçün: tarix/saat, səviyyə, mesaj -->
+    <!--
+    Hər sətir aydın oxunması üçün: tarix/saat, səviyyə, correlation-id
+    (bax logging/CorrelationIdFilter — eyni request-in bütün sətirlərini
+    mərkəzləşdirilmiş log toplama alətlərində (ELK/Loki s.) birləşdirmək üçün),
+    mesaj. Correlation-id olmayan sətirlərdə (məs. app başlanğıcında,
+    request kontekstindən kənar) "-" yazılır.
+    -->
     <property name="FILE_LOG_PATTERN"
-              value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%level] %msg%n"/>
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%level] [%X{correlationId:--}] %msg%n"/>
 
     <!--
     Qovluq strukturu: logs/<əməliyyat>/<YYYY-MM-DD>/<HH>/<əməliyyat>.log

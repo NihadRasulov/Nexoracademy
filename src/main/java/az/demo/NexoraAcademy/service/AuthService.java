@@ -87,13 +87,14 @@ public class AuthService {
     }
 
     /**
-     * Step 1 of login: checks email+password, then emails a 6-digit OTP and stops —
-     * no tokens are issued here. Step 2 is {@link #verifyLoginOtp}, which is where
-     * lastLoginAt/UserLoggedInEvent actually fire (a login isn't "complete" until the
-     * OTP is confirmed).
+     * Step 1 of login: checks email+password. Admin-panel staff roles (ADMIN, SYSTEM_ADMIN,
+     * SALES_CRM, CONTENT_MANAGER) are trusted to log in with just credentials, so tokens are
+     * issued immediately for them. Regular end-user roles (STUDENT, GUEST) still go through
+     * the OTP step — an email is sent and no tokens are issued here; step 2 is
+     * {@link #verifyLoginOtp}.
      */
     @Transactional
-    public LoginOtpResponse login(LoginRequest request, String ipAddress) {
+    public Object login(LoginRequest request, String ipAddress) {
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.email(), request.password()));
@@ -104,10 +105,24 @@ public class AuthService {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
 
+        if (isAdminPanelStaff(user)) {
+            user.setLastLoginAt(Instant.now());
+            userRepository.saveAndFlush(user);
+            eventPublisher.publishEvent(new UserLoggedInEvent(user.getId(), user.getEmail(), ipAddress));
+            return issueTokens(user);
+        }
+
         sendLoginOtp(user);
 
         return new LoginOtpResponse("A 6-digit login code has been sent to your email.", user.getEmail(),
                 authProperties.getLoginOtpExpirationMs() / 1000);
+    }
+
+    private boolean isAdminPanelStaff(User user) {
+        return switch (user.getRole()) {
+            case ADMIN, SYSTEM_ADMIN, SALES_CRM, CONTENT_MANAGER -> true;
+            case STUDENT, GUEST -> false;
+        };
     }
 
     /** Step 2 of login: confirms the OTP emailed by {@link #login}, then issues real tokens. */

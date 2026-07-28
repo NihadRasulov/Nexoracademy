@@ -10,14 +10,24 @@ Bu sənəd `D:\NexoraAcademy\NexoraAcademy\NexoraAcademy` repo-sunun mənbə kod
 
 ## 1. Autentifikasiya / JWT
 
-### 1.0 Email OTP (register + login) — 2026-07-22-dən sonra əlavə olunub
-Bu bölmə yenilənib: **login artıq iki addımlıdır**, register-in email-təsdiqi də link deyil, 6-rəqəmli OTP-dir. Mənbə: `AuthService.java`, `AuthController.java`, `Session`/`SessionType` (yeni `LOGIN_OTP` dəyəri + `attempts` sütunu, bax `V13__add_login_otp_and_session_attempts.sql`).
+### 1.0 Email OTP (register + login) — 2026-07-22-dən sonra əlavə olunub, 2026-07-23-də admin-panel rolları üçün bypass edilib
+Bu bölmə yenilənib: **login STUDENT/GUEST üçün iki addımlıdır**, register-in email-təsdiqi də link deyil, 6-rəqəmli OTP-dir. **Admin-panel rolları (`ADMIN`, `SYSTEM_ADMIN`, `SALES_CRM`, `CONTENT_MANAGER`) isə OTP addımını keçir — sadəcə email+password ilə birbaşa token alır** (bax aşağı). Mənbə: `AuthService.java`, `AuthController.java`, `Session`/`SessionType` (yeni `LOGIN_OTP` dəyəri + `attempts` sütunu, bax `V13__add_login_otp_and_session_attempts.sql`).
 
 - **Register:** `POST /api/v1/auth/register` əvvəlki kimi hesab yaradır (`PENDING_VERIFICATION`), amma indi email-ə **link əvəzinə 6-rəqəmli OTP kod** göndərir. Təsdiq: `POST /api/v1/auth/verify-email` artıq `{token}` yox, **`{email, otp}`** qəbul edir.
-- **Login iki addımlıdır:**
-  1. `POST /api/v1/auth/login` `{email, password}` — uğurlu olsa, **tokens QAYTARMIR**, əvəzinə email-ə 6-rəqəmli OTP göndərir və `LoginOtpResponse{message, email, expiresInSeconds}` qaytarır (200).
-  2. `POST /api/v1/auth/login/verify-otp` `{email, otp}` — OTP düzgündürsə, əsl `TokenResponse` (access+refresh) qaytarır (200). Bu addımda `lastLoginAt`/`UserLoggedInEvent` işə düşür (addım-1-də yox).
-- **OTP xüsusiyyətləri:**
+- **Login rola görə fərqlənir** (`AuthService.login()`, `isAdminPanelStaff()`):
+  - **`ADMIN`/`SYSTEM_ADMIN`/`SALES_CRM`/`CONTENT_MANAGER`:** `POST /api/v1/auth/login` `{email, password}` — uğurlu olsa, **OTP göndərilmir**, `lastLoginAt`/`UserLoggedInEvent` elə bu addımda işə düşür, cavab birbaşa **`TokenResponse{accessToken, refreshToken, tokenType, expiresInSeconds}`**-dur (200). `POST /api/v1/auth/login/verify-otp` bu axın üçün lazım deyil (heç bir OTP yaradılmadığından çağırılsa `401 "Invalid or expired code"` qaytarır).
+  - **Digər bütün rollar (`STUDENT`, `GUEST`) — iki addımlı OTP axını olduğu kimi qalır:**
+    1. `POST /api/v1/auth/login` `{email, password}` — uğurlu olsa, **tokens QAYTARMIR**, əvəzinə email-ə 6-rəqəmli OTP göndərir və `LoginOtpResponse{message, email, expiresInSeconds}` qaytarır (200).
+    2. `POST /api/v1/auth/login/verify-otp` `{email, otp}` — OTP düzgündürsə, əsl `TokenResponse` (access+refresh) qaytarır (200). Bu addımda `lastLoginAt`/`UserLoggedInEvent` işə düşür (addım-1-də yox).
+  - **BFF üçün vacib:** `POST /api/v1/auth/login`-in cavab JSON forması artıq **istifadəçinin roluna görə fərqlidir** (eyni endpoint, iki fərqli şəkil) — BFF cavabı `accessToken` sahəsinin mövcudluğuna görə ayırd etməlidir: varsa admin-axın (token birbaşa gəlib), yoxdursa (`message`/`expiresInSeconds` var) OTP-gözlənilən axın.
+- **Default admin-panel hesabları:** tətbiq hər başladıqda `AdminSeeder` (`CommandLineRunner`) hər rol üçün bir dənə hesabın mövcudluğunu email üzrə yoxlayır — DB-də yoxdursa yaradır, varsa toxunmur (bax `config/AdminSeeder.java`):
+  - `system-admin@nexora.com` / `system-admin1234` — `SYSTEM_ADMIN`
+  - `admin@nexora.com` / `admin1234` — `ADMIN`
+  - `sales-crm@nexora.com` / `sales-crm1234` — `SALES_CRM`
+  - `content-manager@nexora.com` / `content-manager1234` — `CONTENT_MANAGER`
+
+  Qeyd: əvvəlki versiyada tək bir `admin@nexora.com` / `Test1234` (`SYSTEM_ADMIN`) seed olunurdu; `AdminSeeder` indi mövcud DB-lərdə bu köhnə yazını `system-admin@nexora.com`-a (yeni şifrə ilə) bir dəfəlik miqrasiya edir ki, `admin@nexora.com` təzə `ADMIN` hesabı üçün sərbəst qalsın.
+- **OTP xüsusiyyətləri (yalnız STUDENT/GUEST login-i üçün tətbiq olunur):**
   - 6 rəqəm, `SecureRandom` ilə, `String.format("%06d", ...)`.
   - Saxlanma: mövcud `identity.sessions` cədvəlində (`Session` entity), `tokenHash` sütununda SHA-256 hash kimi (xam OTP DB-də saxlanmır) — register-OTP `type=EMAIL_VERIFY`, login-OTP `type=LOGIN_OTP`.
   - Ömrü: `AuthProperties.emailVerifyExpirationMs` (register-OTP) və `loginOtpExpirationMs` (login-OTP) — hər ikisinin **default** dəyəri 10 dəqiqədir, env `EMAIL_VERIFY_EXPIRATION_MS`/`LOGIN_OTP_EXPIRATION_MS` ilə override olunur.
@@ -134,7 +144,7 @@ Fayl: `controller/auth/AuthController.java`
 | Metod | Path | Rol | Request Body | Response Body | Status |
 |---|---|---|---|---|---|
 | POST | `/api/v1/auth/register` | permitAll | `RegisterRequest{email:string(@Email,max255), fullName:string(2-150), phone:string?(pattern), password:string(8-72, ≥1 hərf+≥1 rəqəm)}` | `RegisterResponse{userId:UUID, email:string, message:string}` | 201, 400 (validation), 409 (email/phone artıq var) |
-| POST | `/api/v1/auth/login` | permitAll | `LoginRequest{email:string(@Email), password:string}` | **`LoginOtpResponse{message:string, email:string, expiresInSeconds:long}`** — tokens YOXDUR, uğurlu olsa email-ə 6-rəqəmli OTP göndərilir | 200, 400, 401 (yanlış email/parol — mesaj hər iki halda eynidir, user enumeration qorunur) |
+| POST | `/api/v1/auth/login` | permitAll | `LoginRequest{email:string(@Email), password:string}` | **Rola görə iki mümkün şəkil:** `ADMIN`/`SYSTEM_ADMIN`/`SALES_CRM`/`CONTENT_MANAGER` → `TokenResponse{accessToken, refreshToken, tokenType, expiresInSeconds}` (birbaşa, OTP-siz); `STUDENT`/`GUEST` → `LoginOtpResponse{message:string, email:string, expiresInSeconds:long}` (tokens YOXDUR, email-ə 6-rəqəmli OTP göndərilir) | 200, 400, 401 (yanlış email/parol — mesaj hər iki halda eynidir, user enumeration qorunur) |
 | POST | `/api/v1/auth/login/verify-otp` | permitAll | `LoginOtpVerifyRequest{email:string(@Email), otp:string(6 rəqəm)}` | `TokenResponse{accessToken:string, refreshToken:string, tokenType:"Bearer", expiresInSeconds:long}` | 200, 400, 401 (kod səhv/vaxtı bitib/tapılmadı) |
 | POST | `/api/v1/auth/refresh` | permitAll | `RefreshTokenRequest{refreshToken:string}` | `TokenResponse` (yuxarı bax) | 200, 400, 401 (etibarsız/istifadə olunmuş/vaxtı bitmiş) |
 | POST | `/api/v1/auth/logout` | permitAll | `RefreshTokenRequest{refreshToken:string}` | boş (`Void`) | 204 (tapılmasa belə 204 qaytarır — idempotent) |
@@ -143,7 +153,7 @@ Fayl: `controller/auth/AuthController.java`
 | POST | `/api/v1/auth/verify-email` | permitAll | **`VerifyEmailRequest{email:string(@Email), otp:string(6 rəqəm)}`** (əvvəllər `{token}` idi — dəyişdi, bax §1.0) | boş | 204, 400, 401 |
 | POST | `/api/v1/auth/resend-verification` | permitAll | `ResendVerificationRequest{email:string(@Email)}` | boş | 204 — yeni OTP göndərir, əvvəlkini ləğv edir |
 
-Qeyd: `login` və `login/verify-otp` endpoint-ləri `HttpServletRequest`-dən `remoteAddr`-ı oxuyur; `UserLoggedInEvent` yalnız `verify-otp` uğurlu olanda yayımlanır (bax §1.0 — login "tamamlanmış" sayılmır OTP təsdiqlənənə qədər).
+Qeyd: `login` və `login/verify-otp` endpoint-ləri `HttpServletRequest`-dən `remoteAddr`-ı oxuyur; `UserLoggedInEvent` `STUDENT`/`GUEST` üçün yalnız `verify-otp` uğurlu olanda yayımlanır, admin-panel rolları (`ADMIN`/`SYSTEM_ADMIN`/`SALES_CRM`/`CONTENT_MANAGER`) üçün isə elə `login`-in özündə (bax §1.0 — `STUDENT`/`GUEST` login-i "tamamlanmış" sayılmır OTP təsdiqlənənə qədər, admin-panel login-i isə bir addımda tamamlanır).
 
 ---
 

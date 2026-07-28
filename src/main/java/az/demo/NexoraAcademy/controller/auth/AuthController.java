@@ -35,9 +35,14 @@ public class AuthController {
         return ResponseEntity.status(201).body(authService.register(request));
     }
 
-    /** Step 1 of login: email+password check. On success, emails a 6-digit code — no tokens yet. */
+    /**
+     * Step 1 of login: email+password check. Admin-panel staff (ADMIN, SYSTEM_ADMIN, SALES_CRM,
+     * CONTENT_MANAGER) get a {@link TokenResponse} straight away; regular end-user roles
+     * (STUDENT, GUEST) get a {@link LoginOtpResponse} — a 6-digit code is emailed and no tokens
+     * are issued yet.
+     */
     @PostMapping("/login")
-    public ResponseEntity<LoginOtpResponse> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request, HttpServletRequest httpRequest) {
         return ResponseEntity.ok(authService.login(request, httpRequest.getRemoteAddr()));
     }
 

@@ -1,6 +1,13 @@
 server:
   port: 8081
 
+# Console log-larına da correlation-id əlavə edir (bax logging/CorrelationIdFilter,
+# logback-spring.xml/FILE_LOG_PATTERN) — Spring Boot-un default CONSOLE_LOG_PATTERN-i
+# bu "level" bloğunu istifadə edir, ona görə tam pattern-i təkrar yazmaq lazım deyil.
+logging:
+  pattern:
+    level: "%5p [%X{correlationId:--}]"
+
 # application.yml — Spring Boot + PostgreSQL + Flyway konfiqurasiyası
 # Dəyərlər .env faylından (spring-dotenv vasitəsilə) və ya real ETX env
 # dəyişənlərindən oxunur — bax .env.example. .env heç vaxt commit edilməməlidir.
@@ -61,9 +68,12 @@ spring:
             enable: ${MAIL_SMTP_STARTTLS:false}
         # EmailService bağlantı xətasını udur və log yazır — MAIL_HOST konfiqurasiya
         # olunmayıbsa belə app işə düşür (bax service/notify/EmailService.java).
-        connectiontimeout: 3000
-        timeout: 3000
-        writetimeout: 3000
+        # 10 saniyə: əvvəlki 3000 ms MailHog (lokal, ani cavab) üçün seçilmişdi və real
+        # SMTP-də (Gmail STARTTLS handshake) tez-tez timeout-a düşüb məktubu səssizcə
+        # itirirdi. Göndərmə artıq @Async olduğu üçün bu gözləmə sorğunu bloklamır.
+        connectiontimeout: ${MAIL_CONNECTION_TIMEOUT_MS:10000}
+        timeout: ${MAIL_READ_TIMEOUT_MS:10000}
+        writetimeout: ${MAIL_WRITE_TIMEOUT_MS:10000}
 
 # Mail göndərilməsi qəsdən "best-effort"dur (bax EmailService) — SMTP
 # konfiqurasiya olunmayanda /actuator/health-i "DOWN" göstərməsin.
@@ -90,6 +100,16 @@ app:
     from: ${MAIL_FROM:no-reply@nexora-academy.local}
     frontend-base-url: ${FRONTEND_BASE_URL:http://localhost:3000}
 
+  # Admin-panel default hesabları (bax config/AdminSeeder, AdminSeederProperties).
+  # Aşağıdakı default-lar YALNIZ dev/lokal üçündür — prod profilində seed sönülüdür
+  # və şifrə default-ları boşdur (bax application-prod.yml).
+  admin-seed:
+    enabled: ${ADMIN_SEED_ENABLED:true}
+    system-admin-password: ${ADMIN_SEED_SYSTEM_ADMIN_PASSWORD:system-admin1234}
+    admin-password: ${ADMIN_SEED_ADMIN_PASSWORD:admin1234}
+    sales-crm-password: ${ADMIN_SEED_SALES_CRM_PASSWORD:sales-crm1234}
+    content-manager-password: ${ADMIN_SEED_CONTENT_MANAGER_PASSWORD:content-manager1234}
+
   auth:
     password-reset-expiration-ms: ${PASSWORD_RESET_EXPIRATION_MS:3600000}     # 1 saat
     # Qeydiyyat/login OTP-ləri (6 rəqəmli kod) — link deyil, ona görə ömrü qısadır.
@@ -109,3 +129,16 @@ app:
       webhook-secret: ${PAYMENT_GATEWAY_WEBHOOK_SECRET:}
       # Gateway-in imzanı hansı HTTP başlığında göndərdiyi — provayderə görə dəyişə bilər.
       signature-header: ${PAYMENT_GATEWAY_SIGNATURE_HEADER:X-Gateway-Signature}
+
+  # Qrup yoldaşının öz yazdığı (self-hosted) chat-bota qoşulma — bax
+  # config/ChatbotProperties, service/ai/ChatbotService. Yalnız aşağıdakı env
+  # dəyərlərini doldurmaq kifayətdir (bax CHATBOT_INTEQRASIYASI.md).
+  # CHATBOT_ENABLED=false olduqda tətbiq problemsiz işə düşür, bot çağırılmır.
+  chatbot:
+    enabled: ${CHATBOT_ENABLED:false}
+    base-url: ${CHATBOT_BASE_URL:}
+    chat-path: ${CHATBOT_CHAT_PATH:/chat}
+    api-key: ${CHATBOT_API_KEY:}
+    api-key-header: ${CHATBOT_API_KEY_HEADER:X-API-Key}
+    connect-timeout-ms: ${CHATBOT_CONNECT_TIMEOUT_MS:3000}
+    read-timeout-ms: ${CHATBOT_READ_TIMEOUT_MS:20000}

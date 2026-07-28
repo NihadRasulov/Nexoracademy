@@ -30,10 +30,11 @@
 		<java.version>21</java.version>
 	</properties>
 	<dependencies>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-jdbc</artifactId>
-		</dependency>
+		<!-- DİQQƏT: spring-boot-starter-data-jdbc BİLƏRƏKDƏN yoxdur. Bütün repository-lər
+		     JpaRepository-dir və heç bir yerdə Spring Data JDBC (CrudRepository/JdbcTemplate)
+		     istifadə olunmur. Hər iki starter (data-jdbc + data-jpa) eyni vaxtda classpath-də
+		     olanda Spring Data hər repository interfeysi üçün "Could not safely identify store
+		     assignment" xəbərdarlığı verirdi (JPA, yoxsa JDBC?). Yalnız data-jpa saxlanılır. -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
@@ -61,11 +62,6 @@
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-data-jdbc-test</artifactId>
-			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

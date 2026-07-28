@@ -67,6 +67,7 @@ public class CourseReviewService {
     public CourseReviewResponse update(Long id, CourseReviewRequest request) {
         CourseReview review = getOrThrow(id);
         assertOwnerOrStaff(review);
+        assertNotReassigningOwner(review, request.userId());
 
         review.setCourse(resolveCourse(request.courseId()));
         review.setUser(resolveUser(request.userId()));
@@ -80,6 +81,7 @@ public class CourseReviewService {
     public CourseReviewResponse patch(Long id, CourseReviewRequest request) {
         CourseReview review = getOrThrow(id);
         assertOwnerOrStaff(review);
+        assertNotReassigningOwner(review, request.userId());
 
         if (request.courseId() != null) review.setCourse(resolveCourse(request.courseId()));
         if (request.userId() != null) review.setUser(resolveUser(request.userId()));
@@ -111,6 +113,20 @@ public class CourseReviewService {
         UUID callerId = SecurityUtils.currentUserId();
         if (callerId == null || !callerId.equals(review.getUser().getId())) {
             throw new AccessDeniedException("You may only modify your own review");
+        }
+    }
+
+    /**
+     * Only staff may reassign a review to a different user. Without this a non-staff
+     * owner (who passes assertOwnerOrStaff against the review's CURRENT owner) could set
+     * request.userId() to someone else and attribute their own review to that user.
+     */
+    private void assertNotReassigningOwner(CourseReview review, UUID requestedUserId) {
+        if (requestedUserId == null || SecurityUtils.hasAnyRole(STAFF_ROLES)) {
+            return;
+        }
+        if (!requestedUserId.equals(review.getUser().getId())) {
+            throw new AccessDeniedException("You may not reassign a review to another user");
         }
     }
 

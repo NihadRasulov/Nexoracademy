@@ -151,6 +151,14 @@ public class SecurityConfig {
                                 "/api/v1/notifications/**"
                         ).hasAnyRole("ADMIN", "SYSTEM_ADMIN")
 
+                        // Chat-bot — daxil olmuş istənilən istifadəçi mesaj göndərə bilər.
+                        // Botu saytda GİRİŞSİZ (public) widget kimi açmaq istəsən, bu sətri
+                        // .permitAll() ilə əvəz et — onda ChatbotController-də principal null
+                        // olacaq (userId göndərilməyəcək), qalan hər şey işləyəcək.
+                        .requestMatchers(
+                                "/api/v1/chatbot/**"
+                        ).authenticated()
+
                         // Digər bütün endpointlər authentication tələb edir (course-reviews,
                         // enrollments — bunlar sahiblik yoxlaması ilə servis səviyyəsində
                         // qorunur, bax CourseReviewService / EnrollmentService)
