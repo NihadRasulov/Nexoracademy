@@ -1,31 +1,29 @@
 services:
   postgres:
-    # pgvector extension-ı ilə gələn rəsmi image (ai.kb_articles.embedding üçün lazımdır)
     image: pgvector/pgvector:pg16
     container_name: nexora-postgres
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_NAME:-nexora_academy}
       POSTGRES_USER: ${DB_USER:-nexora_app}
-      # ${VAR:?...} formatı: .env-də DB_PASSWORD təyin olunmayıbsa, compose xəta ilə dayanır —
-      # beləliklə default/plaintext şifrə heç vaxt image-a "sızmır".
       POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD .env faylında təyin edilməlidir}
     ports:
       - "${DB_PORT:-5432}:5432"
     volumes:
       - nexora_pg_data:/var/lib/postgresql/data
+    networks:
+      - nexora-net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-nexora_app} -d ${DB_NAME:-nexora_academy}"]
       interval: 5s
       timeout: 5s
       retries: 10
 
-  # Maven/Java quraşdırmadan migration-ları işə salmaq üçün.
-  # Eyni compose şəbəkəsində olduğu üçün host "postgres" (servis adı) ilə qoşulur —
-  # "localhost" yazmaq lazım deyil, çünki konteynerin öz daxilindən baxır.
   flyway:
     image: flyway/flyway:10
     container_name: nexora-flyway
+    networks:
+      - nexora-net
     depends_on:
       postgres:
         condition: service_healthy
@@ -34,7 +32,6 @@ services:
       FLYWAY_USER: ${DB_USER:-nexora_app}
       FLYWAY_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD .env faylında təyin edilməlidir}
       FLYWAY_CONNECT_RETRIES: 5
-      # application.yml-dəki spring.flyway.schemas ilə eyni siyahı:
       FLYWAY_SCHEMAS: identity,catalog,academics,billing,outcomes,crm,cms,ai,notify,platform,analytics
       FLYWAY_DEFAULT_SCHEMA: identity
       FLYWAY_BASELINE_ON_MIGRATE: "true"
@@ -45,18 +42,15 @@ services:
       - ./src/main/resources/db/migration:/flyway/sql
     command: migrate
 
-  # Lokal SMTP tutucu — göndərilən e-poçtları real şəkildə görmək üçün.
-  # application.yml-dəki MAIL_HOST/MAIL_PORT default-ları (localhost:1025)
-  # məhz bu xidmətin standart portuna uyğundur. UI: http://localhost:8025
-  # DİQQƏT: yalnız dev/local üçündür — real production SMTP-yə keçəndə bu
-  # xidməti compose faylından çıxar (bax PRODUCTION_READINESS.md, Bölmə 6).
   mailhog:
     image: mailhog/mailhog:v1.0.1
     container_name: nexora-mailhog
     restart: unless-stopped
     ports:
-      - "${MAIL_PORT:-1025}:1025"   # SMTP
-      - "8025:8025"                 # Web UI
+      - "${MAIL_PORT:-1025}:1025"
+      - "8025:8025"
+    networks:
+      - nexora-net
 
   chatbot-api:
     build:
@@ -72,38 +66,78 @@ services:
       - DB_NAME=${DB_NAME:-nexora_academy}
       - DB_USER=${DB_USER:-nexora_app}
       - DB_PASSWORD=${DB_PASSWORD}
+    networks:
+      - nexora-net
     depends_on:
       postgres:
         condition: service_healthy
       flyway:
         condition: service_completed_successfully
 
-  # Spring Boot tətbiqinin özü (bax repo kökündəki Dockerfile).
-  # DİQQƏT: bu compose faylı MailHog ehtiva etdiyi üçün lokal/dev orkestrasiya
-  # məqsədlidir — ona görə profil "dev"dir. Real production deploy üçün
-  # MailHog-suz, "prod" profilli və real SMTP/JWT/CORS dəyərləri olan ayrıca
-  # bir compose/manifest lazımdır (bax PRODUCTION_READINESS.md, Bölmə 9).
-#  app:
-#    build: .
-#    container_name: nexora-app
-#    restart: unless-stopped
-#    env_file: .env
-#    environment:
-#      SPRING_PROFILES_ACTIVE: dev
-#      # Compose şəbəkəsinin daxilindən Postgres/MailHog-a servis adı ilə
-#      # qoşulmaq lazımdır — .env-dəki DB_HOST=localhost/MAIL_HOST=localhost
-#      # yalnız tətbiq host maşında (compose-suz) işə salınanda doğrudur.
-#      DB_HOST: postgres
-#      MAIL_HOST: mailhog
-#    ports:
-#      - "8081:8081"
-#    volumes:
-#      - nexora_app_logs:/app/logs
-#    depends_on:
-#      flyway:
-#        condition: service_completed_successfully
-#      mailhog:
-#        condition: service_started
+  app:
+    build: .
+    container_name: nexora-app
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DB_HOST: postgres
+      MAIL_HOST: mailhog
+    ports:
+      - "8081:8081"
+    networks:
+      - nexora-net
+    volumes:
+      - nexora_app_logs:/app/logs
+    depends_on:
+      flyway:
+        condition: service_completed_successfully
+      mailhog:
+        condition: service_started
+
+  admin-bff:
+    build:
+      context: ./adminpanel/NexoraAdminPanel/src/NexoraAcademy.AdminBff
+      dockerfile: Dockerfile
+    container_name: nexora-admin-bff
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      NexoraApi__BaseUrl: http://app:8081
+      Cors__AllowedOrigins__0: https://${PUBLIC_HOST}
+      Cookie__RequireHttps: ${ADMIN_BFF_COOKIE_REQUIRE_HTTPS:-false}
+    ports:
+      - "${ADMIN_BFF_PORT:-8090}:8080"
+    networks:
+      - nexora-net
+    depends_on:
+      - app
+
+  admin-ui:
+    build:
+      context: ./adminpanelUI
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: "https://${PUBLIC_HOST}"
+        VITE_DEMO_MODE: "false"
+    container_name: nexora-admin-ui
+    restart: unless-stopped
+    ports:
+      - "443:443"
+    networks:
+      - nexora-net
+    depends_on:
+      - admin-bff
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-check-certificate -qO- https://127.0.0.1:443/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+networks:
+  nexora-net:
+    driver: bridge
 
 volumes:
   nexora_pg_data:
