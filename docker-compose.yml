@@ -18,6 +18,10 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 500M
 
   flyway:
     image: flyway/flyway:10
@@ -73,6 +77,10 @@ services:
         condition: service_healthy
       flyway:
         condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          memory: 300M
 
   app:
     build: .
@@ -83,6 +91,7 @@ services:
       SPRING_PROFILES_ACTIVE: dev
       DB_HOST: postgres
       MAIL_HOST: mailhog
+      JAVA_OPTS: "-Xmx256m -Xms128m"
     ports:
       - "8081:8081"
     networks:
@@ -94,6 +103,10 @@ services:
         condition: service_completed_successfully
       mailhog:
         condition: service_started
+    deploy:
+      resources:
+        limits:
+          memory: 400M
 
   admin-bff:
     build:
@@ -112,7 +125,10 @@ services:
       - nexora-net
     depends_on:
       - app
-
+    deploy:
+      resources:
+        limits:
+          memory: 250M
   admin-ui:
     build:
       context: ./adminpanelUI
