@@ -9,7 +9,7 @@ using BffC = NexoraAcademy.AdminBff.Contracts.Bff;
 
 namespace NexoraAcademy.AdminBff.Controllers;
 
-[Route("api/enrollments")]
+[Route("api/admin/enrollments")]
 [Authorize(Roles = Roles.SalesCrm)]
 public class EnrollmentController(IEnrollmentApiClient client)
     : BffCrudControllerBase<BackendC.EnrollmentResponse, BackendC.EnrollmentRequest, BffC.EnrollmentResponse, BffC.EnrollmentRequest, Guid>

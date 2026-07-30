@@ -39,45 +39,45 @@ const str = (v: unknown): string => (v == null ? "" : String(v));
 
 export const REFERENCES: Record<ReferenceKind, ReferenceDef> = {
   course: {
-    apiPath: "/api/courses",
+    apiPath: "/api/admin/courses",
     paged: true,
     searchParam: "q",
     label: (c) => str(c.title) || str(c.slug) || str(c.id),
     sublabel: (c) => str(c.slug) || undefined,
   },
   user: {
-    apiPath: "/api/users",
+    apiPath: "/api/admin/users",
     paged: true,
     searchParam: "q",
     label: (u) => str(u.fullName) || str(u.email) || str(u.id),
     sublabel: (u) => str(u.email) || undefined,
   },
   category: {
-    apiPath: "/api/categories",
+    apiPath: "/api/admin/categories",
     paged: false,
     numericId: true,
     label: (c) => str(c.name) || str(c.slug) || str(c.id),
     sublabel: (c) => str(c.slug) || undefined,
   },
   courseGroup: {
-    apiPath: "/api/course-groups",
+    apiPath: "/api/admin/course-groups",
     paged: false,
     label: (g) => str(g.groupCode) || str(g.id),
     sublabel: (g) => (g.status ? str(g.status) : undefined),
   },
   instructor: {
-    apiPath: "/api/instructors",
+    apiPath: "/api/admin/instructors",
     paged: true,
     label: (i) => str(i.fullName) || str(i.id),
   },
   enrollment: {
-    apiPath: "/api/enrollments",
+    apiPath: "/api/admin/enrollments",
     paged: false,
     label: (e) => `${str(e.id).slice(0, 8)}… · ${str(e.status)}`,
     sublabel: (e) => (e.userId ? `user ${str(e.userId).slice(0, 8)}…` : undefined),
   },
   lead: {
-    apiPath: "/api/sales/leads",
+    apiPath: "/api/admin/sales/leads",
     paged: false,
     label: (l) => str(l.fullName) || str(l.email) || str(l.id),
     sublabel: (l) => str(l.email) || undefined,

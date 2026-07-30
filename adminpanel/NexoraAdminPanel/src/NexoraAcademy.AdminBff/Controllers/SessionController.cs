@@ -9,7 +9,7 @@ using BffC = NexoraAcademy.AdminBff.Contracts.Bff;
 
 namespace NexoraAcademy.AdminBff.Controllers;
 
-[Route("api/sessions")]
+[Route("api/admin/sessions")]
 [Authorize(Roles = Roles.AdminOnly)]
 public class SessionController(ISessionApiClient client)
     : BffCrudControllerBase<BackendC.SessionResponse, BackendC.SessionRequest, BffC.SessionResponse, BffC.SessionRequest, Guid>

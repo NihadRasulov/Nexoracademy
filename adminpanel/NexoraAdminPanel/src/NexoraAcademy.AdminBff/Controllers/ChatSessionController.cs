@@ -9,7 +9,7 @@ using BffC = NexoraAcademy.AdminBff.Contracts.Bff;
 
 namespace NexoraAcademy.AdminBff.Controllers;
 
-[Route("api/sales/chat-sessions")]
+[Route("api/admin/sales/chat-sessions")]
 [Authorize(Roles = Roles.SalesCrm)]
 public class ChatSessionController(IChatSessionApiClient client)
     : BffCrudControllerBase<BackendC.ChatSessionResponse, BackendC.ChatSessionRequest, BffC.ChatSessionResponse, BffC.ChatSessionRequest, Guid>

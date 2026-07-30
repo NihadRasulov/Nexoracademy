@@ -9,7 +9,7 @@ using BffC = NexoraAcademy.AdminBff.Contracts.Bff;
 
 namespace NexoraAcademy.AdminBff.Controllers;
 
-[Route("api/scholarships")]
+[Route("api/admin/scholarships")]
 [Authorize(Roles = Roles.AdminOnly)]
 public class ScholarshipController(IScholarshipApiClient client)
     : BffCrudControllerBase<BackendC.ScholarshipResponse, BackendC.ScholarshipRequest, BffC.ScholarshipResponse, BffC.ScholarshipRequest, short>

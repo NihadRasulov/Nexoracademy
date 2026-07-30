@@ -11,32 +11,32 @@ interface Store {
 }
 
 const stores: Record<string, Store> = {
-  "/api/categories": { rows: clone(seed.demoCategories) },
-  "/api/courses": { rows: clone(seed.demoCourses) },
-  "/api/instructors": { rows: clone(seed.demoInstructors) },
-  "/api/course-groups": { rows: clone(seed.demoCourseGroups) },
-  "/api/scholarships": { rows: clone(seed.demoScholarships) },
-  "/api/cms-content": { rows: clone(seed.demoCmsContent) },
-  "/api/sales/campaigns": { rows: clone(seed.demoCampaigns) },
-  "/api/sales/chat-sessions": { rows: clone(seed.demoChatSessions) },
-  "/api/sales/contact-submissions": { rows: clone(seed.demoContactSubmissions) },
-  "/api/sales/leads": { rows: clone(seed.demoLeads) },
-  "/api/oauth-accounts": { rows: clone(seed.demoOAuthAccounts) },
-  "/api/sessions": { rows: clone(seed.demoSessions) },
-  "/api/notifications": { rows: clone(seed.demoNotifications) },
-  "/api/kb-articles": { rows: clone(seed.demoKbArticles) },
-  "/api/course-reviews": { rows: clone(seed.demoCourseReviews) },
-  "/api/graduate-outcomes": { rows: clone(seed.demoGraduateOutcomes) },
+  "/api/admin/categories": { rows: clone(seed.demoCategories) },
+  "/api/admin/courses": { rows: clone(seed.demoCourses) },
+  "/api/admin/instructors": { rows: clone(seed.demoInstructors) },
+  "/api/admin/course-groups": { rows: clone(seed.demoCourseGroups) },
+  "/api/admin/scholarships": { rows: clone(seed.demoScholarships) },
+  "/api/admin/cms-content": { rows: clone(seed.demoCmsContent) },
+  "/api/admin/sales/campaigns": { rows: clone(seed.demoCampaigns) },
+  "/api/admin/sales/chat-sessions": { rows: clone(seed.demoChatSessions) },
+  "/api/admin/sales/contact-submissions": { rows: clone(seed.demoContactSubmissions) },
+  "/api/admin/sales/leads": { rows: clone(seed.demoLeads) },
+  "/api/admin/oauth-accounts": { rows: clone(seed.demoOAuthAccounts) },
+  "/api/admin/sessions": { rows: clone(seed.demoSessions) },
+  "/api/admin/notifications": { rows: clone(seed.demoNotifications) },
+  "/api/admin/kb-articles": { rows: clone(seed.demoKbArticles) },
+  "/api/admin/course-reviews": { rows: clone(seed.demoCourseReviews) },
+  "/api/admin/graduate-outcomes": { rows: clone(seed.demoGraduateOutcomes) },
   "/api/admin/audit-logs": { rows: clone(seed.demoAuditLogs) },
-  "/api/users": { rows: clone(seed.demoUsers) },
-  "/api/enrollments": { rows: clone(seed.demoEnrollments) },
-  "/api/payments": { rows: clone(seed.demoPayments) },
+  "/api/admin/users": { rows: clone(seed.demoUsers) },
+  "/api/admin/enrollments": { rows: clone(seed.demoEnrollments) },
+  "/api/admin/payments": { rows: clone(seed.demoPayments) },
 };
 
 let meState: Record<string, unknown> = clone(seed.DEMO_ME);
 let courseInstructorRows: Record<string, unknown>[] = clone(seed.demoCourseInstructors);
 
-const PAGED_PATHS = new Set(["/api/users", "/api/courses"]);
+const PAGED_PATHS = new Set(["/api/admin/users", "/api/admin/courses"]);
 
 function genId(): string {
   return crypto.randomUUID();
@@ -87,17 +87,17 @@ export async function demoRequest<T>(
   if (path === "/api/auth/me" && method === "GET") return meState as T;
   if (path === "/api/health/backend" && method === "GET") return seed.DEMO_HEALTH as T;
 
-  if (path === "/api/users/me" && method === "PATCH") {
+  if (path === "/api/admin/users/me" && method === "PATCH") {
     meState = { ...meState, ...(body as Record<string, unknown>), updatedAt: new Date().toISOString() };
-    const usersStore = stores["/api/users"];
+    const usersStore = stores["/api/admin/users"];
     const idx = usersStore.rows.findIndex((r) => r.id === meState.id);
     if (idx >= 0) usersStore.rows[idx] = { ...usersStore.rows[idx], ...meState };
     return meState as T;
   }
-  if (path === "/api/users/me/password" && method === "POST") return undefined as T;
+  if (path === "/api/admin/users/me/password" && method === "POST") return undefined as T;
 
-  if (segments[0] === "api" && segments[1] === "course-instructors") {
-    if (segments.length === 2) {
+  if (segments[0] === "api" && segments[1] === "admin" && segments[2] === "course-instructors") {
+    if (segments.length === 3) {
       if (method === "GET") return courseInstructorRows as T;
       if (method === "POST") {
         const created = body as Record<string, unknown>;
@@ -105,8 +105,8 @@ export async function demoRequest<T>(
         return created as T;
       }
     }
-    if (segments.length === 4) {
-      const [, , courseId, instructorId] = segments;
+    if (segments.length === 5) {
+      const [, , , courseId, instructorId] = segments;
       const idx = courseInstructorRows.findIndex(
         (r) => r.courseId === courseId && r.instructorId === instructorId,
       );
@@ -126,9 +126,9 @@ export async function demoRequest<T>(
     notFound(path);
   }
 
-  if (path.match(/^\/api\/enrollments\/[^/]+\/cancel$/) && method === "POST") {
-    const id = segments[2];
-    const store = findStore("/api/enrollments");
+  if (path.match(/^\/api\/admin\/enrollments\/[^/]+\/cancel$/) && method === "POST") {
+    const id = segments[3];
+    const store = findStore("/api/admin/enrollments");
     const idx = store.rows.findIndex((r) => r.id === id);
     if (idx < 0) notFound(path);
     store.rows[idx] = {
@@ -139,9 +139,9 @@ export async function demoRequest<T>(
     };
     return store.rows[idx] as T;
   }
-  if (path.match(/^\/api\/payments\/[^/]+\/capture$/) && method === "POST") {
-    const id = segments[2];
-    const store = findStore("/api/payments");
+  if (path.match(/^\/api\/admin\/payments\/[^/]+\/capture$/) && method === "POST") {
+    const id = segments[3];
+    const store = findStore("/api/admin/payments");
     const idx = store.rows.findIndex((r) => r.id === id);
     if (idx < 0) notFound(path);
     store.rows[idx] = { ...store.rows[idx], status: "CAPTURED", capturedAt: new Date().toISOString() };
@@ -163,14 +163,14 @@ export async function demoRequest<T>(
       }
       if (method === "POST") {
         const created: Record<string, unknown> = { id: genId(), ...(body as Record<string, unknown>) };
-        if (basePath === "/api/categories" || basePath === "/api/scholarships") {
+        if (basePath === "/api/admin/categories" || basePath === "/api/admin/scholarships") {
           created.id = Math.max(0, ...store.rows.map((r) => Number(r.id) || 0)) + 1;
         }
         if (
-          basePath === "/api/cms-content" ||
-          basePath === "/api/oauth-accounts" ||
-          basePath === "/api/course-reviews" ||
-          basePath === "/api/graduate-outcomes" ||
+          basePath === "/api/admin/cms-content" ||
+          basePath === "/api/admin/oauth-accounts" ||
+          basePath === "/api/admin/course-reviews" ||
+          basePath === "/api/admin/graduate-outcomes" ||
           basePath === "/api/admin/audit-logs"
         ) {
           created.id = Math.max(0, ...store.rows.map((r) => Number(r.id) || 0)) + 1;

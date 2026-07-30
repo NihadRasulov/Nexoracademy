@@ -9,7 +9,7 @@ using BffC = NexoraAcademy.AdminBff.Contracts.Bff;
 
 namespace NexoraAcademy.AdminBff.Controllers;
 
-[Route("api/graduate-outcomes")]
+[Route("api/admin/graduate-outcomes")]
 [Authorize(Roles = Roles.ContentManager)]
 public class GraduateOutcomeController(IGraduateOutcomeApiClient client)
     : BffCrudControllerBase<BackendC.GraduateOutcomeResponse, BackendC.GraduateOutcomeRequest, BffC.GraduateOutcomeResponse, BffC.GraduateOutcomeRequest, long>

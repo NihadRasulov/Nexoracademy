@@ -9,7 +9,7 @@ using BffC = NexoraAcademy.AdminBff.Contracts.Bff;
 
 namespace NexoraAcademy.AdminBff.Controllers;
 
-[Route("api/course-groups")]
+[Route("api/admin/course-groups")]
 [Authorize(Roles = Roles.ContentManager)]
 public class CourseGroupController(ICourseGroupApiClient client)
     : BffCrudControllerBase<BackendC.CourseGroupResponse, BackendC.CourseGroupRequest, BffC.CourseGroupResponse, BffC.CourseGroupRequest, Guid>

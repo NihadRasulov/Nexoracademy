@@ -9,7 +9,7 @@ using BffC = NexoraAcademy.AdminBff.Contracts.Bff;
 
 namespace NexoraAcademy.AdminBff.Controllers;
 
-[Route("api/sales/contact-submissions")]
+[Route("api/admin/sales/contact-submissions")]
 [Authorize(Roles = Roles.SalesCrm)]
 public class ContactSubmissionController(IContactSubmissionApiClient client)
     : BffCrudControllerBase<BackendC.ContactSubmissionResponse, BackendC.ContactSubmissionRequest, BffC.ContactSubmissionResponse, BffC.ContactSubmissionRequest, Guid>

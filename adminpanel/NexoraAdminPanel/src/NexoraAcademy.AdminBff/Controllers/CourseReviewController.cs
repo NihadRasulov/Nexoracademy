@@ -9,7 +9,7 @@ using BffC = NexoraAcademy.AdminBff.Contracts.Bff;
 
 namespace NexoraAcademy.AdminBff.Controllers;
 
-[Route("api/course-reviews")]
+[Route("api/admin/course-reviews")]
 [Authorize(Roles = Roles.ContentManager)]
 public class CourseReviewController(ICourseReviewApiClient client)
     : BffCrudControllerBase<BackendC.CourseReviewResponse, BackendC.CourseReviewRequest, BffC.CourseReviewResponse, BffC.CourseReviewRequest, long>

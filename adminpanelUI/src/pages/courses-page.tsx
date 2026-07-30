@@ -85,7 +85,7 @@ export function CoursesPage() {
   const listQuery = useQuery({
     queryKey,
     queryFn: () =>
-      api.get<PagedResult<CourseRow>>("/api/courses", {
+      api.get<PagedResult<CourseRow>>("/api/admin/courses", {
         q: q || undefined,
         page,
         size,
@@ -96,7 +96,7 @@ export function CoursesPage() {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["courses"] });
 
   const createMutation = useMutation({
-    mutationFn: (body: Record<string, unknown>) => api.post<CourseRow>("/api/courses", body),
+    mutationFn: (body: Record<string, unknown>) => api.post<CourseRow>("/api/admin/courses", body),
     onSuccess: () => {
       toast.success("Kurs yaradıldı.");
       setFormOpen(false);

@@ -9,7 +9,7 @@ using BffC = NexoraAcademy.AdminBff.Contracts.Bff;
 
 namespace NexoraAcademy.AdminBff.Controllers;
 
-[Route("api/oauth-accounts")]
+[Route("api/admin/oauth-accounts")]
 [Authorize(Roles = Roles.AdminOnly)]
 public class OAuthAccountController(IOAuthAccountApiClient client)
     : BffCrudControllerBase<BackendC.OAuthAccountResponse, BackendC.OAuthAccountRequest, BffC.OAuthAccountResponse, BffC.OAuthAccountRequest, long>

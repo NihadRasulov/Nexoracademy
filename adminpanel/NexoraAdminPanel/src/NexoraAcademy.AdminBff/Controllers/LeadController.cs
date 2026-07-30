@@ -9,7 +9,7 @@ using BffC = NexoraAcademy.AdminBff.Contracts.Bff;
 
 namespace NexoraAcademy.AdminBff.Controllers;
 
-[Route("api/sales/leads")]
+[Route("api/admin/sales/leads")]
 [Authorize(Roles = Roles.SalesCrm)]
 public class LeadController(ILeadApiClient client)
     : BffCrudControllerBase<BackendC.LeadResponse, BackendC.LeadRequest, BffC.LeadResponse, BffC.LeadRequest, Guid>

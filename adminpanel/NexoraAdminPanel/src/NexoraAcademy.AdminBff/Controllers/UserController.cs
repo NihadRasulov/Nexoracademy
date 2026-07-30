@@ -8,7 +8,7 @@ using BffC = NexoraAcademy.AdminBff.Contracts.Bff;
 namespace NexoraAcademy.AdminBff.Controllers;
 
 [ApiController]
-[Route("api/users")]
+[Route("api/admin/users")]
 [Authorize]
 public class UserController(IUserApiClient client) : ControllerBase
 {

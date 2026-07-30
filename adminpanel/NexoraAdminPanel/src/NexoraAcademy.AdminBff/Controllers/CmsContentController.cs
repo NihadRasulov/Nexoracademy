@@ -9,7 +9,7 @@ using BffC = NexoraAcademy.AdminBff.Contracts.Bff;
 
 namespace NexoraAcademy.AdminBff.Controllers;
 
-[Route("api/cms-content")]
+[Route("api/admin/cms-content")]
 [Authorize(Roles = Roles.ContentManager)]
 public class CmsContentController(ICmsContentApiClient client)
     : BffCrudControllerBase<BackendC.CmsContentResponse, BackendC.CmsContentRequest, BffC.CmsContentResponse, BffC.CmsContentRequest, long>

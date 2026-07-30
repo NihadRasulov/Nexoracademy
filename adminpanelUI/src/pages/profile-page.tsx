@@ -25,7 +25,7 @@ export function ProfilePage() {
 
   const updateProfile = useMutation({
     mutationFn: () =>
-      api.patch<MeResponse>("/api/users/me", {
+      api.patch<MeResponse>("/api/admin/users/me", {
         fullName: fullName || undefined,
         phone: phone || undefined,
         locale: locale || undefined,
@@ -38,7 +38,7 @@ export function ProfilePage() {
   });
 
   const changePassword = useMutation({
-    mutationFn: () => api.post<void>("/api/users/me/password", { currentPassword, newPassword }),
+    mutationFn: () => api.post<void>("/api/admin/users/me/password", { currentPassword, newPassword }),
     onSuccess: () => {
       toast.success("Parol dəyişdirildi.");
       setCurrentPassword("");

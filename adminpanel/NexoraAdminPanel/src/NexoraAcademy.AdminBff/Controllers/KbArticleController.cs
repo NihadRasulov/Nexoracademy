@@ -9,7 +9,7 @@ using BffC = NexoraAcademy.AdminBff.Contracts.Bff;
 
 namespace NexoraAcademy.AdminBff.Controllers;
 
-[Route("api/kb-articles")]
+[Route("api/admin/kb-articles")]
 [Authorize(Roles = Roles.ContentManager)]
 public class KbArticleController(IKbArticleApiClient client)
     : BffCrudControllerBase<BackendC.KbArticleResponse, BackendC.KbArticleRequest, BffC.KbArticleResponse, BffC.KbArticleRequest, Guid>

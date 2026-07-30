@@ -9,7 +9,7 @@ using BffC = NexoraAcademy.AdminBff.Contracts.Bff;
 
 namespace NexoraAcademy.AdminBff.Controllers;
 
-[Route("api/categories")]
+[Route("api/admin/categories")]
 [Authorize(Roles = Roles.ContentManager)]
 public class CategoryController(ICategoryApiClient client)
     : BffCrudControllerBase<BackendC.CategoryResponse, BackendC.CategoryRequest, BffC.CategoryResponse, BffC.CategoryRequest, short>

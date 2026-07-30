@@ -9,7 +9,7 @@ using BffC = NexoraAcademy.AdminBff.Contracts.Bff;
 
 namespace NexoraAcademy.AdminBff.Controllers;
 
-[Route("api/sales/campaigns")]
+[Route("api/admin/sales/campaigns")]
 [Authorize(Roles = Roles.SalesCrm)]
 public class CampaignController(ICampaignApiClient client)
     : BffCrudControllerBase<BackendC.CampaignResponse, BackendC.CampaignRequest, BffC.CampaignResponse, BffC.CampaignRequest, Guid>

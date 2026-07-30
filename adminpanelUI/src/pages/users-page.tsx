@@ -74,7 +74,7 @@ export function UsersPage() {
   const listQuery = useQuery({
     queryKey,
     queryFn: () =>
-      api.get<PagedResult<UserRow>>("/api/users", {
+      api.get<PagedResult<UserRow>>("/api/admin/users", {
         q: q || undefined,
         role: role || undefined,
         status: status || undefined,
@@ -87,7 +87,7 @@ export function UsersPage() {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["users"] });
 
   const createMutation = useMutation({
-    mutationFn: (body: Record<string, unknown>) => api.post<UserRow>("/api/users", body),
+    mutationFn: (body: Record<string, unknown>) => api.post<UserRow>("/api/admin/users", body),
     onSuccess: () => {
       toast.success("İstifadəçi yaradıldı.");
       setFormOpen(false);

@@ -9,7 +9,7 @@ using BffC = NexoraAcademy.AdminBff.Contracts.Bff;
 
 namespace NexoraAcademy.AdminBff.Controllers;
 
-[Route("api/payments")]
+[Route("api/admin/payments")]
 [Authorize(Roles = Roles.AdminOnly)]
 public class PaymentController(IPaymentApiClient client)
     : BffCrudControllerBase<BackendC.PaymentResponse, BackendC.PaymentRequest, BffC.PaymentResponse, BffC.PaymentRequest, Guid>

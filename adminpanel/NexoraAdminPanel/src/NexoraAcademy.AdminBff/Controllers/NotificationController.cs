@@ -9,7 +9,7 @@ using BffC = NexoraAcademy.AdminBff.Contracts.Bff;
 
 namespace NexoraAcademy.AdminBff.Controllers;
 
-[Route("api/notifications")]
+[Route("api/admin/notifications")]
 [Authorize(Roles = Roles.AdminOnly)]
 public class NotificationController(INotificationApiClient client)
     : BffCrudControllerBase<BackendC.NotificationResponse, BackendC.NotificationRequest, BffC.NotificationResponse, BffC.NotificationRequest, Guid>
