@@ -23,11 +23,11 @@
     "SYSTEM_ADMIN",
   ]);
   const ROLE_DESTINATIONS = {
-    STUDENT: "student.html",
-    SALES_CRM: "staff.html",
-    CONTENT_MANAGER: "staff.html",
-    ADMIN: "staff.html",
-    SYSTEM_ADMIN: "staff.html",
+    STUDENT: "/student",
+    SALES_CRM: "/staff",
+    CONTENT_MANAGER: "/staff",
+    ADMIN: "/staff",
+    SYSTEM_ADMIN: "/staff",
   };
   let pageController = null;
   let accessToken = "";
@@ -479,7 +479,7 @@
   }
 
   function currentReturnTarget() {
-    const file = location.pathname.split("/").pop() || "index.html";
+    const file = location.pathname.split("/").pop() || "";
     return `${file}${location.search}`;
   }
 
@@ -489,7 +489,7 @@
   }
 
   function loginUrl(returnTarget = currentReturnTarget()) {
-    return `login.html?return=${encodeURIComponent(returnTarget)}`;
+    return `/login?return=${encodeURIComponent(returnTarget)}`;
   }
 
   function normalizedEnum(value) {
@@ -507,16 +507,16 @@
   }
 
   function roleDestination(role) {
-    return ROLE_DESTINATIONS[normalizedEnum(role)] || "profile.html";
+    return ROLE_DESTINATIONS[normalizedEnum(role)] || "/profile";
   }
 
   function returnTargetAllowed(target, role) {
-    const file = target.pathname.split("/").pop()?.toLowerCase() || "index.html";
-    if (/^(?:login|register|password|account-status)\.html$/.test(file))
+    const file = target.pathname.split("/").pop()?.toLowerCase() || "";
+    if (/^(?:login|register|password|account-status)$/.test(file))
       return false;
-    if (/^(?:student|enrollments)\.html$/.test(file))
+    if (/^(?:student|enrollments)$/.test(file))
       return normalizedEnum(role) === "STUDENT";
-    if (file === "staff.html") return STAFF_ROLES.has(normalizedEnum(role));
+    if (file === "staff") return STAFF_ROLES.has(normalizedEnum(role));
     return true;
   }
 
@@ -524,7 +524,7 @@
     const user = await loadCurrentUser(signal);
     const status = userAccountStatus(user);
     if (status && status !== "ACTIVE") {
-      location.assign("account-status.html");
+      location.assign("/account-status");
       return;
     }
     const role = userRole(user);
@@ -564,7 +564,7 @@
     if (signal.aborted) return null;
     const status = userAccountStatus(user);
     if (!allowInactive && status && status !== "ACTIVE") {
-      location.replace("account-status.html");
+      location.replace("/account-status");
       return null;
     }
     const role = userRole(user);
@@ -1140,7 +1140,7 @@
         <span>${escapeHtml(enumLabel(course.deliveryFormat))}</span>
         ${duration ? `<span>${duration}</span>` : ""}
       </div>
-      <a class="ai-btn ai-btn--text" href="course-details.html?id=${encodeURIComponent(course.id || "")}">Ətraflı bax</a>
+      <a class="ai-btn ai-btn--text" href="/course-details?id=${encodeURIComponent(course.id || "")}">Ətraflı bax</a>
     </article>`;
   }
 
@@ -1339,7 +1339,7 @@
         <h3>${escapeHtml(category.name || category.slug || "Kateqoriya")}</h3>
         <p>${escapeHtml(parentText)}</p>
       </div>
-      <a class="ai-btn ai-btn--text" href="category.html?id=${encodeURIComponent(category.id)}">Kateqoriyaya bax</a>
+      <a class="ai-btn ai-btn--text" href="/category?id=${encodeURIComponent(category.id)}">Kateqoriyaya bax</a>
     </article>`;
   }
 
@@ -1516,7 +1516,7 @@
       course.shortDescription ||
       "Bu kurs haqqında ətraflı məlumat hazırlanır.";
     const role = userRole();
-    const enrollmentTarget = `enrollments.html?courseId=${encodeURIComponent(course.id || "")}`;
+    const enrollmentTarget = `/enrollments?courseId=${encodeURIComponent(course.id || "")}`;
     const accountLink = accessToken
       ? role === "STUDENT"
         ? enrollmentTarget
@@ -1886,7 +1886,7 @@
             submit.type = "button";
             submit.addEventListener(
               "click",
-              () => location.assign("login.html"),
+              () => location.assign("/login"),
               { once: true, signal },
             );
           }
@@ -2184,7 +2184,7 @@
       async () => {
         logoutButton.disabled = true;
         await logoutCurrentSession(signal);
-        location.assign("login.html");
+        location.assign("/login");
       },
       { signal },
     );
@@ -2701,7 +2701,7 @@
       async () => {
         logoutButton.disabled = true;
         await logoutCurrentSession(signal);
-        location.assign("login.html");
+        location.assign("/login");
       },
       { signal },
     );
