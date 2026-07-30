@@ -18,6 +18,10 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 500M
 
   flyway:
     image: flyway/flyway:10
@@ -73,6 +77,10 @@ services:
         condition: service_healthy
       flyway:
         condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          memory: 300M
 
   app:
     build: .
@@ -83,6 +91,7 @@ services:
       SPRING_PROFILES_ACTIVE: dev
       DB_HOST: postgres
       MAIL_HOST: mailhog
+      JAVA_OPTS: "-Xmx256m -Xms128m"
     ports:
       - "8081:8081"
     networks:
@@ -94,7 +103,32 @@ services:
         condition: service_completed_successfully
       mailhog:
         condition: service_started
+    deploy:
+      resources:
+        limits:
+          memory: 400M
 
+  #admin-bff:
+   # build:
+    #  context: ./adminpanel/NexoraAdminPanel/src/NexoraAcademy.AdminBff
+     # dockerfile: Dockerfile
+    #container_name: nexora-admin-bff
+    #restart: unless-stopped
+    #environment:
+    #  ASPNETCORE_ENVIRONMENT: Production
+    #  NexoraApi__BaseUrl: http://app:8081
+    #  Cors__AllowedOrigins__0: https://${PUBLIC_HOST}
+    #  Cookie__RequireHttps: ${ADMIN_BFF_COOKIE_REQUIRE_HTTPS:-true}
+    #ports:
+    #  - "${ADMIN_BFF_PORT:-8090}:8080"
+    #networks:
+    #  - nexora-net
+    #depends_on:
+    #  - app
+    #deploy:
+    #  resources:
+    #    limits:
+    #      memory: 250M
   admin-bff:
     build:
       context: ./adminpanel/NexoraAdminPanel/src/NexoraAcademy.AdminBff
@@ -105,14 +139,34 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       NexoraApi__BaseUrl: http://app:8081
       Cors__AllowedOrigins__0: https://${PUBLIC_HOST}
-      Cookie__RequireHttps: ${ADMIN_BFF_COOKIE_REQUIRE_HTTPS:-false}
+      Cookie__RequireHttps: "true"
     ports:
       - "${ADMIN_BFF_PORT:-8090}:8080"
     networks:
       - nexora-net
     depends_on:
       - app
+    deploy:
+      resources:
+        limits:
+          memory: 250M
 
+
+  # --- SEPARATED MAIN FRONTEND ---
+  main-ui:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: nexora-main-ui
+    restart: unless-stopped
+    networks:
+      - nexora-net
+    deploy:
+      resources:
+        limits:
+          memory: 150M
+
+  # --- SEPARATED ADMIN UI ---
   admin-ui:
     build:
       context: ./adminpanelUI
@@ -122,18 +176,36 @@ services:
         VITE_DEMO_MODE: "false"
     container_name: nexora-admin-ui
     restart: unless-stopped
-    ports:
-      - "443:443"
     networks:
       - nexora-net
     depends_on:
       - admin-bff
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-check-certificate -qO- https://127.0.0.1:443/health || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 150M
+
+  # --- REVERSE PROXY / GATEWAY ---
+  web-gateway:
+    image: nginx:alpine
+    container_name: nexora-web-gateway
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "./nginx.conf:/etc/nginx/conf.d/default.conf:ro"
+      - "./certs:/etc/nginx/certs:ro"
+    networks:
+      - nexora-net
+    depends_on:
+      - main-ui
+      - admin-ui
+      - admin-bff
+    deploy:
+      resources:
+        limits:
+          memory: 100M
 
 networks:
   nexora-net:
