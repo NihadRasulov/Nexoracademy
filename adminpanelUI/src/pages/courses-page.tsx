@@ -107,7 +107,7 @@ export function CoursesPage() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) =>
-      api.patch<CourseRow>(`/api/courses/${id}`, body),
+      api.patch<CourseRow>(`/api/admin/courses/${id}`, body),
     onSuccess: () => {
       toast.success("Kurs yeniləndi.");
       setFormOpen(false);
@@ -117,7 +117,7 @@ export function CoursesPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete<void>(`/api/courses/${id}`),
+    mutationFn: (id: string) => api.delete<void>(`/api/admin/courses/${id}`),
     onSuccess: () => {
       toast.success("Kurs silindi.");
       setDeleting(null);

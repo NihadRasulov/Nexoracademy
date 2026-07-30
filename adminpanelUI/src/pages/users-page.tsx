@@ -98,7 +98,7 @@ export function UsersPage() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) =>
-      api.patch<UserRow>(`/api/users/${id}`, body),
+      api.patch<UserRow>(`/api/admin/users/${id}`, body),
     onSuccess: () => {
       toast.success("İstifadəçi yeniləndi.");
       setFormOpen(false);
@@ -108,7 +108,7 @@ export function UsersPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete<void>(`/api/users/${id}`),
+    mutationFn: (id: string) => api.delete<void>(`/api/admin/users/${id}`),
     onSuccess: () => {
       toast.success("İstifadəçi silindi.");
       setDeleting(null);
