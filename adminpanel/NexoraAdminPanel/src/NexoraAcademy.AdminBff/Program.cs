@@ -3,6 +3,7 @@ using NexoraAcademy.AdminBff.Auth;
 using NexoraAcademy.AdminBff.Clients;
 using NexoraAcademy.AdminBff.Contracts.Bff;
 using NexoraAcademy.AdminBff.Middleware;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +18,13 @@ var nexoraApiSection = builder.Configuration.GetSection(NexoraApiOptions.Section
 builder.Services.Configure<NexoraApiOptions>(nexoraApiSection);
 var nexoraApiBaseUrl = nexoraApiSection["BaseUrl"]
     ?? throw new InvalidOperationException($"{NexoraApiOptions.SectionName}:BaseUrl konfiqurasiya edilmeyib.");
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 builder.Services.AddHttpClient<IAuthApiClient, AuthApiClient>(client =>
 {
@@ -74,7 +82,7 @@ builder.Services.AddAuthentication(BffAuthConstants.CookieScheme)
     {
         options.Cookie.Name = BffAuthConstants.CookieName;
         options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = SameSiteMode.Strict;
+        options.Cookie.SameSite = SameSiteMode.Lax;
         options.Cookie.SecurePolicy = requireHttpsCookie
             ? CookieSecurePolicy.Always
             : CookieSecurePolicy.SameAsRequest;
@@ -116,13 +124,13 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
-
+app.UseForwardedHeaders();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-if (requireHttpsCookie)
-{
-    app.UseHttpsRedirection();
-}
+// if (requireHttpsCookie)
+// {
+//    app.UseHttpsRedirection();
+//}
 app.UseCors(corsPolicy);
 app.UseAuthentication();
 app.UseAuthorization();
