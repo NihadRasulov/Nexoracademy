@@ -77,6 +77,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Sistem",
     items: [
+      { label: "Müraciətlər", to: "/applications", icon: ClipboardList, roleGroup: "adminOnly" },
       { label: "OAuth Hesabları", to: "/oauth-accounts", icon: KeyRound, roleGroup: "adminOnly" },
       { label: "Sessiyalar", to: "/sessions", icon: KeyRound, roleGroup: "adminOnly" },
       { label: "Bildirişlər", to: "/notifications", icon: MailWarning, roleGroup: "adminOnly" },

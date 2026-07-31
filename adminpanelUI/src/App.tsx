@@ -12,6 +12,7 @@ import { PaymentsPage } from "@/pages/payments-page";
 import { ForbiddenPage, NotFoundPage } from "@/pages/status-pages";
 import { ResourcePage } from "@/resources/resource-page";
 import {
+  applicationConfig,
   auditLogConfig,
   campaignConfig,
   categoryConfig,
@@ -52,6 +53,7 @@ export function App() {
               <Route path="/sessions" element={<ResourcePage config={sessionConfig} />} />
               <Route path="/notifications" element={<ResourcePage config={notificationConfig} />} />
               <Route path="/audit-logs" element={<ResourcePage config={auditLogConfig} />} />
+              <Route path="/applications" element={<ResourcePage config={applicationConfig} />} />
             </Route>
 
             <Route element={<RequireRole group="contentManager" />}>

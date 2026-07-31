@@ -69,6 +69,7 @@ AddAuthenticatedClient<IKbArticleApiClient, KbArticleApiClient>();
 AddAuthenticatedClient<ICourseReviewApiClient, CourseReviewApiClient>();
 AddAuthenticatedClient<IGraduateOutcomeApiClient, GraduateOutcomeApiClient>();
 AddAuthenticatedClient<IAuditLogApiClient, AuditLogApiClient>();
+AddAuthenticatedClient<IApplicationApiClient, ApplicationApiClient>();
 
 // Defaults to "secure cookies required" outside Development (previous behavior).
 // Set Cookie__RequireHttps=false explicitly (env var) for a plain-HTTP/IP-only
