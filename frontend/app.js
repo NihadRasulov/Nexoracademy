@@ -11,7 +11,7 @@
     document.body.dataset.router === "legacy" && Boolean(PAGES[DEFAULT_ROUTE]);
   const API_BASE_URL = (
     document.querySelector('meta[name="nexora-api-base"]')?.content ||
-    ""
+    "http://192.168.0.103:8081"
   ).replace(/\/+$/, "");
   const ACCESS_TOKEN_KEY = "nexora_access_token";
   const REFRESH_TOKEN_KEY = "nexora_refresh_token";
@@ -23,11 +23,11 @@
     "SYSTEM_ADMIN",
   ]);
   const ROLE_DESTINATIONS = {
-    STUDENT: "/student",
-    SALES_CRM: "/staff",
-    CONTENT_MANAGER: "/staff",
-    ADMIN: "/staff",
-    SYSTEM_ADMIN: "/staff",
+    STUDENT: "student.html",
+    SALES_CRM: "staff.html",
+    CONTENT_MANAGER: "staff.html",
+    ADMIN: "staff.html",
+    SYSTEM_ADMIN: "staff.html",
   };
   let pageController = null;
   let accessToken = "";
@@ -503,7 +503,7 @@
   }
 
   function currentReturnTarget() {
-    const file = location.pathname.split("/").pop() || "";
+    const file = location.pathname.split("/").pop() || "index.html";
     return `${file}${location.search}`;
   }
 
@@ -513,7 +513,7 @@
   }
 
   function loginUrl(returnTarget = currentReturnTarget()) {
-    return `/login?return=${encodeURIComponent(returnTarget)}`;
+    return `login.html?return=${encodeURIComponent(returnTarget)}`;
   }
 
   function normalizedEnum(value) {
@@ -531,16 +531,16 @@
   }
 
   function roleDestination(role) {
-    return ROLE_DESTINATIONS[normalizedEnum(role)] || "/profile";
+    return ROLE_DESTINATIONS[normalizedEnum(role)] || "profile.html";
   }
 
   function returnTargetAllowed(target, role) {
-    const file = target.pathname.split("/").pop()?.toLowerCase() || "";
-    if (/^(?:login|register|password|account-status)$/.test(file))
+    const file = target.pathname.split("/").pop()?.toLowerCase() || "index.html";
+    if (/^(?:login|register|password|account-status)\.html$/.test(file))
       return false;
-    if (/^(?:student|enrollments)$/.test(file))
+    if (/^(?:student|enrollments)\.html$/.test(file))
       return normalizedEnum(role) === "STUDENT";
-    if (file === "staff") return STAFF_ROLES.has(normalizedEnum(role));
+    if (file === "staff.html") return STAFF_ROLES.has(normalizedEnum(role));
     return true;
   }
 
@@ -548,7 +548,7 @@
     const user = await loadCurrentUser(signal);
     const status = userAccountStatus(user);
     if (status && status !== "ACTIVE") {
-      location.assign("/account-status");
+      location.assign("account-status.html");
       return;
     }
     const role = userRole(user);
@@ -588,7 +588,7 @@
     if (signal.aborted) return null;
     const status = userAccountStatus(user);
     if (!allowInactive && status && status !== "ACTIVE") {
-      location.replace("/account-status");
+      location.replace("account-status.html");
       return null;
     }
     const role = userRole(user);
@@ -647,8 +647,8 @@
 
   function initHeroMedia(signal) {
     const video = $(".HeroSection_video__GVdk5");
-    const playButton = $('button[aria-label="play / pause"]');
-    const muteButton = $('button[aria-label="mute / unmute"]');
+    const playButton = $('[data-hero-control="playback"]');
+    const muteButton = $('[data-hero-control="sound"]');
     const hasSource = Boolean(
       video?.querySelector("source[src]") || video?.getAttribute("src"),
     );
@@ -657,12 +657,47 @@
       muteButton?.setAttribute("aria-disabled", "true");
       return;
     }
+    const icons = {
+      play: '<path d="M8 5.75v12.5L18 12 8 5.75Z"></path>',
+      pause:
+        '<path d="M8 5V19M16 5V19" style="fill:none" stroke="var(--neutral-1)" stroke-linecap="round" stroke-width="2"></path>',
+      muted:
+        '<path d="M4 9h3l4-4v14l-4-4H4V9Z"></path><path d="m15 9 5 6m0-6-5 6" style="fill:none" stroke="var(--neutral-1)" stroke-linecap="round" stroke-width="2"></path>',
+      sound:
+        '<path d="M4 9h3l4-4v14l-4-4H4V9Z"></path><path d="M14.5 8.5C16.4 10.4 16.4 13.6 14.5 15.5M17 6C20.3 9.3 20.3 14.7 17 18" style="fill:none" stroke="var(--neutral-1)" stroke-linecap="round" stroke-width="1.8"></path>',
+    };
+    const setButtonIcon = (button, icon) => {
+      const svg = $("svg", button);
+      if (!svg) return;
+      svg.setAttribute("viewBox", "0 0 24 24");
+      svg.setAttribute("aria-hidden", "true");
+      svg.setAttribute("focusable", "false");
+      svg.innerHTML = icons[icon];
+    };
+    const syncPlaybackControl = () => {
+      if (!playButton) return;
+      const isPaused = video.paused || video.ended;
+      playButton.dataset.mediaState = isPaused ? "paused" : "playing";
+      playButton.setAttribute(
+        "aria-label",
+        isPaused ? "Videonu oynat" : "Videonu dayandır",
+      );
+      setButtonIcon(playButton, isPaused ? "play" : "pause");
+    };
+    const syncSoundControl = () => {
+      if (!muteButton) return;
+      const isMuted = video.muted || video.volume === 0;
+      muteButton.dataset.mediaState = isMuted ? "muted" : "unmuted";
+      muteButton.setAttribute("aria-label", isMuted ? "Səsi aç" : "Səsi bağla");
+      setButtonIcon(muteButton, isMuted ? "muted" : "sound");
+    };
     playButton?.addEventListener(
       "click",
       async () => {
         try {
           if (video.paused) await video.play();
           else video.pause();
+          syncPlaybackControl();
         } catch (_) {
           playButton.setAttribute("aria-disabled", "true");
         }
@@ -673,9 +708,24 @@
       "click",
       () => {
         video.muted = !video.muted;
+        syncSoundControl();
       },
       { signal },
     );
+    ["play", "pause", "ended"].forEach((eventName) =>
+      video.addEventListener(eventName, syncPlaybackControl, { signal }),
+    );
+    video.addEventListener("volumechange", syncSoundControl, { signal });
+    video.addEventListener(
+      "loadedmetadata",
+      () => {
+        syncPlaybackControl();
+        syncSoundControl();
+      },
+      { signal },
+    );
+    syncPlaybackControl();
+    syncSoundControl();
   }
 
   function initHeroTypewriter(signal) {
@@ -810,7 +860,7 @@
 
     form.addEventListener(
       "submit",
-      async (event) => {
+      (event) => {
         event.preventDefault();
         clearInvalid(form);
         const type = $('input[name="applicationType"]:checked', form);
@@ -846,37 +896,11 @@
           );
           return;
         }
-        const submit = $('button[type="submit"]', form);
-        submit?.setAttribute("disabled", "disabled");
-        try {
-          const formData = new FormData();
-          const data = {
-            applicationType: Number(type.value),
-            fullname: fullname.value.trim(),
-            email: email.value.trim(),
-            phone: phone.value.trim(),
-            letter: letter.value.trim(),
-          };
-          formData.append("data", new Blob([JSON.stringify(data)], { type: "application/json" }));
-          if (cv?.files?.[0]) formData.append("cv", cv.files[0]);
-          const response = await fetch(`${API_BASE_URL}/api/v1/applications`, {
-            method: "POST",
-            body: formData,
-          });
-          if (!response.ok) {
-            const err = await response.json().catch(() => ({}));
-            throw new ApiError(response.status, err.message || "Müraciət göndərilmədi.");
-          }
-          announce(form, "Müraciətiniz uğurla göndərildi!", "success");
-          form.reset();
-          const fileLabel = $('label[for="' + cv?.id + '"] [class*="label__text"]', form);
-          if (fileLabel) fileLabel.textContent = "CV seçin";
-        } catch (error) {
-          if (error?.name === "AbortError") return;
-          announce(form, error?.message || "Müraciət göndərilmədi. Yenidən cəhd edin.", "error");
-        } finally {
-          submit?.removeAttribute("disabled");
-        }
+        announce(
+          form,
+          "Bu müraciət üçün açıq server xidməti hələ mövcud deyil. Məlumatlar göndərilmədi və brauzerdə saxlanmadı.",
+          "error",
+        );
       },
       { signal },
     );
@@ -1007,6 +1031,7 @@
         slide.classList.contains("swiper-slide-active"),
       ),
     );
+    let currentOffset = 0;
     const render = (animate = true) => {
       if (centerFromLayout) {
         slides.forEach((slide, index) => {
@@ -1031,6 +1056,7 @@
         : containerWidth / 2 -
           slideWidth / 2 -
           active * (slideWidth + margin);
+      currentOffset = offset;
       wrapper.style.transition = animate ? "transform 480ms ease" : "none";
       wrapper.style.transform = `translate3d(${offset}px, 0, 0)`;
       slides.forEach((slide, index) => {
@@ -1058,14 +1084,21 @@
       render(true);
     };
     let autoplayTimer = null;
+    let dragState = null;
+    const stopAutoplay = () => {
+      if (autoplayTimer === null) return;
+      window.clearInterval(autoplayTimer);
+      autoplayTimer = null;
+    };
     const restartAutoplay = () => {
-      if (autoplayTimer !== null) window.clearInterval(autoplayTimer);
+      stopAutoplay();
       autoplayTimer =
         autoplayMs > 0 && slides.length > 1
           ? window.setInterval(() => move(1), autoplayMs)
           : null;
     };
     const manualMove = (delta) => {
+      dragState = null;
       move(delta);
       restartAutoplay();
     };
@@ -1075,30 +1108,158 @@
     $(nextSelector)?.addEventListener("click", () => manualMove(1), {
       signal,
     });
-    let startX = null;
+
+    const getRenderedOffset = () => {
+      const transform = window.getComputedStyle(wrapper).transform;
+      if (!transform || transform === "none") return currentOffset;
+      const matrix3d = transform.match(/^matrix3d\((.+)\)$/);
+      if (matrix3d) {
+        const values = matrix3d[1].split(",").map(Number);
+        return Number.isFinite(values[12]) ? values[12] : currentOffset;
+      }
+      const matrix = transform.match(/^matrix\((.+)\)$/);
+      if (matrix) {
+        const values = matrix[1].split(",").map(Number);
+        return Number.isFinite(values[4]) ? values[4] : currentOffset;
+      }
+      return currentOffset;
+    };
+    const getDragThreshold = () => {
+      const activeSlide = slides[active];
+      const slideWidth = activeSlide?.getBoundingClientRect().width || 315;
+      return Math.min(80, Math.max(45, slideWidth * 0.12));
+    };
+    const startDrag = (clientX, clientY, inputType) => {
+      stopAutoplay();
+      const baseOffset = getRenderedOffset();
+      dragState = {
+        inputType,
+        startX: clientX,
+        startY: clientY,
+        lastX: clientX,
+        axis: inputType === "mouse" ? "horizontal" : null,
+        baseOffset,
+      };
+      wrapper.style.transition = "none";
+      wrapper.style.transform = `translate3d(${baseOffset}px, 0, 0)`;
+    };
+    const updateDrag = (clientX, clientY, event) => {
+      if (!dragState) return;
+      const deltaX = clientX - dragState.startX;
+      const deltaY = clientY - dragState.startY;
+      if (dragState.axis === null && Math.hypot(deltaX, deltaY) >= 6) {
+        dragState.axis =
+          Math.abs(deltaX) >= Math.abs(deltaY) ? "horizontal" : "vertical";
+      }
+      dragState.lastX = clientX;
+      if (dragState.axis !== "horizontal") return;
+      event.preventDefault();
+      wrapper.style.transform = `translate3d(${dragState.baseOffset + deltaX}px, 0, 0)`;
+    };
+    const finishDrag = (clientX, allowSnap = true) => {
+      if (!dragState) return;
+      const completedDrag = dragState;
+      const endX = Number.isFinite(clientX) ? clientX : completedDrag.lastX;
+      const deltaX = endX - completedDrag.startX;
+      dragState = null;
+      if (
+        allowSnap &&
+        completedDrag.axis === "horizontal" &&
+        Math.abs(deltaX) >= getDragThreshold()
+      ) {
+        move(deltaX > 0 ? -1 : 1);
+      } else {
+        render(true);
+      }
+      restartAutoplay();
+    };
+
     container.addEventListener(
-      "pointerdown",
+      "mousedown",
       (event) => {
-        startX = event.clientX;
-        container.setPointerCapture?.(event.pointerId);
+        if (event.button !== 0) return;
+        event.preventDefault();
+        startDrag(event.clientX, event.clientY, "mouse");
+      },
+      { signal },
+    );
+    window.addEventListener(
+      "mousemove",
+      (event) => {
+        if (dragState?.inputType !== "mouse") return;
+        updateDrag(event.clientX, event.clientY, event);
+      },
+      { signal },
+    );
+    window.addEventListener(
+      "mouseup",
+      (event) => {
+        if (dragState?.inputType !== "mouse") return;
+        finishDrag(event.clientX);
       },
       { signal },
     );
     container.addEventListener(
-      "pointerup",
+      "dragstart",
+      (event) => event.preventDefault(),
+      { signal },
+    );
+    container.addEventListener(
+      "touchstart",
       (event) => {
-        if (startX === null) return;
-        const delta = event.clientX - startX;
-        if (Math.abs(delta) > 45) manualMove(delta > 0 ? -1 : 1);
-        startX = null;
+        if (event.touches.length !== 1) return;
+        const touch = event.touches[0];
+        startDrag(touch.clientX, touch.clientY, "touch");
+      },
+      { signal, passive: true },
+    );
+    container.addEventListener(
+      "touchmove",
+      (event) => {
+        if (dragState?.inputType !== "touch" || event.touches.length !== 1)
+          return;
+        const touch = event.touches[0];
+        updateDrag(touch.clientX, touch.clientY, event);
+      },
+      { signal, passive: false },
+    );
+    container.addEventListener(
+      "touchend",
+      (event) => {
+        if (dragState?.inputType !== "touch") return;
+        finishDrag(event.changedTouches[0]?.clientX);
+      },
+      { signal, passive: true },
+    );
+    container.addEventListener(
+      "touchcancel",
+      () => {
+        if (dragState?.inputType !== "touch") return;
+        finishDrag(dragState.lastX, false);
+      },
+      { signal, passive: true },
+    );
+    window.addEventListener(
+      "blur",
+      () => {
+        if (dragState?.inputType !== "mouse") return;
+        finishDrag(dragState.lastX, false);
       },
       { signal },
     );
-    window.addEventListener("resize", () => render(false), { signal });
+    window.addEventListener(
+      "resize",
+      () => {
+        dragState = null;
+        render(false);
+        restartAutoplay();
+      },
+      { signal },
+    );
     signal?.addEventListener(
       "abort",
       () => {
-        if (autoplayTimer !== null) window.clearInterval(autoplayTimer);
+        stopAutoplay();
       },
       { once: true },
     );
@@ -1116,6 +1277,8 @@
         nextSelector:
           ".SuccessStories_section__header__controller__next__A3AXv",
         depth: 290,
+        centerFromLayout: true,
+        autoplayMs: SCHOLARSHIPS_SLIDER_AUTOPLAY_MS,
       },
       signal,
     );
@@ -1297,7 +1460,7 @@
         <span>${escapeHtml(enumLabel(course.deliveryFormat))}</span>
         ${duration ? `<span>${duration}</span>` : ""}
       </div>
-      <a class="ai-btn ai-btn--text" href="/course-details?id=${encodeURIComponent(course.id || "")}">Ətraflı bax</a>
+      <a class="ai-btn ai-btn--text" href="course-details.html?id=${encodeURIComponent(course.id || "")}">Ətraflı bax</a>
     </article>`;
   }
 
@@ -1496,59 +1659,8 @@
         <h3>${escapeHtml(category.name || category.slug || "Kateqoriya")}</h3>
         <p>${escapeHtml(parentText)}</p>
       </div>
-      <a class="ai-btn ai-btn--text" href="/category?id=${encodeURIComponent(category.id)}">Kateqoriyaya bax</a>
+      <a class="ai-btn ai-btn--text" href="category.html?id=${encodeURIComponent(category.id)}">Kateqoriyaya bax</a>
     </article>`;
-  }
-
-  async function initHomePage(signal) {
-    const coursesContainer = $("#homeCourses");
-    const categoriesContainer = $("#homeCategories");
-    const status = $("#homeCoursesStatus");
-    if (!coursesContainer || !categoriesContainer || !status) return;
-    try {
-      const categories = await apiFetch("/api/v1/categories", { signal });
-      const categoryState = publicCategoryState(categories);
-      const params = new URLSearchParams({
-        page: "0",
-        size: "6",
-        sort: "title,asc",
-        published: "true",
-        active: "true",
-      });
-      const page = await apiFetch(`/api/v1/courses?${params}`, { signal });
-      if (signal.aborted) return;
-      const categoryNames = new Map(
-        categoryState.visible.map((category) => [
-          String(category.id),
-          category.name || category.slug || String(category.id),
-        ]),
-      );
-      const courses = (Array.isArray(page?.content) ? page.content : [])
-        .filter((course) =>
-          isPublicCourse(course, categoryState.visibleIds),
-        )
-        .slice(0, 3);
-      coursesContainer.innerHTML = courses.length
-        ? courses
-            .map((course) => renderCourseCard(course, categoryNames))
-            .join("")
-        : '<div class="Nexora_emptyState"><h3>Açıq kurs tapılmadı</h3><p>Kataloqu bir az sonra yenidən yoxlayın.</p></div>';
-      categoriesContainer.innerHTML = categoryState.visible
-        .slice(0, 3)
-        .map((category) => renderCategoryCard(category, categoryState))
-        .join("");
-      status.textContent = courses.length
-        ? `${courses.length} açıq kurs göstərilir`
-        : "Açıq kurs tapılmadı";
-      status.dataset.state = "success";
-    } catch (error) {
-      if (error?.name === "AbortError") return;
-      coursesContainer.innerHTML =
-        '<div class="Nexora_emptyState"><h3>Kurslar əlçatan deyil</h3><p>Məlumatları hazırda yükləmək mümkün olmadı.</p></div>';
-      categoriesContainer.innerHTML = "";
-      status.textContent = apiErrorMessage(error);
-      status.dataset.state = "error";
-    }
   }
 
   async function initCategoriesPage(signal) {
@@ -1673,7 +1785,7 @@
       course.shortDescription ||
       "Bu kurs haqqında ətraflı məlumat hazırlanır.";
     const role = userRole();
-    const enrollmentTarget = `/enrollments?courseId=${encodeURIComponent(course.id || "")}`;
+    const enrollmentTarget = `enrollments.html?courseId=${encodeURIComponent(course.id || "")}`;
     const accountLink = accessToken
       ? role === "STUDENT"
         ? enrollmentTarget
@@ -1737,7 +1849,7 @@
       <aside class="Nexora_panel Nexora_courseAside">
         <p class="Nexora_eyebrow">Kurs məlumatı</p>
         <p class="Nexora_muted">Tədris formatı, müddəti və qəbul məlumatları dəqiqləşdirildikdə bu səhifədə göstəriləcək.</p>
-        <a class="ai-btn ai-btn--gradient" href="/courses">Kurs kataloqu</a>
+        <a class="ai-btn ai-btn--gradient" href="courses.html">Kurs kataloqu</a>
       </aside>
     </div>`;
   }
@@ -2085,7 +2197,7 @@
             submit.type = "button";
             submit.addEventListener(
               "click",
-              () => location.assign("/login"),
+              () => location.assign("login.html"),
               { once: true, signal },
             );
           }
@@ -2383,7 +2495,7 @@
       async () => {
         logoutButton.disabled = true;
         await logoutCurrentSession(signal);
-        location.assign("/login");
+        location.assign("login.html");
       },
       { signal },
     );
@@ -2900,7 +3012,7 @@
       async () => {
         logoutButton.disabled = true;
         await logoutCurrentSession(signal);
-        location.assign("/login");
+        location.assign("login.html");
       },
       { signal },
     );
@@ -2908,9 +3020,6 @@
 
   function initApiPage(signal) {
     switch (document.body.dataset.page) {
-      case "home":
-        void initHomePage(signal);
-        break;
       case "courses":
         initCoursesPage(signal);
         break;
