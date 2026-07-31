@@ -61,6 +61,10 @@ public class SecurityConfig {
                                 "/api/v1/auth/**"
                         ).permitAll()
 
+                        .requestMatchers(
+                                "/api/v1/applications"
+                        ).permitAll()
+
                         // Payment gateway webhook — bax PaymentController.callback() qeydi:
                         // imza yoxlanışı PaymentCallbackSignatureFilter-də edilir (permitAll
                         // burada yalnız rol/JWT tələbini aradan qaldırır, filter-i yox).

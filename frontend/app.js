@@ -846,11 +846,37 @@
           );
           return;
         }
-        announce(
-          form,
-          "Bu müraciət üçün açıq server xidməti hələ mövcud deyil. Məlumatlar göndərilmədi və brauzerdə saxlanmadı.",
-          "error",
-        );
+        const submit = $('button[type="submit"]', form);
+        submit?.setAttribute("disabled", "disabled");
+        try {
+          const formData = new FormData();
+          const data = {
+            applicationType: Number(type.value),
+            fullname: fullname.value.trim(),
+            email: email.value.trim(),
+            phone: phone.value.trim(),
+            letter: letter.value.trim(),
+          };
+          formData.append("data", new Blob([JSON.stringify(data)], { type: "application/json" }));
+          if (cv?.files?.[0]) formData.append("cv", cv.files[0]);
+          const response = await fetch(`${API_BASE_URL}/api/v1/applications`, {
+            method: "POST",
+            body: formData,
+          });
+          if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new ApiError(response.status, err.message || "Müraciət göndərilmədi.");
+          }
+          announce(form, "Müraciətiniz uğurla göndərildi!", "success");
+          form.reset();
+          const fileLabel = $('label[for="' + cv?.id + '"] [class*="label__text"]', form);
+          if (fileLabel) fileLabel.textContent = "CV seçin";
+        } catch (error) {
+          if (error?.name === "AbortError") return;
+          announce(form, error?.message || "Müraciət göndərilmədi. Yenidən cəhd edin.", "error");
+        } finally {
+          submit?.removeAttribute("disabled");
+        }
       },
       { signal },
     );
