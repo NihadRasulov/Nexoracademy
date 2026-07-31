@@ -234,8 +234,8 @@ FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent / "src" / "main" / 
 if not FRONTEND_DIR.exists():
     FRONTEND_DIR = Path(__file__).resolve().parent.parent / "public"
 if FRONTEND_DIR.exists():
-    app.mount("/", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
-    logger.info("frontend_mounted path=%s", FRONTEND_DIR)
+    app.mount("/chat", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
+    logger.info("frontend_mounted path=%s mount=/chat", FRONTEND_DIR)
 
 # ── Dev server entry point ────────────────────────────────────────────────────
 
