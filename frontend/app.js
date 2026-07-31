@@ -810,7 +810,7 @@
 
     form.addEventListener(
       "submit",
-      (event) => {
+      async (event) => {
         event.preventDefault();
         clearInvalid(form);
         const type = $('input[name="applicationType"]:checked', form);
