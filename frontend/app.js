@@ -11,7 +11,7 @@
     document.body.dataset.router === "legacy" && Boolean(PAGES[DEFAULT_ROUTE]);
   const API_BASE_URL = (
     document.querySelector('meta[name="nexora-api-base"]')?.content ||
-    "/api"
+    ""
   ).replace(/\/+$/, "");
   const ACCESS_TOKEN_KEY = "nexora_access_token";
   const REFRESH_TOKEN_KEY = "nexora_refresh_token";
@@ -174,6 +174,30 @@
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
   }
 
+  function safeStoredValue(value) {
+    if (value instanceof File) {
+      return { name: value.name, size: value.size, type: value.type };
+    }
+    return value;
+  }
+
+  function saveOffline(kind, form) {
+    const key = `naic_${kind}_submissions`;
+    let current = [];
+    try {
+      current = JSON.parse(localStorage.getItem(key) || "[]");
+    } catch (_) {
+      current = [];
+    }
+    const data = {};
+    for (const [name, value] of new FormData(form).entries()) {
+      data[name] = safeStoredValue(value);
+    }
+    current.push({ ...data, stored_at: new Date().toISOString() });
+    localStorage.setItem(key, JSON.stringify(current));
+    return { ok: true, offline: true };
+  }
+
   function validPassword(value) {
     const password = String(value || "");
     return (
@@ -259,7 +283,7 @@
     if (error?.status === 429)
       return "Çox sayda cəhd edildi. Bir az sonra yenidən yoxlayın.";
     if (error?.status === 0)
-      return "Serverlə əlaqə yaratmaq mümkün olmadı. Backend-in işlədiyini və CORS ayarlarını yoxlayın.";
+      return "Serverlə əlaqə yaratmaq mümkün olmadı. Server tərəfinin işlədiyini və CORS ayarlarını yoxlayın.";
     if (error?.status === 401)
       return "Sessiya etibarsızdır. Yenidən daxil olun.";
     if (error?.status === 403)
@@ -274,7 +298,7 @@
 
     refreshPromise = (async () => {
       try {
-          const response = await fetch(`${API_BASE_URL}/v1/auth/refresh`, {
+        const response = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ refreshToken }),
@@ -313,13 +337,13 @@
       response = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
     } catch (error) {
       if (error?.name === "AbortError") throw error;
-      throw new ApiError(0, "Backend ilə əlaqə yaradılmadı.");
+      throw new ApiError(0, "Server tərəfi ilə əlaqə yaradılmadı.");
     }
 
     if (
       response.status === 401 &&
       canRefresh &&
-      !path.startsWith("/v1/auth/")
+      !path.startsWith("/api/v1/auth/")
     ) {
       const refreshed = await refreshAccessToken();
       if (refreshed) return apiFetch(path, options, false);
@@ -554,7 +578,7 @@
 
   async function loadCurrentUser(signal) {
     if (currentUserCache) return currentUserCache;
-    currentUserCache = await apiFetch("/v1/users/me", { signal });
+    currentUserCache = await apiFetch("/api/v1/users/me", { signal });
     return currentUserCache;
   }
 
@@ -824,7 +848,7 @@
         }
         announce(
           form,
-          "Bu müraciət üçün açıq backend endpoint-i hələ mövcud deyil. Məlumatlar göndərilmədi və brauzerdə saxlanmadı.",
+          "Bu müraciət üçün açıq server xidməti hələ mövcud deyil. Məlumatlar göndərilmədi və brauzerdə saxlanmadı.",
           "error",
         );
       },
@@ -833,6 +857,9 @@
   }
 
   function initSimpleForms(signal) {
+    const useReferenceOfflineFlow = ["haqqimizda", "faq"].includes(
+      document.body.dataset.page,
+    );
     $$("form[data-form-kind]").forEach((form) => {
       form.noValidate = true;
       form.addEventListener(
@@ -858,18 +885,42 @@
           if (invalid.length) {
             announce(
               form,
-              kind === "subscribe"
+              useReferenceOfflineFlow && kind === "subscribe"
                 ? "Etibarlı e-poçt ünvanı daxil edin."
-                : "Bütün xanaları düzgün doldurun.",
+                : kind === "subscribe"
+                  ? "Etibarlı e-poçt ünvanı daxil edin."
+                  : "Bütün xanaları düzgün doldurun.",
               "error",
             );
+            return;
+          }
+          if (useReferenceOfflineFlow && kind === "subscribe") {
+            const submit = $('button[type="submit"]', form);
+            submit?.setAttribute("disabled", "disabled");
+            try {
+              saveOffline(kind, form);
+              announce(
+                form,
+                "E-poçt bu cihazda saxlanıldı.",
+                "success",
+              );
+              form.reset();
+            } catch (_) {
+              announce(
+                form,
+                "Məlumatı brauzer yaddaşında saxlamaq mümkün olmadı.",
+                "error",
+              );
+            } finally {
+              submit?.removeAttribute("disabled");
+            }
             return;
           }
           announce(
             form,
             kind === "subscribe"
-              ? "Abunəlik endpoint-i hələ mövcud deyil. E-poçt göndərilmədi və brauzerdə saxlanmadı."
-              : "Bu forma üçün açıq backend endpoint-i hələ mövcud deyil. Məlumatlar göndərilmədi və brauzerdə saxlanmadı.",
+              ? "Abunəlik xidməti hələ mövcud deyil. E-poçt göndərilmədi və brauzerdə saxlanmadı."
+              : "Bu forma üçün açıq server xidməti hələ mövcud deyil. Məlumatlar göndərilmədi və brauzerdə saxlanmadı.",
             "error",
           );
         },
@@ -884,10 +935,14 @@
     if (!input || !cards.length) return;
     const tabs = $$(".Vacancies_ai-tabs__item__l5MN4");
     const activeClass = "Vacancies_ai-tabs__item--active__dqm_Y";
+    const locale =
+      document.body.dataset.page === "scholarships" ? "en" : "az";
     const filter = () => {
-      const query = input.value.trim().toLocaleLowerCase("az");
+      const query = input.value.trim().toLocaleLowerCase(locale);
       cards.forEach((card) => {
-        card.hidden = !card.textContent.toLocaleLowerCase("az").includes(query);
+        card.hidden = !card.textContent
+          .toLocaleLowerCase(locale)
+          .includes(query);
       });
     };
     input.addEventListener("input", filter, { signal });
@@ -905,7 +960,14 @@
   }
 
   function setupCoverflow(
-    { containerSelector, prevSelector, nextSelector, depth = 220 },
+    {
+      containerSelector,
+      prevSelector,
+      nextSelector,
+      depth = 220,
+      centerFromLayout = false,
+      autoplayMs = 0,
+    },
     signal,
   ) {
     const container = $(containerSelector);
@@ -920,20 +982,42 @@
       ),
     );
     const render = (animate = true) => {
+      if (centerFromLayout) {
+        slides.forEach((slide, index) => {
+          const distance = index - active;
+          slide.classList.toggle("swiper-slide-active", distance === 0);
+          slide.classList.toggle("swiper-slide-prev", distance === -1);
+          slide.classList.toggle("swiper-slide-next", distance === 1);
+          slide.classList.toggle(
+            "swiper-slide-visible",
+            Math.abs(distance) <= 2,
+          );
+        });
+      }
       const containerWidth = container.clientWidth || window.innerWidth;
-      const slideWidth = slides[active]?.getBoundingClientRect().width || 315;
+      const activeSlide = slides[active];
+      const slideWidth = activeSlide?.getBoundingClientRect().width || 315;
       const margin =
-        parseFloat(getComputedStyle(slides[active]).marginRight) || 0;
-      const offset =
-        containerWidth / 2 - slideWidth / 2 - active * (slideWidth + margin);
+        parseFloat(getComputedStyle(activeSlide).marginRight) || 0;
+      const offset = centerFromLayout
+        ? containerWidth / 2 -
+          ((activeSlide?.offsetLeft || 0) + (activeSlide?.offsetWidth || slideWidth) / 2)
+        : containerWidth / 2 -
+          slideWidth / 2 -
+          active * (slideWidth + margin);
       wrapper.style.transition = animate ? "transform 480ms ease" : "none";
       wrapper.style.transform = `translate3d(${offset}px, 0, 0)`;
       slides.forEach((slide, index) => {
         const distance = index - active;
-        slide.classList.toggle("swiper-slide-active", distance === 0);
-        slide.classList.toggle("swiper-slide-prev", distance === -1);
-        slide.classList.toggle("swiper-slide-next", distance === 1);
-        slide.classList.toggle("swiper-slide-visible", Math.abs(distance) <= 2);
+        if (!centerFromLayout) {
+          slide.classList.toggle("swiper-slide-active", distance === 0);
+          slide.classList.toggle("swiper-slide-prev", distance === -1);
+          slide.classList.toggle("swiper-slide-next", distance === 1);
+          slide.classList.toggle(
+            "swiper-slide-visible",
+            Math.abs(distance) <= 2,
+          );
+        }
         slide.style.transition = animate
           ? "transform 480ms ease, opacity 480ms ease"
           : "none";
@@ -947,8 +1031,24 @@
       active = (active + delta + slides.length) % slides.length;
       render(true);
     };
-    $(prevSelector)?.addEventListener("click", () => move(-1), { signal });
-    $(nextSelector)?.addEventListener("click", () => move(1), { signal });
+    let autoplayTimer = null;
+    const restartAutoplay = () => {
+      if (autoplayTimer !== null) window.clearInterval(autoplayTimer);
+      autoplayTimer =
+        autoplayMs > 0 && slides.length > 1
+          ? window.setInterval(() => move(1), autoplayMs)
+          : null;
+    };
+    const manualMove = (delta) => {
+      move(delta);
+      restartAutoplay();
+    };
+    $(prevSelector)?.addEventListener("click", () => manualMove(-1), {
+      signal,
+    });
+    $(nextSelector)?.addEventListener("click", () => manualMove(1), {
+      signal,
+    });
     let startX = null;
     container.addEventListener(
       "pointerdown",
@@ -963,16 +1063,25 @@
       (event) => {
         if (startX === null) return;
         const delta = event.clientX - startX;
-        if (Math.abs(delta) > 45) move(delta > 0 ? -1 : 1);
+        if (Math.abs(delta) > 45) manualMove(delta > 0 ? -1 : 1);
         startX = null;
       },
       { signal },
     );
     window.addEventListener("resize", () => render(false), { signal });
+    signal?.addEventListener(
+      "abort",
+      () => {
+        if (autoplayTimer !== null) window.clearInterval(autoplayTimer);
+      },
+      { once: true },
+    );
     requestAnimationFrame(() => render(false));
+    restartAutoplay();
   }
 
   function initSliders(signal) {
+    const SCHOLARSHIPS_SLIDER_AUTOPLAY_MS = 4500;
     setupCoverflow(
       {
         containerSelector: ".SuccessStories_ai-success--stories__vv5bs .swiper",
@@ -990,46 +1099,68 @@
         prevSelector: ".ViewsFromNaic_section__header__controller__prev__cyPxK",
         nextSelector: ".ViewsFromNaic_section__header__controller__next__wERDV",
         depth: 125,
+        centerFromLayout: true,
+        autoplayMs: SCHOLARSHIPS_SLIDER_AUTOPLAY_MS,
       },
       signal,
     );
   }
 
   function initPagination(signal) {
-    const buttons = $$(".Pagination_ai-pagination__item___y0si");
-    if (!buttons.length) return;
-    const pageButtons = buttons.filter((button) =>
-      /^\d+$/.test(button.textContent.trim()),
-    );
-    const prev = buttons.find((button) =>
-      button.getAttribute("aria-label")?.includes("Əvvəlki"),
-    );
-    const next = buttons.find((button) =>
-      button.getAttribute("aria-label")?.includes("Növbəti"),
-    );
-    let active = Math.max(
-      0,
-      pageButtons.findIndex((b) =>
-        b.classList.contains("Pagination_active__qQWfE"),
-      ),
-    );
+    const FAQ_PAGE_SIZE = 6;
     const activeClass = "Pagination_active__qQWfE";
-    const setPage = (index) => {
-      active = clamp(index, 0, pageButtons.length - 1);
-      pageButtons.forEach((button, i) => {
-        button.classList.toggle(activeClass, i === active);
-        if (i === active) button.setAttribute("aria-current", "page");
-        else button.removeAttribute("aria-current");
+    $$(".Pagination_ai-pagination__mtI7X").forEach((pagination) => {
+      const buttons = $$(".Pagination_ai-pagination__item___y0si", pagination);
+      const pageButtons = buttons.filter((button) =>
+        /^\d+$/.test(button.textContent.trim()),
+      );
+      const section = pagination.closest(".section");
+      const cards = section
+        ? $$(".BlogCard_ai-blogs__item__4ILGi", section)
+        : [];
+      if (!pageButtons.length || !cards.length) return;
+      const totalPages = Math.min(
+        pageButtons.length,
+        Math.ceil(cards.length / FAQ_PAGE_SIZE),
+      );
+      const prev = buttons.find((button) => {
+        const label = button.getAttribute("aria-label") || "";
+        return label.includes("Əvvəlki") || label.includes("Previous");
       });
-      const section =
-        pageButtons[0]?.closest("section") || pageButtons[0]?.parentElement;
-      section?.scrollIntoView({ behavior: "smooth", block: "start" });
-    };
-    pageButtons.forEach((button, i) =>
-      button.addEventListener("click", () => setPage(i), { signal }),
-    );
-    prev?.addEventListener("click", () => setPage(active - 1), { signal });
-    next?.addEventListener("click", () => setPage(active + 1), { signal });
+      const next = buttons.find((button) => {
+        const label = button.getAttribute("aria-label") || "";
+        return label.includes("Növbəti") || label.includes("Next");
+      });
+      let active = clamp(
+        pageButtons.findIndex((button) => button.classList.contains(activeClass)),
+        0,
+        totalPages - 1,
+      );
+      const setPage = (index, shouldScroll = true) => {
+        active = clamp(index, 0, totalPages - 1);
+        pageButtons.forEach((button, i) => {
+          button.classList.toggle(activeClass, i === active);
+          if (i === active) button.setAttribute("aria-current", "page");
+          else button.removeAttribute("aria-current");
+        });
+        cards.forEach((card, i) => {
+          card.hidden =
+            i < active * FAQ_PAGE_SIZE ||
+            i >= (active + 1) * FAQ_PAGE_SIZE;
+        });
+        if (prev) prev.disabled = active === 0;
+        if (next) next.disabled = active === totalPages - 1;
+        if (shouldScroll) {
+          section.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      };
+      pageButtons.forEach((button, i) =>
+        button.addEventListener("click", () => setPage(i), { signal }),
+      );
+      prev?.addEventListener("click", () => setPage(active - 1), { signal });
+      next?.addEventListener("click", () => setPage(active + 1), { signal });
+      setPage(active, false);
+    });
   }
 
   function initPhoneInputs(signal) {
@@ -1196,7 +1327,7 @@
     };
 
     const loadCategories = async () => {
-      const categories = await apiFetch("/v1/categories", { signal });
+      const categories = await apiFetch("/api/v1/categories", { signal });
       if (!Array.isArray(categories) || signal.aborted)
         throw new ApiError(0, "Kateqoriya məlumatı əlçatan deyil.");
       const publicState = publicCategoryState(categories);
@@ -1243,7 +1374,7 @@
             0,
             "Kurs görünürlüyünü yoxlamaq üçün kateqoriya məlumatı əlçatan deyil.",
           );
-        const page = await apiFetch(`/v1/courses?${params}`, { signal });
+        const page = await apiFetch(`/api/v1/courses?${params}`, { signal });
         if (signal.aborted || requestId !== coursesRequestId) return;
         const rawCourses = Array.isArray(page?.content) ? page.content : [];
         const courses = rawCourses.filter((course) =>
@@ -1349,7 +1480,7 @@
     const status = $("#homeCoursesStatus");
     if (!coursesContainer || !categoriesContainer || !status) return;
     try {
-      const categories = await apiFetch("/v1/categories", { signal });
+      const categories = await apiFetch("/api/v1/categories", { signal });
       const categoryState = publicCategoryState(categories);
       const params = new URLSearchParams({
         page: "0",
@@ -1358,7 +1489,7 @@
         published: "true",
         active: "true",
       });
-      const page = await apiFetch(`/v1/courses?${params}`, { signal });
+      const page = await apiFetch(`/api/v1/courses?${params}`, { signal });
       if (signal.aborted) return;
       const categoryNames = new Map(
         categoryState.visible.map((category) => [
@@ -1399,7 +1530,7 @@
     const status = $("#categoriesStatus");
     if (!grid || !status) return;
     try {
-      const categories = await apiFetch("/v1/categories", { signal });
+      const categories = await apiFetch("/api/v1/categories", { signal });
       if (signal.aborted) return;
       const categoryState = publicCategoryState(categories);
       grid.innerHTML = categoryState.visible.length
@@ -1441,10 +1572,10 @@
     }
     try {
       const [category, categories] = await Promise.all([
-        apiFetch(`/v1/categories/${encodeURIComponent(categoryId)}`, {
+        apiFetch(`/api/v1/categories/${encodeURIComponent(categoryId)}`, {
           signal,
         }),
-        apiFetch("/v1/categories", { signal }),
+        apiFetch("/api/v1/categories", { signal }),
       ]);
       if (signal.aborted) return;
       const categoryState = publicCategoryState(categories);
@@ -1480,7 +1611,7 @@
         published: "true",
         active: "true",
       });
-      const page = await apiFetch(`/v1/courses?${params}`, { signal });
+      const page = await apiFetch(`/api/v1/courses?${params}`, { signal });
       if (signal.aborted) return;
       const categoryNames = new Map(
         categoryState.visible.map((item) => [
@@ -1552,8 +1683,57 @@
     </div>`;
   }
 
+  const featuredCourseDetails = Object.freeze({
+    "ai-foundations": {
+      title: "Süni intellektin əsasları",
+      description:
+        "Süni intellekt anlayışları, məsuliyyətli istifadə və praktiki iş axınları üzrə möhkəm təməl yaradın.",
+    },
+    "data-analytics": {
+      title: "Tətbiqi məlumat analitikası",
+      description:
+        "Daha yaxşı qərarlar üçün məlumatları hazırlamağı, təhlil etməyi, vizuallaşdırmağı və təqdim etməyi öyrənin.",
+    },
+    "cloud-engineering": {
+      title: "Bulud mühəndisliyi",
+      description:
+        "Bulud arxitekturası, yerləşdirmə, əməliyyatlar və etibarlılıq üzrə praktiki bacarıqlar qazanın.",
+    },
+  });
+
+  function renderFeaturedCourseDetails(course) {
+    return `<div class="Nexora_detailLayout">
+      <div class="Nexora_detailMain">
+        <p class="Nexora_eyebrow">Nexora Academy</p>
+        <h1 class="Nexora_pageTitle">${escapeHtml(course.title)}</h1>
+        <p class="Nexora_pageLead">${escapeHtml(course.description)}</p>
+      </div>
+      <aside class="Nexora_panel Nexora_courseAside">
+        <p class="Nexora_eyebrow">Kurs məlumatı</p>
+        <p class="Nexora_muted">Tədris formatı, müddəti və qəbul məlumatları dəqiqləşdirildikdə bu səhifədə göstəriləcək.</p>
+        <a class="ai-btn ai-btn--gradient" href="/courses">Kurs kataloqu</a>
+      </aside>
+    </div>`;
+  }
+
   function initCourseDetailsPage(signal) {
     const container = $("#courseDetails");
+    if (!container) return;
+
+    const params = new URLSearchParams(location.search);
+    const featuredCourseKey = params.get("course")?.trim() || "";
+    if (featuredCourseKey) {
+      const featuredCourse = featuredCourseDetails[featuredCourseKey];
+      if (!featuredCourse) {
+        container.innerHTML =
+          '<div class="Nexora_emptyState"><h1>Kurs tapılmadı</h1><p>Kataloqa qayıdaraq mövcud kurslardan birini seçin.</p></div>';
+        return;
+      }
+      container.innerHTML = renderFeaturedCourseDetails(featuredCourse);
+      document.title = `${featuredCourse.title} | Nexora Academy`;
+      return;
+    }
+
     const reviewsContainer = $("#courseReviews");
     const reviewsStatus = $("#reviewsStatus");
     const reviewForm = $("#reviewForm");
@@ -1561,43 +1741,36 @@
     const loginLink = $("#reviewLoginLink");
     const relatedContainer = $("#relatedCourses");
     const relatedStatus = $("#relatedCoursesStatus");
-    if (
-      !container ||
-      !reviewsContainer ||
-      !reviewsStatus ||
-      !reviewForm ||
-      !reviewAccess
-    )
-      return;
 
-    const courseId =
-      new URLSearchParams(location.search).get("id")?.trim() || "";
+    const courseId = params.get("id")?.trim() || "";
     if (!courseId) {
       container.innerHTML =
         '<div class="Nexora_emptyState"><h1>Kurs seçilməyib</h1><p>Kataloqdan kurs seçərək yenidən yoxlayın.</p></div>';
-      reviewsStatus.textContent = "";
+      if (reviewsStatus) reviewsStatus.textContent = "";
       return;
     }
 
     if (loginLink) loginLink.href = loginUrl(currentReturnTarget());
-    reviewForm.hidden = true;
-    reviewAccess.hidden = false;
+    if (reviewForm) reviewForm.hidden = true;
+    if (reviewAccess) reviewAccess.hidden = false;
     if (loginLink) loginLink.hidden = true;
-    const accessMessage = $("p", reviewAccess);
+    const accessMessage = reviewAccess ? $("p", reviewAccess) : null;
     if (accessMessage)
       accessMessage.textContent =
-        "Dərc olunmuş rəylər və təhlükəsiz rəy uyğunluğu üçün public endpoint hələ mövcud deyil.";
-    reviewsContainer.innerHTML = "";
-    reviewsStatus.textContent = "Rəy bölməsi backend dəstəyi gözləyir.";
-    reviewsStatus.dataset.state = "error";
+        "Dərc olunmuş rəylər və təhlükəsiz rəy uyğunluğu üçün açıq xidmət hələ mövcud deyil.";
+    if (reviewsContainer) reviewsContainer.innerHTML = "";
+    if (reviewsStatus) {
+      reviewsStatus.textContent = "Rəy bölməsi server dəstəyi gözləyir.";
+      reviewsStatus.dataset.state = "error";
+    }
 
     const loadCourse = async () => {
       try {
         const [course, categories] = await Promise.all([
-          apiFetch(`/v1/courses/${encodeURIComponent(courseId)}`, {
+          apiFetch(`/api/v1/courses/${encodeURIComponent(courseId)}`, {
             signal,
           }),
-          apiFetch("/v1/categories", { signal }),
+          apiFetch("/api/v1/categories", { signal }),
         ]);
         if (signal.aborted) return;
         const categoryState = publicCategoryState(categories);
@@ -1624,7 +1797,7 @@
         relatedStatus.textContent = "Əlaqəli kurslar yüklənir…";
         const relatedResults = await Promise.allSettled(
           relatedIds.map((id) =>
-            apiFetch(`/v1/courses/${encodeURIComponent(id)}`, { signal }),
+            apiFetch(`/api/v1/courses/${encodeURIComponent(id)}`, { signal }),
           ),
         );
         if (signal.aborted) return;
@@ -1704,7 +1877,7 @@
         setFormBusy(loginForm, true);
         try {
           const response = await apiFetch(
-            "/v1/auth/login",
+            "/api/v1/auth/login",
             {
               method: "POST",
               signal,
@@ -1747,7 +1920,7 @@
         setFormBusy(otpForm, true);
         try {
           const response = await apiFetch(
-            "/v1/auth/login/verify-otp",
+            "/api/v1/auth/login/verify-otp",
             {
               method: "POST",
               signal,
@@ -1823,7 +1996,7 @@
         setFormBusy(registerForm, true);
         try {
           const response = await apiFetch(
-            "/v1/auth/register",
+            "/api/v1/auth/register",
             {
               method: "POST",
               signal,
@@ -1866,7 +2039,7 @@
         setFormBusy(verifyForm, true);
         try {
           await apiFetch(
-            "/v1/auth/verify-email",
+            "/api/v1/auth/verify-email",
             {
               method: "POST",
               signal,
@@ -1913,7 +2086,7 @@
         resendButton.disabled = true;
         try {
           await apiFetch(
-            "/v1/auth/resend-verification",
+            "/api/v1/auth/resend-verification",
             {
               method: "POST",
               signal,
@@ -1972,7 +2145,7 @@
         setFormBusy(forgotForm, true);
         try {
           await apiFetch(
-            "/v1/auth/forgot-password",
+            "/api/v1/auth/forgot-password",
             {
               method: "POST",
               signal,
@@ -2023,7 +2196,7 @@
         setFormBusy(resetForm, true);
         try {
           await apiFetch(
-            "/v1/auth/reset-password",
+            "/api/v1/auth/reset-password",
             {
               method: "POST",
               signal,
@@ -2058,7 +2231,7 @@
 
     profileForm.elements.email.readOnly = true;
     profileForm.elements.email.title =
-      "E-poçt dəyişikliyi yenidən təsdiqləmə endpoint-i yaradılanadək bağlıdır.";
+      "E-poçt dəyişikliyi yenidən təsdiqləmə xidməti yaradılanadək bağlıdır.";
     const rawProfileField = profileForm.elements.profile;
     if (rawProfileField) {
       rawProfileField.disabled = true;
@@ -2107,7 +2280,7 @@
 
         setFormBusy(profileForm, true);
         try {
-          const updated = await apiFetch("/v1/users/me", {
+          const updated = await apiFetch("/api/v1/users/me", {
             method: "PATCH",
             signal,
             body: JSON.stringify({
@@ -2163,7 +2336,7 @@
 
         setFormBusy(passwordForm, true);
         try {
-          await apiFetch("/v1/users/me/password", {
+          await apiFetch("/api/v1/users/me/password", {
             method: "POST",
             signal,
             body: JSON.stringify({ currentPassword, newPassword }),
@@ -2313,7 +2486,7 @@
           try {
             return {
               enrollment: await apiFetch(
-                `/v1/enrollments/${encodeURIComponent(id)}`,
+                `/api/v1/enrollments/${encodeURIComponent(id)}`,
                 { signal },
               ),
             };
@@ -2359,7 +2532,7 @@
         const attempt = enrollmentAttempt(user.id, fingerprint);
         setFormBusy(createForm, true);
         try {
-          const enrollment = await apiFetch("/v1/enrollments", {
+          const enrollment = await apiFetch("/api/v1/enrollments", {
             method: "POST",
             signal,
             body: JSON.stringify({
@@ -2402,7 +2575,7 @@
         setFormBusy(lookupForm, true);
         try {
           const enrollment = await apiFetch(
-            `/v1/enrollments/${encodeURIComponent(enrollmentId)}`,
+            `/api/v1/enrollments/${encodeURIComponent(enrollmentId)}`,
             { signal },
           );
           if (enrollment?.id) saveEnrollmentId(user.id, enrollment.id);
@@ -2456,7 +2629,7 @@
         setFormBusy(cancelForm, true);
         try {
           await apiFetch(
-            `/v1/enrollments/${encodeURIComponent(enrollmentId)}/cancel`,
+            `/api/v1/enrollments/${encodeURIComponent(enrollmentId)}/cancel`,
             {
               method: "POST",
               signal,
@@ -2488,11 +2661,11 @@
     if (!user || signal.aborted) return;
     title.textContent = `Salam, ${user.fullName || user.email || "tələbə"}`;
     summary.textContent =
-      "Kabinet kurs, profil və məlum qeydiyyat axınlarını birləşdirir. Ödəniş, bildiriş və təqaüd modulları backend endpoint-ləri yarananadək aktiv deyil.";
+      "Kabinet kurs, profil və məlum qeydiyyat axınlarını birləşdirir. Ödəniş, bildiriş və təqaüd modulları server xidmətləri yarananadək aktiv deyil.";
     const ids = readEnrollmentIds(user.id);
     if (!ids.length) {
       list.innerHTML =
-        '<div class="Nexora_emptyState"><h3>Yadda saxlanmış qeydiyyat yoxdur</h3><p>Backend-də “mənim qeydiyyatlarım” endpoint-i hələ mövcud deyil.</p></div>';
+        '<div class="Nexora_emptyState"><h3>Yadda saxlanmış qeydiyyat yoxdur</h3><p>Server tərəfində “mənim qeydiyyatlarım” xidməti hələ mövcud deyil.</p></div>';
       status.textContent = "";
       return;
     }
@@ -2501,7 +2674,7 @@
       ids.slice(0, 6).map(async (id) => {
         try {
           return await apiFetch(
-            `/v1/enrollments/${encodeURIComponent(id)}`,
+            `/api/v1/enrollments/${encodeURIComponent(id)}`,
             { signal },
           );
         } catch (_) {
@@ -2542,86 +2715,86 @@
       {
         title: "Kateqoriya və kurs əməliyyatları",
         description:
-          "Dəstəklənən CRUD axınları; detail ekranları əlaqəli endpoint-lərin client-side birləşdirilməsini tələb edir.",
-        status: "Supported / Composite",
+          "Dəstəklənən CRUD axınları; təfərrüat ekranları əlaqəli xidmətlərin brauzer tərəfində birləşdirilməsini tələb edir.",
+        status: "Dəstəklənir / Kombinə edilmiş",
       },
       {
         title: "Müəllimlər, tədris təyinatları və qruplar",
         description:
-          "Content əməliyyatları dəstəklənir; linked-user seçimi üçün təhlükəsiz lookup çatışmır.",
-        status: "Supported / Partial",
+          "Məzmun əməliyyatları dəstəklənir; əlaqələndirilmiş istifadəçi seçimi üçün təhlükəsiz axtarış çatışmır.",
+        status: "Dəstəklənir / Qismən",
       },
       {
         title: "CMS, bilik bazası və məzun nəticələri",
         description:
-          "Staff CRUD dəstəklənir; public preview/CMS contract və təhlükəsiz user lookup ayrıca tələb olunur.",
-        status: "Supported / Partial",
+          "Əməkdaş CRUD-u dəstəklənir; açıq önbaxış/CMS müqaviləsi və təhlükəsiz istifadəçi axtarışı ayrıca tələb olunur.",
+        status: "Dəstəklənir / Qismən",
       },
       {
         title: "Rəy idarəetməsi",
         description:
-          "CRUD mövcuddur, lakin publish/unpublish controller endpoint-i yoxdur.",
-        status: "Partial / Blocked action",
+          "CRUD mövcuddur, lakin dərc etmə/dərci dayandırma nəzarətçi xidməti yoxdur.",
+        status: "Qismən / Əməliyyat bloklanıb",
       },
     ];
     const crmModules = [
       {
-        title: "Lead, contact və chat əməliyyatları",
+        title: "Potensial müştəri, əlaqə və çat əməliyyatları",
         description:
-          "Siyahı/detail axınları dəstəklənir; lead status və chat bitirmə əməliyyatları controller-də yoxdur.",
-        status: "Supported / Partial",
+          "Siyahı/təfərrüat axınları dəstəklənir; potensial müştəri statusu və çatı bitirmə əməliyyatları nəzarətçidə yoxdur.",
+        status: "Dəstəklənir / Qismən",
       },
       {
         title: "Kampaniyalar",
         description:
-          "Staff CRUD dəstəklənir; public campaign query və conversion lifecycle yoxdur.",
-        status: "Supported / Partial",
+          "Əməkdaş CRUD-u dəstəklənir; açıq kampaniya sorğusu və çevrilmə prosesi yoxdur.",
+        status: "Dəstəklənir / Qismən",
       },
       {
         title: "Qlobal qeydiyyatlar",
         description:
-          "Yalnız Sales CRM, Admin və System Admin üçündür. Sales CRM user və course-group lookup olmadan təhlükəsiz create formu qura bilmir.",
-        status: "Supported / Partial",
+          "Yalnız Satış CRM-i, Administrator və Sistem administratoru üçündür. Satış CRM-i istifadəçi və kurs qrupu axtarışı olmadan təhlükəsiz yaratma forması qura bilmir.",
+        status: "Dəstəklənir / Qismən",
       },
     ];
     const adminModules = [
       {
         title: "İstifadəçi idarəetməsi",
         description:
-          "CRUD dəstəklənir; self-demotion və yüksək rol dəyişiklikləri üçün əlavə təhlükəsizlik qoruması tələb olunur.",
+          "CRUD dəstəklənir; öz rolunu aşağı salma və yüksək rol dəyişiklikləri üçün əlavə təhlükəsizlik qoruması tələb olunur.",
         status: "Supported",
       },
       {
         title: "Ödəniş və təqaüd əməliyyatları",
         description:
-          "Admin əməliyyatları mövcuddur; refund controller-i və student payment lifecycle yoxdur.",
-        status: "Supported / Blocked action",
+          "Administrator əməliyyatları mövcuddur; geriödəniş nəzarətçisi və tələbə ödənişinin həyat dövrü yoxdur.",
+        status: "Dəstəklənir / Əməliyyat bloklanıb",
       },
       {
         title: "Bildiriş və sessiya qeydləri",
         description:
-          "Record CRUD mövcuddur; mark-read/mark-sent və dedicated revoke endpoint-ləri yoxdur.",
-        status: "Partial / Blocked action",
+          "Qeyd CRUD-u mövcuddur; oxunub/göndərilib işarələmə və ayrıca ləğv xidmətləri yoxdur.",
+        status: "Qismən / Əməliyyat bloklanıb",
       },
       {
-        title: "Audit və sistem sağlamlığı",
+        title: "Yoxlama və sistem sağlamlığı",
         description:
-          "Audit list/detail və health dəstəklənir. Manual audit mutation və internal test əməliyyatları UI-də göstərilmir.",
-        status: "Supported / Internal",
+          "Yoxlamanın siyahı/təfərrüat və sağlamlıq funksiyaları dəstəklənir. Əl ilə yoxlama dəyişikliyi və daxili sınaq əməliyyatları istifadəçi interfeysində göstərilmir.",
+        status: "Dəstəklənir / Daxili",
       },
     ];
     let modules = [];
     if (role === "CONTENT_MANAGER") {
-      title.textContent = "Content Operations Overview";
+      title.textContent = "Məzmun əməliyyatlarına ümumi baxış";
       modules = contentModules;
     } else if (role === "SALES_CRM") {
-      title.textContent = "Sales CRM Overview";
+      title.textContent = "Satış CRM-inə ümumi baxış";
       modules = crmModules;
     } else {
       title.textContent =
         role === "SYSTEM_ADMIN"
-          ? "System Administration Overview"
-          : "Administration Overview";
+          ? "Sistem idarəçiliyinə ümumi baxış"
+          : "İdarəetməyə ümumi baxış";
       modules = [...contentModules, ...crmModules, ...adminModules];
     }
     summary.textContent = `${user.fullName || user.email} · ${enumLabel(role)}. Modul siyahısı faktiki rol icazələrinə görə məhdudlaşdırılıb.`;
@@ -2634,7 +2807,7 @@
     try {
       if (refreshToken) {
         await apiFetch(
-          "/v1/auth/logout",
+          "/api/v1/auth/logout",
           {
             method: "POST",
             signal,
@@ -2773,7 +2946,23 @@
     }
   }
 
+  function initStandaloneTarget() {
+    if (IS_LEGACY_ROUTER) return;
+    const target = new URLSearchParams(location.search).get("target");
+    if (!target) return;
+    const node = document.getElementById(target);
+    if (!node) return;
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        node.scrollIntoView({ behavior: "smooth", block: "center" });
+        node.classList.remove("naic-target-flash");
+        requestAnimationFrame(() => node.classList.add("naic-target-flash"));
+      }),
+    );
+  }
+
   function initPage(signal) {
+    initStandaloneTarget();
     initHeader(signal);
     initHeroMedia(signal);
     initHeroTypewriter(signal);
