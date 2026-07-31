@@ -70,6 +70,10 @@ services:
       - DB_NAME=${DB_NAME:-nexora_academy}
       - DB_USER=${DB_USER:-nexora_app}
       - DB_PASSWORD=${DB_PASSWORD}
+      - REDIS_URL=redis://nexora-redis:6379/0
+      - REDIS_ENABLED=true
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://${DB_USER:-nexora_app}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-nexora_academy}
     networks:
       - nexora-net
     depends_on:
@@ -77,10 +81,31 @@ services:
         condition: service_healthy
       flyway:
         condition: service_completed_successfully
+      redis:
+        condition: service_healthy
     deploy:
       resources:
         limits:
-          memory: 300M
+          memory: 500M
+
+  redis:
+    image: redis:7-alpine
+    container_name: nexora-redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    networks:
+      - nexora-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    deploy:
+      resources:
+        limits:
+          memory: 150M
 
   app:
     build: .

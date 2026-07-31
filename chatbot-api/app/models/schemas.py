@@ -21,16 +21,16 @@ class CourseCard(BaseModel):
     price: Optional[float] = None
     category: str
     level: str
-    tools: list[str] = []
+    tools: list[str] = Field(default_factory=list)
     instructor: str = ""
-    schedule: dict = {}
+    schedule: dict = Field(default_factory=dict)
 
 
 class ChatResponse(BaseModel):
     reply: str
     state: str
-    actions: list[ActionButton] = []
-    courses: list[CourseCard] = []
+    actions: list[ActionButton] = Field(default_factory=list)
+    courses: list[CourseCard] = Field(default_factory=list)
     capture: str = "none"
 
 
@@ -53,4 +53,4 @@ class LeadResponse(BaseModel):
 class IndexDocument(BaseModel):
     id: str
     text: str
-    metadata: dict = {}
+    metadata: dict = Field(default_factory=dict)

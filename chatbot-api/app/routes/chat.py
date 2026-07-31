@@ -1,13 +1,24 @@
-import sys
-import io
+"""
+Chat route – production-grade rewrite.
+"""
+from __future__ import annotations
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+import sys
+import logging
+
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+except (AttributeError, ValueError):
+    pass
 
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
+
 from models.schemas import ChatRequest
 from core.orchestrator import Orchestrator
 from core.rate_limiter import is_rate_limited
+
+logger = logging.getLogger("nexora.route.chat")
 
 router = APIRouter()
 _orchestrator: Orchestrator | None = None
@@ -21,43 +32,73 @@ def init(orchestrator: Orchestrator):
 @router.post("/chat")
 async def chat(req: ChatRequest, request: Request):
     client_ip = request.client.host if request.client else "unknown"
-    if is_rate_limited(client_ip):
+
+    if req.conversationId and req.conversationId.strip():
+        session_id = req.conversationId.strip()
+    elif req.sessionId and req.sessionId.strip():
+        session_id = req.sessionId.strip()
+    else:
+        session_id = client_ip
+        logger.warning(
+            "session_id_fallback_to_ip ip=%s – client should supply conversationId",
+            client_ip,
+        )
+
+    user_id = req.userId or None
+
+    if is_rate_limited(client_ip, session_id=session_id, user_id=user_id):
+        logger.info("rate_limited session=%s ip=%s", session_id, client_ip)
         return {
-            "reply": "Bir az yavaş yaz, nəfəs al Mən də sənə çatım! Bir az gözlə, yenə yaza bilərsən.",
+            "reply": (
+                "Bir az yavaş yaz, nəfəs al — mən də sənə çatım! "
+                "Bir az gözlə, yenə yaza bilərsən."
+            ),
             "state": "rate_limited",
             "actions": [],
             "courses": [],
             "capture": "none",
         }
 
-    session_id = req.conversationId or req.sessionId or client_ip
+    message = (req.message or "").strip()
+    if len(message) > 2000:
+        message = message[:2000]
 
-    print(f"\n=== CHAT REQUEST ===")
-    print(f"IP: {client_ip}")
-    print(f"MESSAGE: {req.message}")
-    print(f"SESSION: {session_id}")
+    logger.info(
+        "chat_request session=%s user=%s ip=%s msg_len=%d",
+        session_id, user_id, client_ip, len(message),
+    )
 
-    result = _orchestrator.process(req.message, session_id)
+    if _orchestrator is None:
+        logger.error("orchestrator_not_initialised")
+        return {
+            "reply": "Sistem hazırlanır. Zəhmət olmasa bir az gözlə.",
+            "state": "error",
+            "actions": [],
+            "courses": [],
+            "capture": "none",
+        }
 
-    reply_preview = result.reply[:100] if result.reply else ""
-    print(f"REPLY: {reply_preview}")
-    print(f"STATE: {result.state}")
-    print(f"ACTIONS: {len(result.actions)}")
-    print(f"=== END ===\n")
+    result = _orchestrator.process(message, session_id, user_id=user_id)
 
-    use_stream = request.headers.get("accept", "").find("text/event-stream") >= 0
-    if use_stream:
+    logger.info(
+        "chat_response session=%s state=%s actions=%d",
+        session_id, result.state, len(result.actions),
+    )
+
+    accept = request.headers.get("accept", "")
+    if "text/event-stream" in accept:
         return _stream_response(result.reply)
+
     return result.model_dump()
 
 
-def _stream_response(text: str):
+def _stream_response(text: str) -> StreamingResponse:
     async def generate():
+        import asyncio
         words = text.split(" ")
-        for i, word in enumerate(words):
+        for word in words:
             yield f"data: {word}\n\n"
-            import asyncio
-            await asyncio.sleep(0.05)
+            await asyncio.sleep(0.04)
         yield "data: [DONE]\n\n"
 
     return StreamingResponse(generate(), media_type="text/event-stream")

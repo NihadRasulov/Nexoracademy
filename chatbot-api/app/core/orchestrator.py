@@ -1,13 +1,36 @@
+"""
+Conversation orchestrator – production-grade rewrite.
+"""
 from __future__ import annotations
 
-from core.session import get_or_create, update_state, add_history, reset
-from core.intent import detect_intent, extract_phone as extract_phone_raw, extract_name
+import logging
+import time
+from typing import TYPE_CHECKING
+
+from core.session import (
+    get_or_create,
+    save as session_save,
+    update_state,
+    add_history,
+    reset,
+    get_context_history,
+)
+from core.intent import detect_intent, extract_phone as extract_phone_raw, extract_name, is_blocked
 from core.extractor import extract_phone as extract_phone_clean
-from rag.retriever import Retriever
-from llm.client import LLMClient
+from core.personalisation import PersonalisationInjector
+from core.parser import ResponseParser
+from core.observability import telemetry, TurnMetrics
+
+if TYPE_CHECKING:
+    from rag.retriever import Retriever
+    from llm.client import LLMClient
+
 from llm.prompts import SYSTEM_PROMPT
 from data.loader import load_courses
 from models.schemas import ChatResponse, ActionButton, CourseCard, LeadRequest
+from core.config import settings
+
+logger = logging.getLogger("nexora.orchestrator")
 
 INTEREST_ACTIONS = [
     ActionButton(type="button", label="Proqramlaşdırma", value="proqramlashdirma"),
@@ -19,6 +42,12 @@ LEVEL_ACTIONS = [
     ActionButton(type="button", label="Yeni başlayan", value="baslangic"),
     ActionButton(type="button", label="Orta səviyyə", value="orta"),
     ActionButton(type="button", label="Təcrübəli", value="ireli"),
+]
+
+RECOMMENDATION_ACTIONS = [
+    ActionButton(type="button", label="Qeydiyyatdan keç", value="qeydiyyat"),
+    ActionButton(type="button", label="Demo dərs istəyirəm", value="demo"),
+    ActionButton(type="button", label="Başqa sahə seç", value="basha"),
 ]
 
 DIRECTION_MAP = {
@@ -34,67 +63,111 @@ LEVEL_MAP = {
 }
 
 STATE_CONTEXT = {
-    "interest_selected": "İstifadəçi hələ maraq sahəsini seçməyib. Ona seçim etməyə kömək et: Proqramlaşdırma, Kibertəhlükəsizlik və ya Şəbəkə/DevOps. Əgər yazdığı bu sahələrdən birinə uyğun gəlmirsə, onu seçim etməyə yönləndir, amma sualına da cavab ver.",
-    "level_selected": "İstifadəçi maraq sahəsini seçib, indi səviyyəsini seçməlidir: Başlanğıc, Orta və ya İrəli. Cavab verərkən onu səviyyə seçməyə yönləndir.",
-    "recommendation": "İstifadəçiyə kurslar tövsiyə olunub. O, qeydiyyatdan keçmək, demo dərs istəmək və ya başqa sual verə bilər. Kömək et.",
-    "lead_capture_name": "İstifadəçidən adını alırıq. Adını yazıbsa, təsdiq et və telefon nömrəsini soruş. Hələ yazmayıbsa, nəzakətlə adını soruş. Əgər sual verirsə, cavab ver, amma sonra yenə adını soruş.",
-    "lead_capture_phone": "İstifadəçidən telefon nömrəsini alırıq (+994XXXXXXXXX). Nömrəni yazıbsa, təsdiq et. Yazmayıbsa, nömrəsini soruş. Sual verirsə, cavab ver, amma sonra yenə nömrəni soruş.",
+    "interest_selected": (
+        "İstifadəçi hələ maraq sahəsini seçməyib. Ona seçim etməyə kömək et: "
+        "Proqramlaşdırma, Kibertəhlükəsizlik və ya Şəbəkə/DevOps. "
+        "Əgər yazdığı bu sahələrdən birinə uyğun gəlmirsə, onu seçim etməyə yönləndir, amma sualına da cavab ver."
+    ),
+    "level_selected": (
+        "İstifadəçi maraq sahəsini seçib, indi səviyyəsini seçməlidir: "
+        "Başlanğıc, Orta və ya İrəli. Cavab verərkən onu səviyyə seçməyə yönləndir."
+    ),
+    "recommendation": (
+        "İstifadəçiyə kurslar tövsiyə olunub. O, qeydiyyatdan keçmək, "
+        "demo dərs istəmək və ya başqa sual verə bilər. Kömək et."
+    ),
+    "lead_capture_name": (
+        "İstifadəçidən adını alırıq. Adını yazıbsa, təsdiq et və telefon nömrəsini soruş. "
+        "Hələ yazmayıbsa, nəzakətlə adını soruş. "
+        "Əgər sual verirsə, cavab ver, amma sonra yenə adını soruş."
+    ),
+    "lead_capture_phone": (
+        "İstifadəçidən telefon nömrəsini alırıq (+994XXXXXXXXX). "
+        "Nömrəni yazıbsa, təsdiq et. Yazmayıbsa, nömrəsini soruş. "
+        "Sual verirsə, cavab ver, amma sonra yenə nömrəni soruş."
+    ),
     "completed": "İstifadəçi qeydiyyatdan keçib. Sərbəst sual verə bilər. Kömək et.",
 }
 
 
 class Orchestrator:
-    def __init__(self, retriever: Retriever | None = None, llm: LLMClient | None = None):
+    def __init__(
+        self,
+        retriever: "Retriever | None" = None,
+        llm: "LLMClient | None" = None,
+    ):
         self.retriever = retriever
         self.llm = llm
+        self._personaliser = PersonalisationInjector()
+        self._parser = ResponseParser()
 
-    def process(self, message: str, session_id: str) -> ChatResponse:
-        session = get_or_create(session_id)
-        text = message.strip()
+    def process(self, message: str, session_id: str, user_id: str | None = None) -> ChatResponse:
+        session = get_or_create(session_id, user_id)
+        text = message.strip()[:2000]
 
-        print(f"USER: {text[:100]}")
-        print(f"SESSION: {session_id} STATE: {session['state']}")
+        state_before = session["state"]
 
-        if not text or text in ("/start", ""):
-            return self._handle_start(session)
+        logger.debug("turn_start session=%s state=%s user=%s", session_id, state_before, user_id)
 
         if is_blocked(text):
             add_history(session, "user", text)
-            return self._answer_with_llm(session, text)
+            result = self._answer_with_llm(session, text)
+            self._finalize(session, text, result, state_before, llm_called=True)
+            return result
+
+        if not text or text in ("/start", ""):
+            result = self._handle_start(session)
+            self._finalize(session, text, result, state_before, llm_called=False)
+            return result
 
         add_history(session, "user", text)
         state = session["state"]
 
+        llm_called = False
         if state == "start":
-            return self._handle_start(session, text)
+            result = self._handle_start(session, text)
         elif state == "interest_selected":
-            return self._handle_interest(session, text)
+            result = self._handle_interest(session, text)
         elif state == "level_selected":
-            return self._handle_level(session, text)
+            result = self._handle_level(session, text)
         elif state == "recommendation":
-            return self._handle_recommendation_reply(session, text)
+            result = self._handle_recommendation_reply(session, text)
         elif state == "lead_capture_name":
-            return self._handle_name(session, text)
+            result = self._handle_name(session, text)
         elif state == "lead_capture_phone":
-            return self._handle_phone(session, text)
+            result = self._handle_phone(session, text)
         elif state == "completed":
-            return self._handle_completed(session, text)
+            result = self._handle_completed(session, text)
+            llm_called = True
         else:
-            return self._answer_with_llm(session, text)
+            result = self._answer_with_llm(session, text)
+            llm_called = True
+
+        if not llm_called:
+            llm_called = getattr(result, "_llm_called", False)
+
+        self._finalize(session, text, result, state_before, llm_called=llm_called)
+        return result
 
     def _handle_start(self, session: dict, text: str = "") -> ChatResponse:
         if text:
             lower = text.lower().strip()
             greeting_words = ["salam", "hi", "hello", "hey", "merhaba", "sağol", "sagol"]
-            is_just_greeting = lower in greeting_words
-            if not is_just_greeting:
+            if lower not in greeting_words:
                 update_state(session, "interest_selected")
-                session["data"]["interest"] = "proqramlashdirma"
                 return self._answer_with_llm(session, text)
 
         update_state(session, "interest_selected")
+
+        name = session.get("data", {}).get("name")
+        greeting = f"Xoş gördük, {name}!" if name else "Salam əziz dostum!"
+
         return ChatResponse(
-            reply="Salam əziz dostum! Nexora Academy-nin süni intellekt köməkçisiyəm. Çox şadam ki, bura gəlmisən! De görüm, səni ən çox hansı sahə maraqlandırır? Seçimini et, mən də sənə ən uyğun kursları tapaq!",
+            reply=(
+                f"{greeting} Nexora Academy-nin süni intellekt köməkçisiyəm. "
+                "Çox şadam ki, bura gəlmisən! De görüm, səni ən çox hansı sahə maraqlandırır? "
+                "Seçimini et, mən də sənə ən uyğun kursları tapaq!"
+            ),
             state="interest_selected",
             actions=INTEREST_ACTIONS,
             courses=[],
@@ -112,16 +185,21 @@ class Orchestrator:
         if matched:
             session["data"]["interest"] = matched
             update_state(session, "level_selected")
-            return self._answer_with_llm(
-                session, text,
-                system_override=(
-                    "İstifadəçi maraq sahəsini seçdi. Onu təbrik et və səviyyəsini soruş "
-                    "(Başlanğıc, Orta, İrəli). Cavabında həm seçiminə uyğun rəy bildir, "
-                    "həm də səviyyə seçimini etməsi üçün yönləndir."
-                )
+            direction_label = DIRECTION_MAP.get(matched, "seçdiyin sahə")
+            return ChatResponse(
+                reply=(
+                    f"Əla seçimdir! {direction_label} istiqamətində sənə uyğun proqramı "
+                    "tapmaq üçün hazırkı səviyyəni seç: yeni başlayan, orta səviyyə və ya təcrübəli."
+                ),
+                state="level_selected",
+                actions=LEVEL_ACTIONS,
+                courses=[],
+                capture="none",
             )
 
-        return self._answer_with_llm(session, text)
+        result = self._answer_with_llm(session, text)
+        result._llm_called = True
+        return result
 
     def _handle_level(self, session: dict, text: str) -> ChatResponse:
         lower = text.lower().strip()
@@ -149,25 +227,25 @@ class Orchestrator:
             else:
                 reply = (
                     f"Təəssüf ki, {direction_label} sahəsində {level_label.lower()} səviyyəyə "
-                    f"uyğun kurs hazırda mövcud deyil. Amma başqa sahə seçsən, bəlkə orada sənə uyğun bir şey tapaq!"
+                    f"uyğun kurs hazırda mövcud deyil. "
+                    f"Amma başqa sahə seçsən, bəlkə orada sənə uyğun bir şey tapaq!"
                 )
 
             return ChatResponse(
                 reply=reply,
                 state="recommendation",
-                actions=[
-                    ActionButton(type="button", label="Qeydiyyatdan keç", value="qeydiyyat"),
-                    ActionButton(type="button", label="Demo dərs istəyirəm", value="demo"),
-                    ActionButton(type="button", label="Başqa sahə seç", value="basha"),
-                ],
+                actions=RECOMMENDATION_ACTIONS,
                 courses=courses,
                 capture="none",
             )
 
-        return self._answer_with_llm(session, text)
+        result = self._answer_with_llm(session, text)
+        result._llm_called = True
+        return result
 
     def _handle_recommendation_reply(self, session: dict, text: str) -> ChatResponse:
         lower = text.lower()
+
         if any(w in lower for w in ["basha", "basqa", "geri"]):
             reset(session)
             return self._handle_start(session)
@@ -175,32 +253,56 @@ class Orchestrator:
         if any(w in lower.split() for w in ["kec", "keç", "yox", "istemirem", "istəmirəm"]):
             update_state(session, "completed")
             return ChatResponse(
-                reply="Heç problem deyil, canın sağ olsun! Nə vaxt istəsən, yenə buyur. Başqa sualın varsa mən buradam. Yenidən başlamaq üçün 'başla' yazmağın kifayətdir.",
+                reply=(
+                    "Heç problem deyil, canın sağ olsun! Nə vaxt istəsən, yenə buyur. "
+                    "Başqa sualın varsa mən buradam. Yenidən başlamaq üçün 'başla' yazmağın kifayətdir."
+                ),
                 state="completed",
-                actions=[],
+                actions=[ActionButton(type="button", label="Yenidən başla", value="basha")],
                 courses=[],
                 capture="none",
             )
 
         intent = detect_intent(text)
-        if intent in ("lead_phone", "lead_name", "registration"):
+        if intent in ("lead_phone", "lead_name", "registration") or any(
+            word in lower for word in ["qeydiyyat", "demo"]
+        ):
             update_state(session, "lead_capture_name")
-            return self._answer_with_llm(session, text)
+            return ChatResponse(
+                reply="Məmnuniyyətlə kömək edərəm. Əvvəlcə adını yaz.",
+                state="lead_capture_name",
+                actions=[],
+                courses=[],
+                capture="name",
+            )
 
-        return self._answer_with_llm(session, text)
+        result = self._answer_with_llm(session, text)
+        result._llm_called = True
+        return result
 
     def _handle_name(self, session: dict, text: str) -> ChatResponse:
         name = extract_name(text) or text.strip()
         if len(name) >= 2:
             session["data"]["name"] = name
             update_state(session, "lead_capture_phone")
-            return self._answer_with_llm(session, text)
+            return ChatResponse(
+                reply=(
+                    f"Təşəkkür edirəm, {name}. İndi əlaqə üçün telefon nömrəni "
+                    "+994XXXXXXXXX formatında yaz."
+                ),
+                state="lead_capture_phone",
+                actions=[],
+                courses=[],
+                capture="phone",
+            )
 
-        intent = detect_intent(text)
-        if intent == "question":
-            return self._answer_with_llm(session, text)
-
-        return self._answer_with_llm(session, text)
+        return ChatResponse(
+            reply="Zəhmət olmasa adını ən azı 2 simvolla yaz.",
+            state="lead_capture_name",
+            actions=[],
+            courses=[],
+            capture="name",
+        )
 
     def _handle_phone(self, session: dict, text: str) -> ChatResponse:
         phone = extract_phone_clean(text)
@@ -208,6 +310,7 @@ class Orchestrator:
             session["data"]["phone"] = phone
             update_state(session, "completed")
             self._store_lead(session)
+
             name = session["data"].get("name", "")
             return ChatResponse(
                 reply=(
@@ -222,7 +325,13 @@ class Orchestrator:
                 capture="none",
             )
 
-        return self._answer_with_llm(session, text)
+        return ChatResponse(
+            reply="Telefon nömrəsini +994XXXXXXXXX formatında yaz.",
+            state="lead_capture_phone",
+            actions=[],
+            courses=[],
+            capture="phone",
+        )
 
     def _handle_completed(self, session: dict, text: str = "") -> ChatResponse:
         lower = text.lower().strip()
@@ -231,74 +340,172 @@ class Orchestrator:
             return self._handle_start(session)
         return self._answer_with_llm(session, text)
 
-    def _answer_with_llm(self, session: dict, text: str, system_override: str | None = None) -> ChatResponse:
-        from data.loader import load_courses as _load_courses, load_knowledge
+    def _answer_with_llm(self, session: dict, text: str) -> ChatResponse:
+        from data.loader import load_knowledge
 
-        context_parts = []
+        context_parts: list[str] = []
 
-        courses = _load_courses()
+        if self.retriever:
+            try:
+                results = self.retriever.retrieve(text, top_k=settings.rag_top_k)
+                if results:
+                    rag_text = "RAG məlumatları:\n" + "\n\n".join(r["text"] for r in results)
+                    context_parts.append(rag_text)
+                    logger.debug("rag_retrieved count=%d", len(results))
+            except Exception as exc:
+                logger.warning("rag_error error=%s", exc)
+
+        courses = load_courses()
         if courses:
-            context_parts.append("Mövcud kurslar:\n" + "\n".join(
-                f"- {c.get('title','')} ({c.get('direction','')}, {c.get('level','')}) - {c.get('priceAzn','')} AZN"
-                for c in courses[:10]
-            ))
+            context_parts.append(
+                "Mövcud kurslar:\n" + "\n".join(
+                    f"- {c.get('title','')} ({c.get('direction','')}, {c.get('level','')}) "
+                    f"- {c.get('priceAzn','')} AZN"
+                    for c in courses[:settings.context_max_courses]
+                )
+            )
 
         for entry in load_knowledge():
             context_parts.append(f"[{entry['id']}] {entry['text']}")
 
-        if self.retriever:
-            try:
-                results = self.retriever.retrieve(text, top_k=3)
-                print(f"DOCS: {len(results)} retrieved")
-                if results:
-                    rag_text = "RAG məlumatları:\n" + "\n\n".join(r["text"] for r in results)
-                    context_parts.insert(0, rag_text)
-            except Exception as e:
-                print(f"[RAG ERROR] {e}")
+        context = "\n\n".join(context_parts)
 
-        context = "\n\n".join(context_parts) if context_parts else ""
+        state_hint = STATE_CONTEXT.get(session["state"], "")
+        system_content = SYSTEM_PROMPT
+        if state_hint:
+            system_content += f"\n\nCari vəziyyət: {state_hint}"
 
-        if system_override:
-            system_msg = system_override
-        else:
-            state_hint = STATE_CONTEXT.get(session["state"], "")
-            system_msg = SYSTEM_PROMPT
-            if state_hint:
-                system_msg += f"\n\nCari vəziyyət: {state_hint}"
+        messages: list[dict] = [{"role": "system", "content": system_content}]
 
-        messages = [
-            {"role": "system", "content": system_msg},
-        ]
         if context:
             messages.append({"role": "system", "content": f"Kontekst məlumatı:\n{context}"})
 
-        for entry in session["history"][-6:]:
-            messages.append({"role": entry["role"], "content": entry["text"]})
+        personalisation = self._personaliser.build(session)
+        if personalisation:
+            messages.append({"role": "system", "content": personalisation})
+
+        messages.extend(get_context_history(session))
 
         messages.append({"role": "user", "content": text})
 
         if not self.llm:
+            return self._fallback_response(session)
+
+        t0 = time.time()
+        try:
+            from llm.client import LLMCircuitOpenError
+            raw_reply = self.llm.chat(messages)
+            latency_ms = int((time.time() - t0) * 1000)
+            logger.debug("llm_reply latency_ms=%d", latency_ms)
+        except LLMCircuitOpenError:
+            logger.warning("llm_circuit_open – returning fallback")
+            telemetry.record_llm_error("circuit_open")
+            return self._fallback_response(session)
+        except Exception as exc:
+            latency_ms = int((time.time() - t0) * 1000)
+            logger.error("llm_error error=%s latency_ms=%d", exc, latency_ms)
+            telemetry.record_llm_error(type(exc).__name__)
+            return self._fallback_response(session)
+
+        parsed = self._parser.parse(raw_reply, session["state"])
+
+        return ChatResponse(
+            reply=parsed["reply"],
+            state=parsed.get("state", session["state"]),
+            actions=parsed.get("actions", []),
+            courses=parsed.get("courses", []),
+            capture=parsed.get("capture", "none"),
+        )
+
+    def _fallback_response(self, session: dict) -> ChatResponse:
+        state = session.get("state", "start")
+        if state in ("start", "interest_selected"):
             return ChatResponse(
-                reply="Hal-hazırda texniki problem var. Zəhmət olmasa sonra yenidən yoxlayın.",
-                state=session["state"],
-                actions=[],
+                reply="Sənə uyğun kurs tapmaq üçün maraqlandığın istiqaməti seç.",
+                state="interest_selected",
+                actions=INTEREST_ACTIONS,
                 courses=[],
                 capture="none",
             )
-
-        try:
-            reply = self.llm.chat(messages)
-        except Exception as e:
-            print(f"LLM ERROR: {e}")
-            reply = "Hal-hazırda texniki problem var. Zəhmət olmasa sonra yenidən yoxlayın."
-
+        if state == "level_selected":
+            return ChatResponse(
+                reply="Hazırkı səviyyəni seç: yeni başlayan, orta səviyyə və ya təcrübəli.",
+                state=state,
+                actions=LEVEL_ACTIONS,
+                courses=[],
+                capture="none",
+            )
+        if state == "recommendation":
+            return ChatResponse(
+                reply="Kurslardan biri ilə bağlı demo dərs və ya qeydiyyat üçün seçim et.",
+                state=state,
+                actions=RECOMMENDATION_ACTIONS,
+                courses=[],
+                capture="none",
+            )
+        if state == "lead_capture_name":
+            return ChatResponse(
+                reply="Qeydiyyatı davam etdirmək üçün adını yaz.",
+                state=state,
+                actions=[],
+                courses=[],
+                capture="name",
+            )
+        if state == "lead_capture_phone":
+            return ChatResponse(
+                reply="Əlaqə üçün telefon nömrəni +994XXXXXXXXX formatında yaz.",
+                state=state,
+                actions=[],
+                courses=[],
+                capture="phone",
+            )
         return ChatResponse(
-            reply=reply,
-            state=session["state"],
-            actions=[],
+            reply="Yeni kurs seçimi üçün aşağıdakı düymədən istifadə et.",
+            state="completed",
+            actions=[ActionButton(type="button", label="Yenidən başla", value="basha")],
             courses=[],
             capture="none",
         )
+
+    def _finalize(
+        self,
+        session: dict,
+        user_text: str,
+        result: ChatResponse,
+        state_before: str,
+        llm_called: bool,
+    ):
+        add_history(session, "assistant", result.reply)
+        session_save(session)
+
+        telemetry.record(
+            TurnMetrics(
+                session_id=session["sessionId"],
+                user_id=session.get("userId"),
+                state_before=state_before,
+                state_after=result.state,
+                llm_called=llm_called,
+                llm_latency_ms=None,
+                fallback_hit=False,
+                retry_count=0,
+                user_message_len=len(user_text),
+                reply_len=len(result.reply),
+            )
+        )
+
+    def _store_lead(self, session: dict):
+        from core.lead_service import add_lead
+        interest = session["data"].get("interest", "")
+        add_lead({
+            "name": session["data"].get("name", ""),
+            "phone": session["data"].get("phone", ""),
+            "interest": interest,
+            "level": session["data"].get("level", ""),
+            "sessionId": session.get("sessionId", ""),
+            "userId": session.get("userId", ""),
+            "source": "chatbot",
+        })
+        telemetry.record_lead(interest)
 
     def _recommend_courses(self, interest: str, level: str) -> list[CourseCard]:
         courses = load_courses()
@@ -328,33 +535,3 @@ class Orchestrator:
             )
             for c in matched[:4]
         ]
-
-    def _store_lead(self, session: dict):
-        from .lead_service import add_lead
-        add_lead({
-            "name": session["data"].get("name", ""),
-            "phone": session["data"].get("phone", ""),
-            "interest": session["data"].get("interest", ""),
-            "level": session["data"].get("level", ""),
-            "sessionId": id(session),
-        })
-
-
-def is_blocked(text: str) -> bool:
-    import re
-    patterns = [
-        r"ignore (all|previous|the) (instructions|rules)",
-        r"system prompt",
-        r"you are now",
-        r"act as",
-        r"jailbreak",
-        r"təlimatları unut",
-        r"qaydaları unut",
-        r"rolunu dəyiş",
-        r"sən indi",
-    ]
-    lower = text.lower()
-    for p in patterns:
-        if re.search(p, lower):
-            return True
-    return False
