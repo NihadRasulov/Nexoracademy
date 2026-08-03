@@ -5,70 +5,23 @@ metadata:
   namespace: nexora-academy
 data:
   SPRING_PROFILES_ACTIVE: "prod"
-
-  # ── Verilənlər bazası ────────────────────────────────────────────────
-  # İdarə olunan baza (RDS/Cloud SQL) istifadə olunursa, DB_HOST onun
-  # endpoint-i ilə əvəz olunur. DB_PASSWORD burada DEYİL — Secret-dədir.
   DB_HOST: "nexora-postgres"
   DB_PORT: "5432"
   DB_NAME: "nexora_academy"
   DB_USER: "nexora_app"
-
-  # ── JWT ──────────────────────────────────────────────────────────────
   JWT_ISSUER: "nexora-academy"
   JWT_ACCESS_EXPIRATION_MS: "900000"
   JWT_REFRESH_EXPIRATION_MS: "2592000000"
-
-  # ── Frontend / CORS ──────────────────────────────────────────────────
-  # DEVOPS: hər ikisi REAL domenlə əvəz olunmalıdır. CORS_ALLOWED_ORIGINS
-  # prod profilində DEFAULT-SUZDUR — verilməzsə pod açılışda çökür (fail-fast).
-  # Vergüllə ayrılmış siyahı olar: "https://app.x.com,https://admin.x.com"
   CORS_ALLOWED_ORIGINS: "https://admin.example.com"
-  FRONTEND_BASE_URL: "https://admin.example.com"
-
-  # ── SMTP ─────────────────────────────────────────────────────────────
-  # MAIL_USERNAME/MAIL_PASSWORD Secret-dədir.
   MAIL_HOST: "smtp.example.com"
   MAIL_PORT: "587"
   MAIL_SMTP_AUTH: "true"
   MAIL_SMTP_STARTTLS: "true"
   MAIL_FROM: "noreply@nexora-academy.com"
-  # Gmail/SES STARTTLS handshake 3 saniyəyə sığmır — default 10 saniyə.
-  MAIL_CONNECTION_TIMEOUT_MS: "10000"
-  MAIL_READ_TIMEOUT_MS: "10000"
-  MAIL_WRITE_TIMEOUT_MS: "10000"
-
-  # ── Auth / OTP ───────────────────────────────────────────────────────
+  FRONTEND_BASE_URL: "https://admin.example.com"
   PASSWORD_RESET_EXPIRATION_MS: "3600000"
   EMAIL_VERIFY_EXPIRATION_MS: "600000"
   LOGIN_OTP_EXPIRATION_MS: "600000"
   OTP_MAX_ATTEMPTS: "5"
-
-  # ── Admin seed ───────────────────────────────────────────────────────
-  # DİQQƏT: prod profilində seed DEFAULT OLARAQ SÖNÜLÜDÜR. Yeni/boş bazaya ilk
-  # deploy-da bu "true" olmasa, sistemdə heç bir admin hesabı yaranmır və admin
-  # panelə HEÇ KİM daxil ola bilmir (public qeydiyyat yalnız STUDENT yaradır).
-  # Ardıcıllıq: ilk deploy → "true" + Secret-də şifrələr → hesablar yaranır →
-  # sonra "false" edin (seeder mövcud hesablara toxunmur, amma açıq qalmasına
-  # ehtiyac yoxdur).
-  ADMIN_SEED_ENABLED: "false"
-
-  # ── Chat-bot (self-hosted) ───────────────────────────────────────────
-  # false olduqda tətbiq problemsiz işə düşür, bot sadəcə çağırılmır.
-  # true edilərsə CHATBOT_BASE_URL doldurulmalıdır; klaster daxilindəki servis
-  # ola bilər (məs. http://nexora-chatbot.nexora-ai.svc.cluster.local:8000) —
-  # bu halda 06-network-policy.yaml-dakı egress qaydası uyğunlaşdırılmalıdır.
-  CHATBOT_ENABLED: "false"
-  CHATBOT_BASE_URL: ""
-  CHATBOT_CHAT_PATH: "/chat"
-  CHATBOT_API_KEY_HEADER: "X-API-Key"
-  CHATBOT_CONNECT_TIMEOUT_MS: "3000"
-  CHATBOT_READ_TIMEOUT_MS: "20000"
-
-  # ── Loglar ───────────────────────────────────────────────────────────
   LOG_DIR: "/app/logs"
-
-  # ── Ödəniş gateway-i ─────────────────────────────────────────────────
-  # Webhook secret Secret-dədir. Boş qaldığı müddətcə /api/v1/payments/callback
-  # İMZA YOXLANMADAN qəbul edilir (hər çağırışda WARN loglanır).
   PAYMENT_GATEWAY_SIGNATURE_HEADER: "X-Gateway-Signature"

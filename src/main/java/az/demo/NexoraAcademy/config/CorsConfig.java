@@ -21,7 +21,7 @@ public class CorsConfig {
 
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(corsProperties.getAllowedOrigins());
+        configuration.setAllowedOriginPatterns(corsProperties.getAllowedOrigins());
 
         configuration.setAllowedMethods(List.of(
                 HttpMethod.GET.name(),

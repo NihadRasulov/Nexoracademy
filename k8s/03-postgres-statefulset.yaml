@@ -1,12 +1,3 @@
-# DEVOPS QƏRARI: bu StatefulSet klaster daxilində TƏK replikalı Postgres qaldırır —
-# yəni HA yoxdur, node itəndə baza əlçatmaz olur, avtomatik failover yoxdur.
-# Real prod üçün iki seçim var:
-#   a) İdarə olunan xidmət (AWS RDS / Cloud SQL / Azure Database) — tövsiyə olunan.
-#      Bu halda bu fayl və 03-postgres-service.yaml tətbiq EDİLMİR, yalnız
-#      ConfigMap-dəki DB_HOST xarici endpoint-ə yönəldilir.
-#   b) Operator (CloudNativePG, Zalando postgres-operator) ilə replikasiya + backup.
-# Aşağıdakı manifest yalnız "öz klasterində sadə quraşdırma" ssenarisi üçündür.
-# Bax: PRODUCTION_HANDOVER.md → "Verilənlər bazası".
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -25,13 +16,6 @@ spec:
       labels:
         app: nexora-postgres
     spec:
-      securityContext:
-        # postgres image-də postgres istifadəçisinin UID-i 999-dur. fsGroup olmadan
-        # bəzi storage class-larda PVC root:root montaj olunur və Postgres
-        # "could not open ... Permission denied" ilə start olmur.
-        runAsUser: 999
-        runAsGroup: 999
-        fsGroup: 999
       containers:
         - name: postgres
           image: pgvector/pgvector:pg16
@@ -54,10 +38,6 @@ spec:
                 secretKeyRef:
                   name: nexora-secrets
                   key: DB_PASSWORD
-            # MÜTLƏQ: PVC-nin kökündə (ext4) "lost+found" qovluğu olur və initdb
-            # "directory not empty" deyib start olmur. Data alt-qovluğa yazılır.
-            - name: PGDATA
-              value: /var/lib/postgresql/data/pgdata
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
@@ -69,23 +49,23 @@ spec:
               memory: "1Gi"
               cpu: "1"
           readinessProbe:
-            # Əvvəllər istifadəçi/baza adı manifestə hardcode edilmişdi ("nexora_app",
-            # "nexora_academy") — ConfigMap-də DB_USER/DB_NAME dəyişdirilən kimi probe
-            # həmişə uğursuz olurdu və pod heç vaxt Ready statusuna keçmirdi.
-            # Probe exec əmrlərində k8s $(VAR) genişlənməsi İŞLƏMİR, ona görə sh -c.
             exec:
               command:
-                - sh
-                - -c
-                - 'pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+                - pg_isready
+                - -U
+                - nexora_app
+                - -d
+                - nexora_academy
             initialDelaySeconds: 5
             periodSeconds: 5
           livenessProbe:
             exec:
               command:
-                - sh
-                - -c
-                - 'pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+                - pg_isready
+                - -U
+                - nexora_app
+                - -d
+                - nexora_academy
             initialDelaySeconds: 30
             periodSeconds: 10
   volumeClaimTemplates:
@@ -94,9 +74,6 @@ spec:
       spec:
         accessModes:
           - ReadWriteOnce
-        # DEVOPS: storageClassName qeyd olunmayıb — klasterin default StorageClass-ı
-        # istifadə olunacaq. Default-un `reclaimPolicy: Retain` olduğunu yoxlayın;
-        # `Delete` olarsa, PVC səhvən silinəndə bütün baza geri dönməz itir.
         resources:
           requests:
             storage: 10Gi

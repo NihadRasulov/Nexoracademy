@@ -19,40 +19,15 @@ spec:
     metadata:
       labels:
         app: nexora-app
-      annotations:
-        # Prometheus scrape — metrikalar yalnız daxili management portundadır (9091),
-        # ingress-dən əlçatan deyil (bax application-prod.yml → management.server.port).
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "9091"
-        prometheus.io/path: "/actuator/prometheus"
     spec:
       terminationGracePeriodSeconds: 60
-      securityContext:
-        # Image onsuz da non-root "spring" istifadəçisi ilə işləyir (bax Dockerfile),
-        # amma bunu klaster səviyyəsində məcbur etmək lazımdır: image dəyişəndə və ya
-        # səhvən root-a qayıdanda pod ümumiyyətlə start olmasın.
-        # QEYD: alpine-də "spring" istifadəçisinin UID-i 100-dür (adduser -S).
-        # Aşağıdakı runAsUser dəyəri Dockerfile ilə uyğun olmalıdır — Dockerfile-da
-        # istifadəçi dəyişsə, buranı da dəyişin, yoxsa pod "runAsNonRoot" ilə çökür.
-        runAsNonRoot: true
-        runAsUser: 100
-        runAsGroup: 101
-        fsGroup: 101
-        seccompProfile:
-          type: RuntimeDefault
       containers:
         - name: app
-          # DEVOPS: "latest" deyil, immutable tag (məs. .../nexora-academy:1.4.2 və ya
-          # git SHA) istifadə edin — əks halda rollback mümkün deyil və eyni Deployment
-          # fərqli podlarda fərqli kod işlədə bilər. Registry prefiksi olmadan image
-          # yalnız lokal (minikube/kind) klasterlərində tapılır.
-          image: registry.example.com/nexora-academy:REPLACE_WITH_IMMUTABLE_TAG
-          imagePullPolicy: IfNotPresent
+          image: nexora-academy:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8081
               name: http
-            - containerPort: 9091
-              name: management
           envFrom:
             - configMapRef:
                 name: nexora-config
@@ -65,60 +40,25 @@ spec:
             limits:
               memory: "1Gi"
               cpu: "1"
-          securityContext:
-            allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
-            capabilities:
-              drop:
-                - ALL
-          # Startup probe: 13 Flyway migration + Hibernate validate soyuq startda
-          # 40 saniyədən uzun çəkə bilər. Bu olmadan liveness probe hələ açılmamış
-          # podu öldürüb sonsuz restart döngəsi yaradır (CrashLoopBackOff).
-          # 30 × 5s = 150 saniyəyə qədər gözləyir, yalnız sonra liveness işə düşür.
-          startupProbe:
-            httpGet:
-              path: /actuator/health/readiness
-              port: 9091
-            periodSeconds: 5
-            failureThreshold: 30
           readinessProbe:
             httpGet:
-              path: /actuator/health/readiness
-              port: 9091
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 3
             failureThreshold: 3
           livenessProbe:
-            # Liveness üçün readiness yox, liveness qrupu: DB müvəqqəti düşəndə pod
-            # "hazır deyil" olmalıdır (trafik almasın), amma RESTART OLUNMAMALIDIR.
-            # Əvvəlki konfiqurasiyada hər iki probe /actuator/health idi — yəni DB
-            # kəsintisi bütün podları eyni anda restart döngəsinə salırdı.
             httpGet:
-              path: /actuator/health/liveness
-              port: 9091
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 40
             periodSeconds: 15
             timeoutSeconds: 3
             failureThreshold: 3
-          lifecycle:
-            preStop:
-              # Pod "Terminating" olan kimi endpoint siyahısından silinmə ilə SIGTERM
-              # arasında yarış var — bu gecikmə olmadan ingress hələ bir neçə sorğunu
-              # ölməkdə olan poda göndərir və istifadəçi 502 alır.
-              exec:
-                command: ["sh", "-c", "sleep 10"]
           volumeMounts:
             - name: logs
               mountPath: /app/logs
-            - name: tmp
-              mountPath: /tmp
       volumes:
-        # DİQQƏT: emptyDir — pod öləndə loglar İTİR. CRUD audit logları
-        # (logback-spring.xml → logs/create|read|update|delete/) belə saxlanmır.
-        # Audit tələbi varsa: ya mərkəzləşdirilmiş log toplama (Loki/ELK) ilə
-        # stdout-dan yığın, ya da bu volume-u PVC edin. Bax PRODUCTION_HANDOVER.md.
         - name: logs
-          emptyDir: {}
-        # readOnlyRootFilesystem: true olduğu üçün JVM-in yazmalı olduğu /tmp
-        # (heap dump, JIT, Tomcat multipart temp) ayrıca yazıla bilən volume olmalıdır.
-        - name: tmp
           emptyDir: {}

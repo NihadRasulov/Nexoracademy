@@ -153,6 +153,17 @@ services:
       driver: json-file
       options: { max-size: "10m", max-file: "3" }
 
+  redis:
+    image: redis:7-alpine
+    container_name: nexora-redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
 volumes:
   nexora_pg_data:
   nexora_app_logs:
