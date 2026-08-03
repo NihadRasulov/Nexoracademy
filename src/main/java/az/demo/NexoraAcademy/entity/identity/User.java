@@ -42,8 +42,12 @@ public class User {
     @Column(length = 20)
     private String phone;
 
-    @Column(name = "full_name", nullable = false, length = 150)
-    private String fullName;
+    // length 40 — bax az.demo.NexoraAcademy.validation.PersonName (DTO validasiyası ilə eyni hədd).
+    @Column(name = "first_name", nullable = false, length = 40)
+    private String firstName;
+
+    @Column(name = "last_name", nullable = false, length = 40)
+    private String lastName;
 
     @Column(name = "password_hash")
     private String passwordHash;
@@ -81,4 +85,10 @@ public class User {
 
     @Column(name = "deleted_at")
     private Instant deletedAt;
+
+    /** Ad və soyadın birləşmiş forması — yalnız göstərmək üçün, bazada sütunu yoxdur. */
+    @Transient
+    public String getDisplayName() {
+        return (firstName + " " + lastName).trim();
+    }
 }

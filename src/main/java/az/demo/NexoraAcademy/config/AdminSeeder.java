@@ -62,10 +62,10 @@ public class AdminSeeder implements CommandLineRunner {
 
         migrateLegacySystemAdmin();
 
-        seedIfMissing(SYSTEM_ADMIN_EMAIL, properties.getSystemAdminPassword(), UserRole.SYSTEM_ADMIN, "System Admin");
-        seedIfMissing(ADMIN_EMAIL, properties.getAdminPassword(), UserRole.ADMIN, "Admin");
-        seedIfMissing(SALES_CRM_EMAIL, properties.getSalesCrmPassword(), UserRole.SALES_CRM, "Sales CRM");
-        seedIfMissing(CONTENT_MANAGER_EMAIL, properties.getContentManagerPassword(), UserRole.CONTENT_MANAGER, "Content Manager");
+        seedIfMissing(SYSTEM_ADMIN_EMAIL, properties.getSystemAdminPassword(), UserRole.SYSTEM_ADMIN, "System", "Admin");
+        seedIfMissing(ADMIN_EMAIL, properties.getAdminPassword(), UserRole.ADMIN, "Nexora", "Admin");
+        seedIfMissing(SALES_CRM_EMAIL, properties.getSalesCrmPassword(), UserRole.SALES_CRM, "Sales", "CRM");
+        seedIfMissing(CONTENT_MANAGER_EMAIL, properties.getContentManagerPassword(), UserRole.CONTENT_MANAGER, "Content", "Manager");
     }
 
     /**
@@ -103,14 +103,15 @@ public class AdminSeeder implements CommandLineRunner {
 
         legacy.ifPresent(user -> {
             user.setEmail(SYSTEM_ADMIN_EMAIL);
-            user.setFullName("System Admin");
+            user.setFirstName("System");
+            user.setLastName("Admin");
             user.setPasswordHash(passwordEncoder.encode(properties.getSystemAdminPassword()));
             userRepository.saveAndFlush(user);
             log.info("Köhnə default admin hesabı miqrasiya edildi: {} -> {}", LEGACY_SYSTEM_ADMIN_EMAIL, SYSTEM_ADMIN_EMAIL);
         });
     }
 
-    private void seedIfMissing(String email, String rawPassword, UserRole role, String fullName) {
+    private void seedIfMissing(String email, String rawPassword, UserRole role, String firstName, String lastName) {
         if (userRepository.existsByEmail(email)) {
             log.info("{} ({}) artıq mövcuddur, seed edilmir.", role, email);
             return;
@@ -118,7 +119,8 @@ public class AdminSeeder implements CommandLineRunner {
 
         User user = new User();
         user.setEmail(email);
-        user.setFullName(fullName);
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
         user.setPasswordHash(passwordEncoder.encode(rawPassword));
         user.setRole(role);
         user.setStatus(AccountStatus.ACTIVE);

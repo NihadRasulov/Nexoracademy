@@ -2,7 +2,11 @@ package az.demo.NexoraAcademy.dto.identity;
 
 import az.demo.NexoraAcademy.entity.enums.AccountStatus;
 import az.demo.NexoraAcademy.entity.enums.UserRole;
+import az.demo.NexoraAcademy.validation.PersonName;
+import az.demo.NexoraAcademy.validation.PhoneNumber;
+import az.demo.NexoraAcademy.validation.TrimmedStringDeserializer;
 import az.demo.NexoraAcademy.validation.ValidationGroups;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -11,12 +15,17 @@ import jakarta.validation.constraints.Size;
 import java.util.Map;
 
 public record UserRequest(
-        @NotBlank(groups = ValidationGroups.OnCreate.class) @Email @Size(max = 255) String email,
+        @NotBlank(groups = ValidationGroups.OnCreate.class) @Email @Size(max = 254)
+        @JsonDeserialize(using = TrimmedStringDeserializer.class) String email,
 
-        @Pattern(regexp = "^\\+?[0-9 ()-]{6,20}$", message = "phone must be a valid phone number")
-        String phone,
+        @PhoneNumber
+        @JsonDeserialize(using = TrimmedStringDeserializer.class) String phone,
 
-        @NotBlank(groups = ValidationGroups.OnCreate.class) @Size(min = 2, max = 150) String fullName,
+        @NotBlank(groups = ValidationGroups.OnCreate.class) @PersonName
+        @JsonDeserialize(using = TrimmedStringDeserializer.class) String firstName,
+
+        @NotBlank(groups = ValidationGroups.OnCreate.class) @PersonName
+        @JsonDeserialize(using = TrimmedStringDeserializer.class) String lastName,
 
         @NotBlank(groups = ValidationGroups.OnCreate.class)
         @Pattern(

@@ -1,5 +1,9 @@
 package az.demo.NexoraAcademy.dto.identity;
 
+import az.demo.NexoraAcademy.validation.PersonName;
+import az.demo.NexoraAcademy.validation.PhoneNumber;
+import az.demo.NexoraAcademy.validation.TrimmedStringDeserializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -11,14 +15,23 @@ import java.util.Map;
  * those go through UserController (admin-only) or the dedicated
  * change-password endpoint, so a user can never escalate their own privileges
  * through /me.
+ *
+ * Every field is optional (PATCH semantics: omitted = unchanged), so presence
+ * constraints are absent by design; the format constraints below still run on
+ * whichever fields the client actually sends.
  */
 public record UpdateProfileRequest(
-        @Email @Size(max = 255) String email,
+        @Email @Size(max = 254)
+        @JsonDeserialize(using = TrimmedStringDeserializer.class) String email,
 
-        @Pattern(regexp = "^\\+?[0-9 ()-]{6,20}$", message = "phone must be a valid phone number")
-        String phone,
+        @PhoneNumber
+        @JsonDeserialize(using = TrimmedStringDeserializer.class) String phone,
 
-        @Size(min = 2, max = 150) String fullName,
+        @PersonName
+        @JsonDeserialize(using = TrimmedStringDeserializer.class) String firstName,
+
+        @PersonName
+        @JsonDeserialize(using = TrimmedStringDeserializer.class) String lastName,
 
         @Pattern(regexp = "^[a-z]{2}(-[A-Z]{2})?$", message = "locale must look like 'az' or 'az-AZ'")
         String locale,

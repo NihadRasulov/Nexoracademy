@@ -50,7 +50,8 @@ class UserServiceTest {
         existingUser = new User();
         existingUser.setId(UUID.randomUUID());
         existingUser.setEmail("existing@example.com");
-        existingUser.setFullName("Existing User");
+        existingUser.setFirstName("Existing");
+        existingUser.setLastName("User");
         existingUser.setPasswordHash("hashed-old-password");
         existingUser.setRole(UserRole.STUDENT);
         existingUser.setStatus(AccountStatus.ACTIVE);
@@ -58,7 +59,7 @@ class UserServiceTest {
 
     @Test
     void createThrowsDuplicateResourceExceptionWhenEmailAlreadyExists() {
-        UserRequest request = new UserRequest("existing@example.com", null, "New User", "pass1234",
+        UserRequest request = new UserRequest("existing@example.com", null, "New", "User", "pass1234",
                 null, null, null, null);
         when(userRepository.existsByEmail("existing@example.com")).thenReturn(true);
 
@@ -70,7 +71,7 @@ class UserServiceTest {
 
     @Test
     void createDefaultsRoleAndStatusWhenNotProvided() {
-        UserRequest request = new UserRequest("new@example.com", null, "New User", "pass1234",
+        UserRequest request = new UserRequest("new@example.com", null, "New", "User", "pass1234",
                 null, null, null, null);
         when(userRepository.existsByEmail("new@example.com")).thenReturn(false);
         when(passwordEncoder.encode("pass1234")).thenReturn("hashed");
@@ -96,10 +97,12 @@ class UserServiceTest {
         when(userRepository.findById(existingUser.getId())).thenReturn(Optional.of(existingUser));
         when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        UserRequest patch = new UserRequest(null, null, "Updated Name Only", null, null, null, null, null);
+        UserRequest patch = new UserRequest(null, null, "Updated", null, null, null, null, null, null);
         UserResponse response = userService.patch(existingUser.getId(), patch);
 
-        assertThat(response.fullName()).isEqualTo("Updated Name Only");
+        assertThat(response.firstName()).isEqualTo("Updated");
+        assertThat(response.lastName()).isEqualTo("User");
+        assertThat(response.fullName()).isEqualTo("Updated User");
         assertThat(response.email()).isEqualTo("existing@example.com");
         verify(passwordEncoder, never()).encode(anyString());
     }

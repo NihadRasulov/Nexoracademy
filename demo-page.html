@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nexora Academy — Data Demo</title>
+<style>
+  :root{
+    color-scheme: light dark;
+    --bg:#f4f5f7; --card:#ffffff; --ink:#14171c; --muted:#5c6570;
+    --line:#e2e5ea; --accent:#2f6feb; --accent-soft:#e8f0fe;
+    --ok-bg:#d7f5dd; --ok-ink:#10632a; --warn-bg:#fdeecf; --warn-ink:#7a4c04;
+    --err-bg:#fbdcdc; --err-ink:#8c1d1d;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#101216; --card:#181b21; --ink:#e9ecf1; --muted:#98a2b0;
+      --line:#282d36; --accent:#5a8cf5; --accent-soft:#1c2941;
+      --ok-bg:#12351f; --ok-ink:#7fe0a0; --warn-bg:#3a2c10; --warn-ink:#f0c579;
+      --err-bg:#3d1a1a; --err-ink:#f09a9a;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+       font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.5}
+  .wrap{max-width:1180px;margin:0 auto;padding:24px 20px 80px}
+  header h1{font-size:24px;margin:0 0 4px}
+  header p{margin:0 0 20px;color:var(--muted);font-size:14px}
+
+  .config{background:var(--card);border:1px solid var(--line);border-radius:12px;
+          padding:16px;margin-bottom:20px;display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
+  .config .f{flex:1 1 220px}
+  label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;
+        letter-spacing:.05em;color:var(--muted);margin-bottom:5px}
+  input,select{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:8px;
+               background:var(--bg);color:inherit;font-size:14px}
+  button{padding:10px 22px;border:0;border-radius:8px;background:var(--accent);color:#fff;
+         font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap}
+  button:disabled{opacity:.5;cursor:default}
+
+  #status{margin-bottom:20px;font-size:14px;padding:12px 16px;border-radius:10px;display:none}
+  #status.on{display:block}
+  #status.ok{background:var(--ok-bg);color:var(--ok-ink)}
+  #status.err{background:var(--err-bg);color:var(--err-ink)}
+  #status.load{background:var(--accent-soft);color:var(--accent)}
+
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:28px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .stat b{display:block;font-size:26px;line-height:1.2}
+  .stat span{font-size:12px;color:var(--muted)}
+
+  section{margin-bottom:36px}
+  h2{font-size:17px;margin:0 0 4px;display:flex;align-items:center;gap:10px}
+  h2 .n{font-size:12px;font-weight:600;background:var(--accent-soft);color:var(--accent);
+        padding:2px 9px;border-radius:999px}
+  .hint{font-size:12.5px;color:var(--muted);margin:0 0 14px;font-family:ui-monospace,Consolas,monospace}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .card h3{margin:0 0 6px;font-size:15px}
+  .card p{margin:0 0 10px;font-size:13px;color:var(--muted)}
+  .price{font-size:20px;font-weight:700}
+  .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .tag{font-size:11px;padding:3px 9px;border-radius:999px;background:var(--accent-soft);
+       color:var(--accent);font-weight:600}
+  .tag.g{background:var(--ok-bg);color:var(--ok-ink)}
+  .tag.y{background:var(--warn-bg);color:var(--warn-ink)}
+  .tag.r{background:var(--err-bg);color:var(--err-ink)}
+
+  .person{display:flex;gap:12px;align-items:flex-start}
+  .person img{width:56px;height:56px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--line)}
+
+  .tablewrap{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:12px}
+  table{border-collapse:collapse;width:100%;font-size:13px;min-width:600px}
+  th,td{text-align:left;padding:9px 13px;border-bottom:1px solid var(--line)}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+  tr:last-child td{border-bottom:0}
+
+  .stars{color:#f0a92a;letter-spacing:2px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{background:var(--card);border:1px solid var(--line);border-radius:999px;
+        padding:6px 14px;font-size:13px}
+  .chip small{color:var(--muted)}
+
+  .chatbox{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .msgs{max-height:280px;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:8px}
+  .msg{padding:9px 13px;border-radius:12px;font-size:13.5px;max-width:80%}
+  .msg.u{background:var(--accent);color:#fff;align-self:flex-end}
+  .msg.b{background:var(--bg);border:1px solid var(--line);align-self:flex-start}
+  .msg.e{background:var(--err-bg);color:var(--err-ink);align-self:flex-start}
+  .botactions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .botactions button{background:var(--card);color:var(--accent);border:1px solid var(--accent);
+                     padding:6px 14px;font-size:13px}
+  .chatrow{display:flex;gap:10px}
+  .chatrow input{flex:1}
+  .empty{color:var(--muted);font-size:13px;font-style:italic}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Nexora Academy — canlı data demo</h1>
+  <p>Bu səhifə backend-dəki bütün əsas resursları çəkib ekranda göstərir. Həm bağlantının işlədiyini sübut edir, həm də frontend üçün nümunə kod rolunu oynayır.</p>
+</header>
+
+<div class="config">
+  <div class="f" style="flex:2 1 300px">
+    <label>Backend ünvanı</label>
+    <input id="baseUrl" value="http://192.168.0.103:8081">
+  </div>
+  <div class="f">
+    <label>Hesab</label>
+    <select id="account">
+      <option value="system-admin@nexora.com|system-admin1234">SYSTEM_ADMIN — hər şeyi görür</option>
+      <option value="admin@nexora.com|admin1234">ADMIN</option>
+      <option value="content-manager@nexora.com|content-manager1234">CONTENT_MANAGER</option>
+      <option value="sales-crm@nexora.com|sales-crm1234">SALES_CRM</option>
+      <option value="">Girişsiz — yalnız kurslar/kateqoriyalar</option>
+    </select>
+  </div>
+  <button id="load">Datanı yüklə</button>
+</div>
+
+<div id="status"></div>
+<div class="stats" id="stats"></div>
+
+<section id="s-courses"></section>
+<section id="s-categories"></section>
+<section id="s-instructors"></section>
+<section id="s-groups"></section>
+<section id="s-reviews"></section>
+<section id="s-graduates"></section>
+<section id="s-campaigns"></section>
+<section id="s-leads"></section>
+<section id="s-faq"></section>
+<section id="s-chat"></section>
+
+</div>
+
+<script>
+/* ------------------------------------------------------------------
+   1) API köməkçiləri — frontend-də istifadə ediləcək əsas nümunə budur
+   ------------------------------------------------------------------ */
+let API = '';
+let TOKEN = null;
+
+/** Token varsa Authorization başlığı ilə, yoxsa başlıqsız GET atır. */
+async function apiGet(path) {
+  const res = await fetch(API + path, {
+    headers: TOKEN ? { Authorization: 'Bearer ' + TOKEN } : {}
+  });
+  if (!res.ok) throw new Error(`${path} → HTTP ${res.status}`);
+  return res.json();
+}
+
+/** Admin rolları birbaşa token alır; STUDENT/GUEST üçün OTP tələb olunur. */
+async function login(email, password) {
+  const res = await fetch(API + '/api/v1/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password })
+  });
+  if (!res.ok) throw new Error('Login uğursuz — HTTP ' + res.status);
+  const body = await res.json();
+  if (!body.accessToken) throw new Error('Token gəlmədi — bu hesab OTP tələb edir');
+  return body.accessToken;
+}
+
+/* ------------------------------------------------------------------
+   2) Kiçik yardımçılar
+   ------------------------------------------------------------------ */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
+  ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+const money = (v, c) => v == null ? '—' : `${Number(v).toLocaleString('az-AZ')} ${c || 'AZN'}`;
+const date  = d => d ? new Date(d).toLocaleDateString('az-AZ') : '—';
+const stars = n => '★'.repeat(n) + '☆'.repeat(5 - n);
+
+function setStatus(text, cls) {
+  const el = $('status');
+  el.className = 'on ' + cls;
+  el.textContent = text;
+}
+
+function head(title, count, endpoint) {
+  return `<h2>${esc(title)} <span class="n">${count}</span></h2>
+          <p class="hint">GET ${esc(endpoint)}</p>`;
+}
+
+/* ------------------------------------------------------------------
+   3) Bütün datanı çək və göstər
+   ------------------------------------------------------------------ */
+async function loadAll() {
+  API = $('baseUrl').value.trim().replace(/\/+$/, '');
+  const acc = $('account').value;
+  $('load').disabled = true;
+  setStatus('Yüklənir…', 'load');
+
+  try {
+    TOKEN = null;
+    if (acc) {
+      const [email, password] = acc.split('|');
+      TOKEN = await login(email, password);
+    }
+
+    // Public endpointlər həmişə çəkilir; qalanları yalnız token varsa.
+    const [courses, categories] = await Promise.all([
+      apiGet('/api/v1/courses?size=100'),
+      apiGet('/api/v1/categories')
+    ]);
+
+    let instructors = [], groups = [], reviews = [], graduates = [],
+        campaigns = [], leads = [], cms = [];
+
+    if (TOKEN) {
+      [instructors, groups, reviews, graduates, campaigns, leads, cms] =
+        await Promise.all([
+          apiGet('/api/v1/instructors').catch(() => []),
+          apiGet('/api/v1/course-groups').catch(() => []),
+          apiGet('/api/v1/course-reviews').catch(() => []),
+          apiGet('/api/v1/graduate-outcomes').catch(() => []),
+          apiGet('/api/v1/sales/campaigns').catch(() => []),
+          apiGet('/api/v1/sales/leads').catch(() => []),
+          apiGet('/api/v1/content/cms-content').catch(() => [])
+        ]);
+    }
+
+    const courseList = courses.content || [];
+    const byId = Object.fromEntries(courseList.map(c => [c.id, c]));
+    const catById = Object.fromEntries(categories.map(c => [c.id, c]));
+
+    renderStats({ courses: courseList, categories, instructors, groups, reviews, graduates, campaigns, leads });
+    renderCourses(courseList, catById);
+    renderCategories(categories);
+    renderInstructors(instructors);
+    renderGroups(groups, byId);
+    renderReviews(reviews, byId);
+    renderGraduates(graduates, byId);
+    renderCampaigns(campaigns);
+    renderLeads(leads, byId);
+    renderFaq(cms);
+    renderChat();
+
+    setStatus(TOKEN
+      ? '✓ Bütün data uğurla yükləndi — backend ilə əlaqə tam işləyir.'
+      : '✓ Public data yükləndi. Qalan bölmələr üçün hesab seçib yenidən yüklə.', 'ok');
+
+  } catch (e) {
+    const network = e instanceof TypeError;
+    setStatus(network
+      ? `✗ Backend-ə çatmaq mümkün olmadı. Bu səhifənin origin-i: ${location.origin}. `
+        + `Yoxla: (1) ünvan/port, (2) eyni Wi-Fi, (3) firewall, (4) CORS_ALLOWED_ORIGINS-də bu origin var? `
+        + `Dəqiq səbəb üçün F12 → Console.`
+      : '✗ ' + e.message, 'err');
+  } finally {
+    $('load').disabled = false;
+  }
+}
+
+/* ------------------------------------------------------------------
+   4) Render funksiyaları
+   ------------------------------------------------------------------ */
+function renderStats(d) {
+  $('stats').innerHTML = [
+    ['Kurs', d.courses.length], ['Kateqoriya', d.categories.length],
+    ['Müəllim', d.instructors.length], ['Qrup', d.groups.length],
+    ['Rəy', d.reviews.length], ['Məzun', d.graduates.length],
+    ['Kampaniya', d.campaigns.length], ['Lid', d.leads.length]
+  ].map(([k, v]) => `<div class="stat"><b>${v}</b><span>${k}</span></div>`).join('');
+}
+
+function renderCourses(list, catById) {
+  const fmt = { ONLINE:'Onlayn', OFFLINE:'Əyani', HYBRID:'Hibrid' };
+  const dif = { BEGINNER:'Başlanğıc', INTERMEDIATE:'Orta', ADVANCED:'Yüksək' };
+  $('s-courses').innerHTML = head('Kurslar', list.length, '/api/v1/courses?size=100') +
+    `<div class="grid">${list.map(c => `
+      <div class="card">
+        <h3>${esc(c.title)}</h3>
+        <p>${esc(c.shortDescription || '')}</p>
+        <div class="price">${money(c.basePrice, c.currency)}</div>
+        <div class="tags">
+          <span class="tag">${esc(catById[c.categoryId]?.name || 'kateqoriyasız')}</span>
+          <span class="tag">${esc(dif[c.difficulty] || c.difficulty)}</span>
+          <span class="tag">${esc(fmt[c.deliveryFormat] || c.deliveryFormat)}</span>
+          ${c.durationWeeks ? `<span class="tag">${c.durationWeeks} həftə</span>` : ''}
+          ${c.published ? '<span class="tag g">dərc olunub</span>'
+                        : '<span class="tag y">qaralama</span>'}
+          ${c.archived ? '<span class="tag r">arxiv</span>' : ''}
+        </div>
+      </div>`).join('')}</div>`;
+}
+
+function renderCategories(list) {
+  const roots = list.filter(c => !c.parentId);
+  $('s-categories').innerHTML = head('Kateqoriyalar', list.length, '/api/v1/categories') +
+    `<div class="chips">${roots.map(r => {
+      const kids = list.filter(c => c.parentId === r.id);
+      return `<div class="chip"><b>${esc(r.name)}</b>${
+        kids.length ? ` <small>· ${kids.map(k => esc(k.name)).join(', ')}</small>` : ''}</div>`;
+    }).join('')}</div>`;
+}
+
+function renderInstructors(list) {
+  if (!list.length) return $('s-instructors').innerHTML =
+    head('Müəllimlər', 0, '/api/v1/instructors') + '<p class="empty">Giriş tələb olunur.</p>';
+  $('s-instructors').innerHTML = head('Müəllimlər', list.length, '/api/v1/instructors') +
+    `<div class="grid">${list.map(i => `
+      <div class="card person">
+        <img src="${esc(i.photoUrl || '')}" alt="" onerror="this.style.visibility='hidden'">
+        <div>
+          <h3>${esc(i.fullName)}</h3>
+          <p>${esc(i.bio || '')}</p>
+          <div class="tags">
+            <span class="tag y">★ ${i.avgRating ?? '—'}</span>
+            ${(i.certifications || []).map(c =>
+              `<span class="tag">${esc(c.title || c)}</span>`).join('')}
+          </div>
+        </div>
+      </div>`).join('')}</div>`;
+}
+
+function renderGroups(list, byId) {
+  if (!list.length) return $('s-groups').innerHTML =
+    head('Qruplar', 0, '/api/v1/course-groups') + '<p class="empty">Giriş tələb olunur.</p>';
+  const st = { PLANNED:['y','planlaşdırılıb'], OPEN:['g','qeydiyyat açıq'], FULL:['r','yerlər dolub'],
+               IN_PROGRESS:['g','davam edir'], COMPLETED:['','bitib'], CANCELLED:['r','ləğv olunub'] };
+  $('s-groups').innerHTML = head('Qruplar', list.length, '/api/v1/course-groups') +
+    `<div class="tablewrap"><table>
+      <thead><tr><th>Kod</th><th>Kurs</th><th>Başlanğıc</th><th>Yerlər</th><th>Status</th></tr></thead>
+      <tbody>${list.map(g => {
+        const [cls, label] = st[g.status] || ['', g.status];
+        return `<tr>
+          <td><b>${esc(g.groupCode)}</b></td>
+          <td>${esc(byId[g.courseId]?.title || '—')}</td>
+          <td>${date(g.startDate)}</td>
+          <td>${g.reservedSeats}/${g.totalSeats}</td>
+          <td><span class="tag ${cls}">${esc(label)}</span></td>
+        </tr>`; }).join('')}</tbody></table></div>`;
+}
+
+function renderReviews(list, byId) {
+  if (!list.length) return $('s-reviews').innerHTML =
+    head('Rəylər', 0, '/api/v1/course-reviews') + '<p class="empty">Giriş tələb olunur.</p>';
+  const shown = list.filter(r => r.published);
+  $('s-reviews').innerHTML = head('Rəylər', list.length, '/api/v1/course-reviews') +
+    `<p class="hint">${shown.length} dərc olunub · ${list.length - shown.length} moderasiya gözləyir</p>
+     <div class="grid">${list.slice(0, 12).map(r => `
+      <div class="card">
+        <div class="stars">${stars(r.rating)}</div>
+        <p style="margin-top:6px">${esc(r.comment || '')}</p>
+        <div class="tags">
+          <span class="tag">${esc(byId[r.courseId]?.title || 'kurs')}</span>
+          ${r.published ? '<span class="tag g">dərc olunub</span>'
+                        : '<span class="tag y">moderasiyada</span>'}
+        </div>
+      </div>`).join('')}</div>`;
+}
+
+function renderGraduates(list, byId) {
+  const pub = list.filter(g => g.publicStory);
+  if (!pub.length) return $('s-graduates').innerHTML =
+    head('Məzun hekayələri', 0, '/api/v1/graduate-outcomes') + '<p class="empty">Giriş tələb olunur.</p>';
+  $('s-graduates').innerHTML = head('Məzun hekayələri', list.length, '/api/v1/graduate-outcomes') +
+    `<div class="grid">${pub.map(g => `
+      <div class="card">
+        <h3>${esc(g.jobTitle)} — ${esc(g.companyName)}</h3>
+        <p>${esc(g.storyText || '')}</p>
+        <div class="tags">
+          <span class="tag">${esc(byId[g.courseId]?.title || 'kurs')}</span>
+          <span class="tag g">${esc(g.salaryBand || '')}</span>
+        </div>
+      </div>`).join('')}</div>`;
+}
+
+function renderCampaigns(list) {
+  const act = list.filter(c => c.active);
+  if (!list.length) return $('s-campaigns').innerHTML =
+    head('Kampaniyalar', 0, '/api/v1/sales/campaigns') + '<p class="empty">Giriş tələb olunur.</p>';
+  $('s-campaigns').innerHTML = head('Kampaniyalar', list.length, '/api/v1/sales/campaigns') +
+    `<div class="grid">${act.map(c => `
+      <div class="card">
+        <h3>${esc(c.name)}</h3>
+        <div class="price">${c.discountPct}% endirim</div>
+        <p>${date(c.startsAt)} — ${date(c.endsAt)}</p>
+        <div class="tags"><span class="tag g">aktiv</span>
+          <span class="tag">${(c.courseIds || []).length} kurs</span></div>
+      </div>`).join('')}</div>`;
+}
+
+function renderLeads(list, byId) {
+  if (!list.length) return $('s-leads').innerHTML =
+    head('Lidlər (CRM)', 0, '/api/v1/sales/leads') + '<p class="empty">Giriş tələb olunur (ADMIN/SALES_CRM).</p>';
+  const cls = { NEW:'y', CONTACTED:'', QUALIFIED:'g', CONVERTED:'g', LOST:'r', DISQUALIFIED:'r' };
+  $('s-leads').innerHTML = head('Lidlər (CRM)', list.length, '/api/v1/sales/leads') +
+    `<div class="tablewrap"><table>
+      <thead><tr><th>Ad</th><th>Əlaqə</th><th>Kurs</th><th>Mənbə</th><th>Status</th></tr></thead>
+      <tbody>${list.slice(0, 15).map(l => `<tr>
+        <td><b>${esc(l.fullName || '—')}</b></td>
+        <td>${esc(l.email || '')}<br><small>${esc(l.phone || '')}</small></td>
+        <td>${esc(byId[l.courseId]?.title || '—')}</td>
+        <td>${esc(l.source)}</td>
+        <td><span class="tag ${cls[l.status] || ''}">${esc(l.status)}</span></td>
+      </tr>`).join('')}</tbody></table></div>`;
+}
+
+function renderFaq(list) {
+  const faq = list.filter(c => c.type === 'FAQ' && c.published);
+  if (!faq.length) return $('s-faq').innerHTML =
+    head('FAQ / Məzmun', 0, '/api/v1/content/cms-content') + '<p class="empty">Giriş tələb olunur.</p>';
+  $('s-faq').innerHTML = head('FAQ / Məzmun', list.length, '/api/v1/content/cms-content') +
+    `<div class="grid">${faq.map(f => `
+      <div class="card"><h3>${esc(f.title)}</h3><p>${esc(f.body || '')}</p></div>`).join('')}</div>`;
+}
+
+/* ------------------------------------------------------------------
+   5) Chat-bot widget — actions düymələri ilə birlikdə
+   ------------------------------------------------------------------ */
+let conversationId = null;
+
+function renderChat() {
+  $('s-chat').innerHTML = head('Chat-bot', '', '/api/v1/chatbot/message') + `
+    <div class="chatbox">
+      <div class="msgs" id="msgs"></div>
+      <div class="botactions" id="botactions"></div>
+      <div class="chatrow">
+        <input id="chatInput" placeholder="Bota sual yaz…" ${TOKEN ? '' : 'disabled'}>
+        <button id="chatSend" ${TOKEN ? '' : 'disabled'}>Göndər</button>
+      </div>
+      ${TOKEN ? '' : '<p class="empty" style="margin-top:10px">Chat-bot giriş tələb edir.</p>'}
+    </div>`;
+  $('chatSend')?.addEventListener('click', sendChat);
+  $('chatInput')?.addEventListener('keydown', e => { if (e.key === 'Enter') sendChat(); });
+}
+
+function pushMsg(text, cls) {
+  const d = document.createElement('div');
+  d.className = 'msg ' + cls;
+  d.textContent = text;
+  $('msgs').appendChild(d);
+  $('msgs').scrollTop = $('msgs').scrollHeight;
+}
+
+async function sendChat(preset) {
+  const input = $('chatInput');
+  const text = typeof preset === 'string' ? preset : input.value.trim();
+  if (!text) return;
+  input.value = '';
+  $('botactions').innerHTML = '';
+  pushMsg(text, 'u');
+
+  try {
+    const res = await fetch(API + '/api/v1/chatbot/message', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + TOKEN },
+      body: JSON.stringify({ message: text, conversationId })
+    });
+    if (!res.ok) {
+      pushMsg(res.status === 503
+        ? 'Bot hazırda əlçatan deyil (503). Botun işlədiyini yoxla.'
+        : 'Xəta: HTTP ' + res.status, 'e');
+      return;
+    }
+    const data = await res.json();
+    conversationId = data.conversationId || conversationId;
+    pushMsg(data.reply, 'b');
+
+    // Botun göndərdiyi düymələr — backend düzəlişindən sonra artıq gəlir.
+    $('botactions').innerHTML = (data.actions || [])
+      .map(a => `<button data-v="${esc(a.value)}">${esc(a.label)}</button>`).join('');
+    $('botactions').querySelectorAll('button').forEach(btn =>
+      btn.addEventListener('click', () => sendChat(btn.dataset.v)));
+
+  } catch {
+    pushMsg('Şəbəkə xətası — backend-ə çatmaq mümkün olmadı.', 'e');
+  }
+}
+
+$('load').addEventListener('click', loadAll);
+</script>
+</body>
+</html>

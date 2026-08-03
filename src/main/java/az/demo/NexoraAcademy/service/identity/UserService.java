@@ -61,7 +61,8 @@ public class UserService {
         User user = new User();
         user.setEmail(request.email());
         user.setPhone(request.phone());
-        user.setFullName(request.fullName());
+        user.setFirstName(request.firstName());
+        user.setLastName(request.lastName());
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         user.setRole(request.role() != null ? request.role() : UserRole.STUDENT);
         user.setStatus(request.status() != null ? request.status() : AccountStatus.PENDING_VERIFICATION);
@@ -80,7 +81,8 @@ public class UserService {
 
         user.setEmail(request.email());
         user.setPhone(request.phone());
-        user.setFullName(request.fullName());
+        user.setFirstName(request.firstName());
+        user.setLastName(request.lastName());
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         applyRoleChange(user, request.role());
         user.setStatus(request.status() != null ? request.status() : user.getStatus());
@@ -101,7 +103,8 @@ public class UserService {
             assertPhoneAvailable(request.phone(), id);
             user.setPhone(request.phone());
         }
-        if (request.fullName() != null) user.setFullName(request.fullName());
+        if (request.firstName() != null) user.setFirstName(request.firstName());
+        if (request.lastName() != null) user.setLastName(request.lastName());
         if (request.password() != null) user.setPasswordHash(passwordEncoder.encode(request.password()));
         if (request.role() != null) applyRoleChange(user, request.role());
         if (request.status() != null) user.setStatus(request.status());
@@ -137,7 +140,8 @@ public class UserService {
             assertPhoneAvailable(request.phone(), id);
             user.setPhone(request.phone());
         }
-        if (request.fullName() != null) user.setFullName(request.fullName());
+        if (request.firstName() != null) user.setFirstName(request.firstName());
+        if (request.lastName() != null) user.setLastName(request.lastName());
         if (request.locale() != null) user.setLocale(request.locale());
         if (request.profile() != null) user.setProfile(request.profile());
 
@@ -191,7 +195,9 @@ public class UserService {
                 user.getId(),
                 user.getEmail(),
                 user.getPhone(),
-                user.getFullName(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getDisplayName(),
                 user.getRole(),
                 user.getStatus(),
                 user.getLocale(),

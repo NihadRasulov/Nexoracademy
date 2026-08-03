@@ -33,11 +33,19 @@ COPY --from=build --chown=spring:spring /app/target/app.jar app.jar
 # Real value must come from the deploy environment (see application-prod.yml) —
 # this default only picks the profile, it does not supply any secret.
 ENV SPRING_PROFILES_ACTIVE=prod
-ENV JAVA_OPTS=""
+# Konteyner limitinin ~75%-i heap-ə. Açıq yazılmasa JVM özü təxmin edir və
+# `docker run -m 1g` kimi limitlərdə OOM-kill riski artır.
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=75"
 
-EXPOSE 8081
+# 8081 = tətbiq API-si (reverse proxy bura yönləndirir)
+# 9091 = management/actuator (health + prometheus) — bax application-prod.yml.
+#        Bu portu HEÇ VAXT internetə açmayın: actuator zənciri ayrı kontekstdədir.
+EXPOSE 8081 9091
 
-HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
-    CMD wget -qO- http://localhost:8081/actuator/health | grep -q '"status":"UP"' || exit 1
+# DİQQƏT: prod profilində actuator 8081-də DEYİL, 9091-dədir. Əvvəllər bu yoxlama
+# 8081/actuator/health-ə vururdu və prod-da 404 alırdı — yəni konteyner həmişə
+# "unhealthy" görünür, `depends_on: service_healthy` şərtləri isə heç vaxt keçmirdi.
+HEALTHCHECK --interval=30s --timeout=3s --start-period=90s --retries=3 \
+    CMD wget -qO- http://localhost:9091/actuator/health/readiness | grep -q '"status":"UP"' || exit 1
 
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

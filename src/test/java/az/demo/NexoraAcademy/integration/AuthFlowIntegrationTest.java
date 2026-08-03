@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -15,7 +16,7 @@ import java.util.regex.Pattern;
 
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -28,7 +29,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
+@Import(TestcontainersConfiguration.class)
 class AuthFlowIntegrationTest {
+
+    /**
+     * EmailService#send is {@code @Async} — the invocation is recorded on a background
+     * thread, so a bare verify() races the request thread and intermittently reports
+     * "zero interactions". Every verification below waits instead of asserting instantly.
+     */
+    private static final long EMAIL_TIMEOUT_MS = 10_000L;
 
     @Autowired
     private MockMvc mockMvc;
@@ -43,7 +52,7 @@ class AuthFlowIntegrationTest {
         String password = "s3cret-password";
 
         // 1. register
-        String registerBody = "{\"email\":\"" + email + "\",\"fullName\":\"Flow Test User\",\"password\":\"" + password + "\"}";
+        String registerBody = "{\"email\":\"" + email + "\",\"firstName\":\"Flow\",\"lastName\":\"Test User\",\"password\":\"" + password + "\"}";
 
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType("application/json")
@@ -53,7 +62,7 @@ class AuthFlowIntegrationTest {
 
         // 2. capture the verification email that was "sent" and pull the 6-digit OTP out of it
         org.mockito.ArgumentCaptor<String> bodyCaptor = org.mockito.ArgumentCaptor.forClass(String.class);
-        verify(emailService).send(eq(email), anyString(), bodyCaptor.capture());
+        verify(emailService, timeout(EMAIL_TIMEOUT_MS)).send(eq(email), anyString(), bodyCaptor.capture());
         String verifyOtp = extractOtp(bodyCaptor.getValue());
 
         mockMvc.perform(post("/api/v1/auth/verify-email")
@@ -70,7 +79,8 @@ class AuthFlowIntegrationTest {
                 .andExpect(jsonPath("$.email").value(email));
 
         org.mockito.ArgumentCaptor<String> loginOtpBodyCaptor = org.mockito.ArgumentCaptor.forClass(String.class);
-        verify(emailService, org.mockito.Mockito.times(2)).send(eq(email), anyString(), loginOtpBodyCaptor.capture());
+        verify(emailService, timeout(EMAIL_TIMEOUT_MS).times(2))
+                .send(eq(email), anyString(), loginOtpBodyCaptor.capture());
         String loginOtp = extractOtp(loginOtpBodyCaptor.getAllValues().get(1));
 
         // 3b. login step 2 (submit the OTP) -> actual tokens
@@ -113,9 +123,14 @@ class AuthFlowIntegrationTest {
 
     @Test
     void registeringWithDuplicateEmailReturns409() throws Exception {
-        doNothing().when(emailService).send(anyString(), anyString(), anyString());
+        // NOTE: do NOT stub the spy here (doNothing().when(emailService).send(...)).
+        // send() is @Async, so the stubbing call is dispatched to a background thread and
+        // never completes on this one — Mockito is left with an unfinished stubbing whose
+        // dangling matchers then fail *every subsequent test class* in the same JVM with
+        // InvalidUseOfMatchers/UnfinishedStubbing. Stubbing is unnecessary anyway:
+        // EmailService swallows send failures by design, so an unreachable SMTP host is harmless.
         String email = "dup-" + UUID.randomUUID() + "@example.com";
-        String body = "{\"email\":\"" + email + "\",\"fullName\":\"Dup User\",\"password\":\"s3cret-password\"}";
+        String body = "{\"email\":\"" + email + "\",\"firstName\":\"Dup\",\"lastName\":\"User\",\"password\":\"s3cret-password\"}";
 
         mockMvc.perform(post("/api/v1/auth/register").contentType("application/json").content(body))
                 .andExpect(status().isCreated());
@@ -134,7 +149,7 @@ class AuthFlowIntegrationTest {
 
     @Test
     void registerWithWeakPasswordReturns400WithFieldErrors() throws Exception {
-        String body = "{\"email\":\"weak-" + UUID.randomUUID() + "@example.com\",\"fullName\":\"Weak\",\"password\":\"short\"}";
+        String body = "{\"email\":\"weak-" + UUID.randomUUID() + "@example.com\",\"firstName\":\"Weak\",\"lastName\":\"Password\",\"password\":\"short\"}";
 
         mockMvc.perform(post("/api/v1/auth/register").contentType("application/json").content(body))
                 .andExpect(status().isBadRequest())

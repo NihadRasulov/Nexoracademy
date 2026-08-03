@@ -82,9 +82,28 @@ public class SecurityConfig {
                                 "/v3/api-docs/**"
                         ).permitAll()
 
-                        // Health Check
+                        // Health Check — "/**" vacibdir: application-prod.yml
+                        // liveness/readiness probe-larını aktivləşdirir, onların path-i isə
+                        // /actuator/health/liveness və /actuator/health/readiness-dir.
+                        // Yalnız dəqiq "/actuator/health" yazılanda k8s probe-ları 401 alırdı.
+                        // Prod-da actuator ayrıca management portuna (9091) köçür və bu
+                        // zəncir ora ümumiyyətlə tətbiq olunmur — bax application-prod.yml.
                         .requestMatchers(
-                                "/actuator/health"
+                                "/actuator/health",
+                                "/actuator/health/**"
+                        ).permitAll()
+
+                        // Prometheus scrape endpoint-i. Ayrıca management portu (9091)
+                        // öz-özlüyündə KİFAYƏT ETMİR — bu filter zənciri həmin porta da
+                        // tətbiq olunur (sınaqla təsdiqləndi: 9091/actuator/prometheus → 401),
+                        // Prometheus isə JWT göndərə bilmir.
+                        // Təhlükəsizlik: bu endpoint yalnız prod-da mövcuddur
+                        // (management.endpoints.web.exposure.include), yalnız 9091-dədir və
+                        // 9091 nə Service-də, nə ingress-də xaricə verilir — yəni yalnız
+                        // klaster daxilindən oxuna bilir (bax k8s/06-network-policy.yaml).
+                        // Dev profilində bu endpoint ümumiyyətlə açılmır (404).
+                        .requestMatchers(
+                                "/actuator/prometheus"
                         ).permitAll()
 
                         // Self-service — istənilən autentifikasiya olunmuş istifadəçi öz

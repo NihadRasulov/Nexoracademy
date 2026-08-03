@@ -1,5 +1,9 @@
 package az.demo.NexoraAcademy.dto.auth;
 
+import az.demo.NexoraAcademy.validation.PersonName;
+import az.demo.NexoraAcademy.validation.PhoneNumber;
+import az.demo.NexoraAcademy.validation.TrimmedStringDeserializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -11,13 +15,20 @@ import jakarta.validation.constraints.Size;
  * anything more privileged goes through the admin-only UserController.
  */
 public record RegisterRequest(
-        @NotBlank @Email @Size(max = 255) String email,
+        // 254 = RFC 5321 maximum length of an email address.
+        @NotBlank @Email @Size(max = 254)
+        @JsonDeserialize(using = TrimmedStringDeserializer.class) String email,
 
-        @NotBlank @Size(min = 2, max = 150) String fullName,
+        @NotBlank @PersonName
+        @JsonDeserialize(using = TrimmedStringDeserializer.class) String firstName,
 
-        @Pattern(regexp = "^\\+?[0-9 ()-]{6,20}$", message = "phone must be a valid phone number")
-        String phone,
+        @NotBlank @PersonName
+        @JsonDeserialize(using = TrimmedStringDeserializer.class) String lastName,
 
+        @PhoneNumber
+        @JsonDeserialize(using = TrimmedStringDeserializer.class) String phone,
+
+        // Not trimmed: leading/trailing spaces are legitimate password characters.
         @NotBlank
         @Pattern(
                 regexp = "^(?=.*[A-Za-z])(?=.*\\d).{8,72}$",

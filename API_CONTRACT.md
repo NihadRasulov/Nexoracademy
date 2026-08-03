@@ -143,7 +143,7 @@ Fayl: `controller/auth/AuthController.java`
 
 | Metod | Path | Rol | Request Body | Response Body | Status |
 |---|---|---|---|---|---|
-| POST | `/api/v1/auth/register` | permitAll | `RegisterRequest{email:string(@Email,max255), fullName:string(2-150), phone:string?(pattern), password:string(8-72, ≥1 hərf+≥1 rəqəm)}` | `RegisterResponse{userId:UUID, email:string, message:string}` | 201, 400 (validation), 409 (email/phone artıq var) |
+| POST | `/api/v1/auth/register` | permitAll | `RegisterRequest{email:string(@Email,max254), firstName:string(2-40, yalnız hərflər + tək daxili boşluq/defis/apostrof), lastName:string(2-40, yalnız hərflər + tək daxili boşluq/defis/apostrof), phone:string?(7-15 rəqəm, max 20 simvol), password:string(8-72, ≥1 hərf+≥1 rəqəm)}` | `RegisterResponse{userId:UUID, email:string, message:string}` | 201, 400 (validation), 409 (email/phone artıq var) |
 | POST | `/api/v1/auth/login` | permitAll | `LoginRequest{email:string(@Email), password:string}` | **Rola görə iki mümkün şəkil:** `ADMIN`/`SYSTEM_ADMIN`/`SALES_CRM`/`CONTENT_MANAGER` → `TokenResponse{accessToken, refreshToken, tokenType, expiresInSeconds}` (birbaşa, OTP-siz); `STUDENT`/`GUEST` → `LoginOtpResponse{message:string, email:string, expiresInSeconds:long}` (tokens YOXDUR, email-ə 6-rəqəmli OTP göndərilir) | 200, 400, 401 (yanlış email/parol — mesaj hər iki halda eynidir, user enumeration qorunur) |
 | POST | `/api/v1/auth/login/verify-otp` | permitAll | `LoginOtpVerifyRequest{email:string(@Email), otp:string(6 rəqəm)}` | `TokenResponse{accessToken:string, refreshToken:string, tokenType:"Bearer", expiresInSeconds:long}` | 200, 400, 401 (kod səhv/vaxtı bitib/tapılmadı) |
 | POST | `/api/v1/auth/refresh` | permitAll | `RefreshTokenRequest{refreshToken:string}` | `TokenResponse` (yuxarı bax) | 200, 400, 401 (etibarsız/istifadə olunmuş/vaxtı bitmiş) |
@@ -163,7 +163,7 @@ Fayl: `controller/identity/UserController.java`
 | Metod | Path | Rol | Request Body | Response Body | Status |
 |---|---|---|---|---|---|
 | GET | `/api/v1/users/me` | `authenticated()` (istənilən rol — özü haqqında) | — | `UserResponse` (aşağı bax) | 200, 401 |
-| PATCH | `/api/v1/users/me` | `authenticated()` | `UpdateProfileRequest{email:string?, phone:string?, fullName:string?, locale:string?, profile:Map<string,object>?}` — hamısı optional, `@Valid` (format yoxlanılır, presence yox) | `UserResponse` | 200, 400, 401, 409 (email tutulub) |
+| PATCH | `/api/v1/users/me` | `authenticated()` | `UpdateProfileRequest{email:string?, phone:string?, firstName:string?, lastName:string?, locale:string?, profile:Map<string,object>?}` (ad/telefon qaydaları `UserRequest`-dəki ilə eynidir) — hamısı optional, `@Valid` (format yoxlanılır, presence yox) | `UserResponse` | 200, 400, 401, 409 (email tutulub) |
 | POST | `/api/v1/users/me/password` | `authenticated()` | `ChangePasswordRequest{currentPassword:string, newPassword:string(8-72,...)}` | boş | 204, 400, 401 (cari parol səhvdirsə) |
 | POST | `/api/v1/users` | `ADMIN`,`SYSTEM_ADMIN` | `UserRequest` (tam, aşağı bax) | `UserResponse` | 201, 400, 403, 409 |
 | GET | `/api/v1/users` | `ADMIN`,`SYSTEM_ADMIN` | Query: `q:string?`, `role:UserRole?`, `status:AccountStatus?`, `page:int?`(default 0), `size:int?`(default 20), `sort:string?`(default `createdAt`) | **`Page<UserResponse>`** (Spring Data default JSON — bax §2.pagination) | 200, 403 |
@@ -172,9 +172,9 @@ Fayl: `controller/identity/UserController.java`
 | PATCH | `/api/v1/users/{id}` | `ADMIN`,`SYSTEM_ADMIN` | `UserRequest` (qismən — göndərilməyən sahələr toxunulmaz qalır, göndərilənlər format yoxlanılır) | `UserResponse` | 200, 400, 403, 404, 409 |
 | DELETE | `/api/v1/users/{id}` | `ADMIN`,`SYSTEM_ADMIN` | — | boş | 204, 403, 404 |
 
-**`UserRequest`** (create/update/patch üçün ortaq DTO): `email:string(@Email,max255)`, `phone:string?(pattern)`, `fullName:string(2-150)`, `password:string(8-72,...)`, `role:UserRole?` (default `STUDENT` create-də), `status:AccountStatus?` (default `PENDING_VERIFICATION` create-də), `locale:string?(pattern "az" və ya "az-AZ")`, `profile:Map<string,object>?(max 50 açar)`.
+**`UserRequest`** (create/update/patch üçün ortaq DTO): `email:string(@Email,max254)`, `phone:string?(7-15 rəqəm, max 20 simvol)`, `firstName:string(2-40, yalnız hərflər + tək daxili boşluq/defis/apostrof)`, `lastName:string(2-40, yalnız hərflər + tək daxili boşluq/defis/apostrof)`, `password:string(8-72,...)`, `role:UserRole?` (default `STUDENT` create-də), `status:AccountStatus?` (default `PENDING_VERIFICATION` create-də), `locale:string?(pattern "az" və ya "az-AZ")`, `profile:Map<string,object>?(max 50 açar)`.
 
-**`UserResponse`**: `id:UUID`, `email:string`, `phone:string?`, `fullName:string`, `role:UserRole`, `status:AccountStatus`, `locale:string`, `profile:Map<string,object>`, `lastLoginAt:Instant?`, `createdAt:Instant`, `updatedAt:Instant`.
+**`UserResponse`**: `id:UUID`, `email:string`, `phone:string?`, `firstName:string`, `lastName:string`, `fullName:string` (törəmə/read-only — `firstName + " " + lastName`; request-lərdə qəbul olunmur), `role:UserRole`, `status:AccountStatus`, `locale:string`, `profile:Map<string,object>`, `lastLoginAt:Instant?`, `createdAt:Instant`, `updatedAt:Instant`.
 
 Qeyd: `patch` endpoint-i admin `role` sahəsini dəyişəndə `UserRoleChangedEvent` yayımlayır (`event/UserRoleChangedEvent.java`) — event listener-lərin nə etdiyi bu sənədin əhatəsindən kənardır.
 
@@ -589,7 +589,7 @@ Canlı nümunələr (real sınaqdan, `curl` ilə):
 
 **400 — validasiya xətası** (`@Valid`/`@Validated` uğursuz, `MethodArgumentNotValidException`):
 ```json
-{"timestamp":"2026-07-22T06:55:01.729382400Z","status":400,"error":"Bad Request","message":"Validation failed","path":"/api/v1/auth/register","errors":{"fullName":"must not be blank","email":"must not be blank","password":"must not be blank"}}
+{"timestamp":"2026-07-22T06:55:01.729382400Z","status":400,"error":"Bad Request","message":"Validation failed","path":"/api/v1/auth/register","errors":{"firstName":"must not be blank","lastName":"must not be blank","email":"must not be blank","password":"must not be blank"}}
 ```
 `errors` — `Map<sahə adı, mesaj>` formasıdır (`FieldError.getField()` → `FieldError.getDefaultMessage()`). Bir sahədə birdən çox pozulmuş qayda varsa, yalnız **sonuncusu** map-də qalır (map açar-təkrarında üzərinə yazılır — Bean Validation-ın sırası deterministik deyil).
 

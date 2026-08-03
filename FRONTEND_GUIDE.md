@@ -4,6 +4,28 @@ Bu sənəd `API_CONTRACT.md`-dəki (backend-BFF komandası üçün yazılmış, 
 
 ---
 
+## 0. ⚠️ Son Breaking Change — istifadəçi adı ikiyə bölündü
+
+**Nə dəyişdi:** `identity.users`-də tək `full_name` sahəsi silinib, yerinə **`firstName` + `lastName`** gəlib (DB migration: `V14__split_user_full_name.sql`). Bu, **breaking change**-dir — köhnə `fullName` göndərən hər request düzəldilməlidir.
+
+**Frontend-də konkret nə edilməlidir:**
+
+| # | Yer | Nə etməli |
+|---|---|---|
+| 1 | **Register forması** (`POST /api/v1/auth/register`) | Tək "Ad Soyad" input-u əvəzinə **iki ayrı input**: `firstName` və `lastName`. Hər ikisi məcburi. Qayda: **2–40 simvol, yalnız hərflər** (Azərbaycan əlifbası tam dəstəklənir) — rəqəm/simvol olmaz; söz araları üçün **tək** boşluq, defis və ya apostrof olar (`Anna-Maria`, `O'Brien`). Başda/sonda ayırıcı və ya iki ardıcıl ayırıcı qəbul edilmir. |
+| 2 | **Profil redaktəsi** (`PATCH /api/v1/users/me`) | `fullName` sahəsi artıq qəbul olunmur — `firstName` və/və ya `lastName` göndər (hər ikisi optional, göndərilməyən toxunulmaz qalır). |
+| 3 | **Admin: istifadəçi yaratma/redaktə** (`POST`/`PUT`/`PATCH /api/v1/users`) | `UserRequest`-də `fullName` → `firstName` + `lastName`. `POST`/`PUT`-da hər ikisi məcburi, `PATCH`-də optional. |
+| 4 | **Ad göstərilən hər yer** (profil başlığı, istifadəçi cədvəli, avatar tooltip və s.) | Dəyişiklik **məcburi deyil** — `UserResponse` törəmə `fullName` sahəsini qaytarmağa davam edir. İstəsən `firstName`/`lastName`-i ayrıca göstər (məs. cədvəldə "Ad" və "Soyad" sütunları). |
+| 5 | **Admin istifadəçi siyahısında sıralama** (`GET /api/v1/users?sort=...`) | `sort=fullName` **artıq 500 verir** (belə property yoxdur). `sort=firstName` və ya `sort=lastName` istifadə et. |
+| 6 | **Validasiya xətalarının göstərilməsi** | 400 cavabında `errors.fullName` yerinə indi `errors.firstName` / `errors.lastName` gəlir — field-ə görə xəta map edən kod yenilənməlidir. |
+| 7 | **Axtarış** (`GET /api/v1/users?q=...`) | Dəyişiklik lazım deyil — backend email, ad, soyad **və** `"Ad Soyad"` birləşməsi üzrə axtarır. |
+
+**🚨 Ən vacib tələ:** Backend naməlum JSON sahələrini **səssizcə iqnor edir** (`FAIL_ON_UNKNOWN_PROPERTIES` sönülüdür). Yəni `PATCH /users/me` ilə köhnə `{"fullName":"Yeni Ad"}` göndərsən — **400 yox, 200 alacaqsan, amma ad dəyişməyəcək**. Bu, səssiz baq kimi görünür, ona görə profil formasını mütləq yoxla.
+
+`fullName` **yalnız response-da** var (read-only, backend-də qurulur) — request body-də göndərmə, effekti olmayacaq.
+
+---
+
 ## 1. Məhsul nədir
 
 NexoraAcademy — kurs satan bir təhsil platformasıdır (bootcamp/akademiya modeli). İki tərəfi var:
@@ -55,9 +77,11 @@ Bir istifadəçinin **yalnız bir rolu** var (array deyil, tək sahə):
 ### 4.1 Register (public sayt, STUDENT üçün)
 ```
 POST /api/v1/auth/register
-{ email, fullName, phone?, password }
+{ email, firstName, lastName, phone?, password }
 → 201 { userId, email, message }
 ```
+> ⚠️ Əvvəllər bu endpoint tək `fullName` qəbul edirdi. İndi **iki ayrı sahə** — `firstName` və `lastName`: məcburi, 2–40 simvol, yalnız hərflər (daxildə tək boşluq/defis/apostrof olar). Telefon: 7–15 rəqəm, maksimum 20 simvol. Bax §0.
+
 Hesab `PENDING_VERIFICATION` statusu ilə yaradılır, email-ə **6 rəqəmli OTP** göndərilir (link deyil).
 
 ```
@@ -182,7 +206,7 @@ Format: `Metod Path — Rol`. `Rol: PUBLIC` = token lazım deyil. Bütün `POST/
 
 ### 6.1 Auth — `/api/v1/auth` (hamısı PUBLIC)
 ```typescript
-interface RegisterRequest { email: string; fullName: string; phone?: string; password: string; } // password: 8-72 simvol, ≥1 hərf + ≥1 rəqəm
+interface RegisterRequest { email: string; firstName: string; lastName: string; phone?: string; password: string; } // password: 8-72 simvol, ≥1 hərf + ≥1 rəqəm
 interface RegisterResponse { userId: UUID; email: string; message: string; }
 interface LoginRequest { email: string; password: string; }
 interface LoginOtpResponse { message: string; email: string; expiresInSeconds: number; }
@@ -198,19 +222,22 @@ interface ResendVerificationRequest { email: string; }
 ### 6.2 Users — `/api/v1/users`
 ```typescript
 interface UserResponse {
-  id: UUID; email: string; phone?: string; fullName: string;
+  id: UUID; email: string; phone?: string; firstName: string; lastName: string;
+  fullName: string; // read-only, backend-də firstName+lastName-dən qurulur — göndərmək olmaz
   role: UserRole; status: AccountStatus; locale: string;
   profile: Record<string, unknown>;
   lastLoginAt?: ISODateTime; createdAt: ISODateTime; updatedAt: ISODateTime;
 }
-interface UpdateProfileRequest { email?: string; phone?: string; fullName?: string; locale?: string; profile?: Record<string, unknown>; }
+interface UpdateProfileRequest { email?: string; phone?: string; firstName?: string; lastName?: string; locale?: string; profile?: Record<string, unknown>; }
 interface ChangePasswordRequest { currentPassword: string; newPassword: string; }
-interface UserRequest { email: string; phone?: string; fullName: string; password: string; role?: UserRole; status?: AccountStatus; locale?: string; profile?: Record<string, unknown>; }
+interface UserRequest { email: string; phone?: string; firstName: string; lastName: string; password: string; role?: UserRole; status?: AccountStatus; locale?: string; profile?: Record<string, unknown>; }
 ```
 - `GET /api/v1/users/me` — **authenticated** (istənilən rol, öz profili)
 - `PATCH /api/v1/users/me` — **authenticated**
 - `POST /api/v1/users/me/password` — **authenticated**
 - `POST|GET|GET{id}|PUT{id}|PATCH{id}|DELETE{id} /api/v1/users` — **ADMIN, SYSTEM_ADMIN** (tam CRUD, `GET` list **paginated** — bax §6.9)
+
+> ⚠️ **Ad sahələri dəyişib** (bax §0): request-lərdə `fullName` YOXDUR — `firstName` + `lastName` göndər. `UserResponse`-dakı `fullName` isə read-only törəmə sahədir. Sıralamada `sort=fullName` **500 verir** — `sort=firstName`/`sort=lastName` istifadə et.
 
 ### 6.3 Categories — `/api/v1/categories` (id: `short`/number)
 ```typescript

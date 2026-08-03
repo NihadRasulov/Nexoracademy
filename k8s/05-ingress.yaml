@@ -7,6 +7,12 @@ metadata:
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/proxy-body-size: "10m"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "30"
+    # HSTS — brauzer bu domenə bir daha http:// ilə getməsin.
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains";
+    # DEVOPS: TLS sertifikatı üçün cert-manager quraşdırılıbsa, aşağıdakı sətri açın —
+    # əks halda "nexora-tls" secret-ini əl ilə yaratmalısınız (bax PRODUCTION_HANDOVER.md).
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   ingressClassName: nginx
   tls:
@@ -24,10 +30,10 @@ spec:
                 name: nexora-app
                 port:
                   number: 8081
-          - path: /actuator
-            pathType: Prefix
-            backend:
-              service:
-                name: nexora-app
-                port:
-                  number: 8081
+# QEYD: "/actuator" prefiksi buradan QƏSDƏN SİLİNDİ.
+# 1) Actuator prod-da ayrıca daxili porta (9091) köçüb — bax application-prod.yml.
+#    Yəni bu yol onsuz da 8081-də mövcud deyil.
+# 2) Daha vacibi: actuator-u ictimai domendə saxlamaq üçün heç bir səbəb yoxdur —
+#    k8s probe-ları poda birbaşa (kubelet) müraciət edir, Prometheus isə klaster
+#    daxilindən scrape edir. Xaricə açılsaydı, exposure siyahısı səhvən genişlənən
+#    kimi /actuator/env və /actuator/heapdump bütün sirləri verərdi.

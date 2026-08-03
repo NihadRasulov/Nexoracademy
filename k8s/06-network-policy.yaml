@@ -21,10 +21,19 @@ spec:
   policyTypes:
     - Ingress
   ingress:
+    # Tətbiq trafiki (ingress controller → 8081)
     - from:
         - namespaceSelector: {}
       ports:
         - port: 8081
+    # Management portu (9091): kubelet probe-ları və Prometheus scrape.
+    # Bu port ingress-ə çıxarılmır (bax 05-ingress.yaml) — yalnız klaster daxilində.
+    # DEVOPS: monitorinq namespace-i məlum olanda buradakı namespaceSelector-u
+    # daraldın, məs: matchLabels: {kubernetes.io/metadata.name: monitoring}
+    - from:
+        - namespaceSelector: {}
+      ports:
+        - port: 9091
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -57,14 +66,60 @@ spec:
   policyTypes:
     - Egress
   egress:
+    # 1) Postgres
     - to:
         - podSelector:
             matchLabels:
               app: nexora-postgres
       ports:
         - port: 5432
+
+    # 2) DNS — TCP də lazımdır. Yalnız UDP/53 açıq olanda 512 baytdan böyük cavab
+    #    (və ya truncate olunmuş cavab) TCP-yə keçir və sükutla düşür; nəticədə SMTP/
+    #    Cloudinary host-ları nadir hallarda "UnknownHostException" verir.
     - to:
         - namespaceSelector: {}
       ports:
         - port: 53
           protocol: UDP
+        - port: 53
+          protocol: TCP
+
+    # 3) Xarici HTTPS/SMTP — ƏVVƏLKİ KONFİQURASİYADA YOX İDİ və bu, klasterdə
+    #    aşağıdakıların HAMISINI sükutla sındırırdı (kod xətasız görünür, çünki
+    #    EmailService xətanı udur, sadəcə heç bir məktub çatmır):
+    #      - SMTP (587/465): OTP, email doğrulama, şifrə bərpası
+    #      - HTTPS (443): Cloudinary şəkil yükləmə (pom.xml → cloudinary-http5)
+    #      - HTTPS (443): self-hosted chat-bot xarici host-dadırsa (CHATBOT_BASE_URL)
+    #
+    #    DİQQƏT: 0.0.0.0/0 bütün internetə çıxışdır, sadəcə klaster daxilindəki
+    #    digər podlara YOX (except blokları). Provayder IP-ləri sabitdirsə, bunu
+    #    daha da daraldın.
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - port: 443
+          protocol: TCP
+        - port: 587
+          protocol: TCP
+        - port: 465
+          protocol: TCP
+
+    # 4) Chat-bot klaster DAXİLİNDƏ ayrıca servis kimi işləyirsə, yuxarıdakı
+    #    "except" blokları onu bağlayır. Belə halda aşağıdakı bloku aktivləşdirin
+    #    və selektoru bot-un pod etiketinə uyğunlaşdırın:
+    # - to:
+    #     - namespaceSelector:
+    #         matchLabels:
+    #           kubernetes.io/metadata.name: nexora-ai
+    #       podSelector:
+    #         matchLabels:
+    #           app: nexora-chatbot
+    #   ports:
+    #     - port: 8000
+    #       protocol: TCP

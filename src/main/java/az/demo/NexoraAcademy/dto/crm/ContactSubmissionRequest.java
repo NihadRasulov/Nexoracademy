@@ -1,11 +1,11 @@
 package az.demo.NexoraAcademy.dto.crm;
 
 import az.demo.NexoraAcademy.entity.enums.SubmissionType;
+import az.demo.NexoraAcademy.validation.PhoneNumber;
 import az.demo.NexoraAcademy.validation.ValidationGroups;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 import java.time.Instant;
@@ -22,8 +22,7 @@ public record ContactSubmissionRequest(
 
         @Email @Size(max = 255) String email,
 
-        @Pattern(regexp = "^\\+?[0-9 ()-]{6,20}$", message = "phone must be a valid phone number")
-        String phone,
+        @PhoneNumber String phone,
 
         @Size(max = 4000) String message,
 

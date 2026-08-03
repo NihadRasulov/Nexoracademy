@@ -149,6 +149,41 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-mail</artifactId>
 		</dependency>
+
+		<!-- Actuator özü metrikaları toplayır, amma onları Prometheus formatında
+		     verə bilməz — bu registry olmadan /actuator/prometheus mövcud deyil və
+		     prod-da monitorinq (latency, error rate, JVM/Hikari/HTTP metrikaları)
+		     üçün heç bir scrape hədəfi yoxdur. Endpoint ayrıca management portunda
+		     açılır (bax application-prod.yml), ictimai ingress-ə çıxarılmır. -->
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
+		<!-- Integration testləri əvvəllər .env-dəki real (developer-in öz) Postgres-inə
+		     qoşulurdu: CI-da işləmirdi, lokalda isə canlı dev bazasına sətir yazırdı.
+		     Testcontainers hər build üçün təmiz, birdəfəlik baza qaldırır —
+		     bax src/test/.../integration/TestcontainersConfiguration.java. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-testcontainers</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<!-- DİQQƏT: Testcontainers 2.x-də artifactId-lər dəyişib —
+		     "junit-jupiter"/"postgresql" DEYİL, "testcontainers-junit-jupiter"/
+		     "testcontainers-postgresql". Köhnə adlar Spring Boot 4.1-in BOM-unda
+		     idarə olunmur və "version is missing" xətası verir. -->
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>testcontainers-junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>testcontainers-postgresql</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>

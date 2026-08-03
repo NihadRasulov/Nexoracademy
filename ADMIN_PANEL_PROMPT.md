@@ -12,6 +12,8 @@ Bu tapşırığı yerinə yetirməzdən **əvvəl** repo kökündəki **`API_CON
 - Ya bu barədə sual ver (tapşırığı verən şəxsdən aydınlaşdırma istə),
 - Ya da konservativ/təhlükəsiz defolt seç və kodda **aydın şərh** yaz ki, bu qərarın fərziyyə olduğunu bildirəsən (məs. `// FƏRZİYYƏ: backend-də X aydın deyil, buna görə Y davranışı seçildi — təsdiqlənməlidir`).
 
+**⚠️ Son breaking change (backend-də artıq tətbiq olunub):** İstifadəçinin tək `fullName` sahəsi silinib, yerinə **`firstName` + `lastName`** gəlib (DB migration `V14__split_user_full_name.sql`). Bu, `RegisterRequest`, `UserRequest`, `UpdateProfileRequest` və `UserResponse`-a toxunur. Detallar §5.1-də — BFF modellərini yazmazdan əvvəl mütləq oxu.
+
 ---
 
 ## 1. Layihənin məqsədi
@@ -99,6 +101,19 @@ NexoraAcademy.AdminBff/
 - **`Page<T>` (yalnız `GET /api/v1/courses` və `GET /api/v1/users`):** Spring Data-nın öz default JSON forması — `API_CONTRACT.md` §2.4-dəki tam nümunəyə bax. Minimum lazım olan sahələr: `content` (massiv), `totalElements`, `totalPages`, `number` (cari səhifə, 0-based), `size`. Qalan sahələri (`pageable`, `sort` daxili strukturu) BFF-in öz `PagedResult<T>` modelinə map edərkən nəzərə almaq məcburi deyil, sadəcə `content`/`totalElements`/`totalPages`/`number`/`size`-i çıxarmaq kifayətdir.
 - **Digər bütün `GET` collection endpoint-ləri paginasiyasız düz JSON massiv qaytarır** (`List<T>`) — bunları `Page<T>` kimi parse etməyə cəhd etmə, sadəcə array deserialize et.
 
+### 5.1 İstifadəçi adı: `fullName` → `firstName` + `lastName` (BREAKING)
+
+Backend-də `identity.users.full_name` sütunu silinib, yerinə `first_name` və `last_name` gəlib (migration `V14__split_user_full_name.sql`). BFF modellərində və admin panel UI-də aşağıdakılar nəzərə alınmalıdır:
+
+- **Backend contract modelləri** (`Contracts/Backend`): `RegisterRequest`, `UserRequest`, `UpdateProfileRequest` — `FullName` sahəsini **sil**, yerinə `FirstName` + `LastName` (`[JsonPropertyName("firstName")]` / `("lastName")`). `UserResponse`-da isə **hər üçü** var: `FirstName`, `LastName` və read-only `FullName`.
+- **`fullName` yalnız response-dadır** — backend-də `firstName + " " + lastName` kimi qurulur, bazada sütunu yoxdur. Request DTO-larına **əlavə etmə**; göndərsən belə, effekti olmayacaq (aşağıdakı tələyə bax).
+- **Validasiya:** `firstName` və `lastName` — hər biri **2–40 simvol** və **yalnız hərflər** (Azərbaycan əlifbası daxil; daxildə tək boşluq/defis/apostrof olar, başda/sonda yox). Backend dəyəri validasiyadan ƏVVƏL trim edir, ona görə BFF ayrıca trim etməsə də olar. `POST`/`PUT` (`ValidationGroups.OnCreate`) üçün hər ikisi **məcburi** (`@NotBlank`), `PATCH` üçün ikisi də optional və bir-birindən asılı olmadan tətbiq olunur (yalnız `firstName` göndərib soyadı toxunulmaz saxlaya bilərsən).
+- **Admin panel formaları:** istifadəçi yaratma/redaktə ekranında tək "Ad Soyad" input-u əvəzinə **iki ayrı input**. Siyahı/cədvəldə isə dəyişiklik məcburi deyil — `UserResponse.FullName`-i birbaşa göstərmək olar.
+- **🚨 Səssiz uğursuzluq təhlükəsi:** Backend `FAIL_ON_UNKNOWN_PROPERTIES`-i sönülü saxlayır (Spring Boot default). Yəni BFF köhnə `{"fullName": "..."}` göndərsə, backend **400 qaytarmayacaq** — sorğu 200/201 ilə uğurlu görünəcək, amma ad **dəyişməyəcək**. Buna görə mapping-i mütləq real backend-ə qarşı test et; sırf status koduna baxıb "işlədi" qərarı vermə.
+- **Sıralama (`GET /api/v1/users?sort=...`):** `sort=fullName` artıq mövcud olmayan property-yə istinad etdiyi üçün Spring Data `PropertyReferenceException` atır və bu, generic handler-ə düşərək **500** qaytarır (400 deyil!). BFF sort parametrini `firstName`/`lastName` ilə əvəzləməli, ideal halda isə **icazə verilən sort sahələrini whitelist** edib naməlum dəyəri backend-ə ötürməməlidir.
+- **Axtarış (`?q=`):** dəyişiklik lazım deyil — backend `q`-nu email, ad, soyad **və** `"Ad Soyad"` birləşməsi üzrə axtarır.
+- **Xəta normalizasiyası (§7):** 400 cavabında validasiya açarları `fullName` yerinə indi `firstName` / `lastName` gəlir — BFF-in field-səviyyəli xəta mapping-i buna uyğunlaşdırılmalıdır.
+
 ---
 
 ## 6. PATCH semantikası — vacib
@@ -181,6 +196,8 @@ Bunların hamısı `API_CONTRACT.md`-də ətraflı izah olunub, burada sadəcə 
 - [ ] **Access token logout-da server-side ləğv olunmur** (yalnız refresh token) — BFF öz tərəfində qısa-müddətli keşləmə/yoxlama əlavə etmək istəyə bilər, məcburi deyil.
 - [ ] **Bütün collection GET endpoint-lərinin əksəriyyəti paginasiyasızdır** — böyük datasetlərdə (məs. `sessions`, `audit-logs`) performans/UX riski var, BFF səviyyəsində client-side və ya BFF-side səhifələmə əlavə etmək düşünülə bilər (backend özü dəstəkləmir).
 - [ ] **`GUEST` rolu** enum-da var, amma heç bir yerdə təyin edilmir/istifadə olunmur — admin panel UI-də bu rol üçün xüsusi məntiq qurmağa ehtiyac yoxdur, sadəcə mövcudluğunu bil.
+- [ ] **`GET /api/v1/users?sort=fullName` → 500.** İstifadəçi adı `firstName`/`lastName`-ə bölündükdən sonra `fullName` sıralana bilən property deyil; backend naməlum sort sahəsi üçün 400 yox, **500** qaytarır. BFF sort sahələrini whitelist etməlidir (bax §5.1).
+- [ ] **Köhnə `fullName` request sahəsi səssizcə iqnor olunur** — backend naməlum JSON property-lərinə xəta vermir, ona görə səhv mapping özünü 200 kimi göstərəcək (bax §5.1).
 
 ---
 

@@ -13,18 +13,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.HashMap;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -37,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
+@Import(TestcontainersConfiguration.class)
 class CourseCrudAndSearchIntegrationTest {
 
     @Autowired
@@ -60,28 +57,22 @@ class CourseCrudAndSearchIntegrationTest {
         String adminEmail = "admin-" + UUID.randomUUID() + "@example.com";
         User admin = new User();
         admin.setEmail(adminEmail);
-        admin.setFullName("Test Admin");
+        admin.setFirstName("Test");
+        admin.setLastName("Admin");
         admin.setPasswordHash(passwordEncoder.encode("adminpass123"));
         admin.setRole(UserRole.ADMIN);
         admin.setStatus(AccountStatus.ACTIVE);
         admin.setProfile(new HashMap<>());
         userRepository.save(admin);
 
-        mockMvc.perform(post("/api/v1/auth/login")
+        // Admin-panel işçiləri (ADMIN/SYSTEM_ADMIN/SALES_CRM/CONTENT_MANAGER) OTP
+        // addımını KEÇMİR — bax AuthService#login → isAdminPanelStaff(): token-lər
+        // birbaşa /login cavabında gəlir. Bu test əvvəllər hər rol üçün OTP göndərilən
+        // köhnə axına görə yazılmışdı və /login/verify-otp çağırırdı; heç vaxt
+        // gəlməyəcək OTP məktubunu gözlədiyi üçün setUp həmişə uğursuz olurdu.
+        String loginResponse = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType("application/json")
                         .content("{\"email\":\"" + adminEmail + "\",\"password\":\"adminpass123\"}"))
-                .andExpect(status().isOk());
-
-        org.mockito.ArgumentCaptor<String> otpBodyCaptor = org.mockito.ArgumentCaptor.forClass(String.class);
-        verify(emailService).send(eq(adminEmail), anyString(), otpBodyCaptor.capture());
-        Matcher otpMatcher = Pattern.compile("\\b(\\d{6})\\b").matcher(otpBodyCaptor.getValue());
-        if (!otpMatcher.find()) {
-            throw new IllegalStateException("No 6-digit OTP found in email body: " + otpBodyCaptor.getValue());
-        }
-
-        String loginResponse = mockMvc.perform(post("/api/v1/auth/login/verify-otp")
-                        .contentType("application/json")
-                        .content("{\"email\":\"" + adminEmail + "\",\"otp\":\"" + otpMatcher.group(1) + "\"}"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         adminToken = objectMapper.readTree(loginResponse).get("accessToken").asText();

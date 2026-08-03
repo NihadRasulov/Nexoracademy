@@ -27,6 +27,21 @@ spring:
 
   flyway:
     enabled: true
+    # V15 (identity.users.full_name-in silinməsi) qəsdən bloklanıb.
+    #
+    # V14 geriyə uyğundur — icra olunandan sonra köhnə və yeni podlar eyni anda işləyə
+    # bilir (bax V14-dəki sinxronizasiya trigger-i), ona görə RollingUpdate downtime-sız
+    # keçir. V15 isə full_name-i DROP edir: hələ işləyən köhnə pod həmin an çökər.
+    #
+    # AKTİVLƏŞDİRMƏ ARDICILLIĞI (V14-lü reliz tam yayıldıqdan sonra):
+    #   1. `kubectl rollout status deploy/nexora-app` ilə köhnə podların söndüyünü təsdiqlə
+    #   2. Bazanın backup-ını al (V15 geri qaytarıla bilməz)
+    #   3. Bu sətri 15-ə dəyiş və ya `target` açarını tamamilə sil
+    #   4. Yenidən deploy et
+    #
+    # QEYD: dev/test profillərində bu məhdudiyyət yoxdur — orada rolling deploy olmadığı
+    # üçün V15 dərhal işləyir və sxem son formasına düşür.
+    target: "14"
 
 # Prod-da default/insecure JWT sirri ilə işə düşməsin deyə placeholder-siz —
 # JWT_SECRET təyin olunmayıbsa tətbiq başlamayacaq (əvəzinə sussuzca dev
@@ -66,15 +81,43 @@ springdoc:
 # /actuator/health/readiness alt-statuslarını aktivləşdirir. Əsas
 # /actuator/health (permitAll, bax SecurityConfig) təsirlənmir.
 management:
+  # Actuator ayrıca porta köçürülür ki, ictimai ingress (yalnız 8081-i backend
+  # kimi göstərir) heç bir actuator endpoint-inə çata bilməsin. 9091 nə Service-də,
+  # nə ingress-də xaricə verilir — yalnız klaster daxilindən (kubelet probe-ları,
+  # Prometheus scrape) əlçatandır, bax k8s/04-app-service.yaml və 06-network-policy.yaml.
+  # DİQQƏT: ayrıca management portu öz (child) kontekstində işləyir — SecurityConfig-dəki
+  # filter zənciri ORA TƏTBİQ OLUNMUR. Yəni bu portu heç vaxt LoadBalancer/NodePort
+  # ilə xaricə çıxarmayın.
+  server:
+    port: 9091
+
+  endpoints:
+    web:
+      exposure:
+        # Yalnız bunlar. "*" YAZMAYIN — /actuator/env, /actuator/configprops və
+        # /actuator/heapdump bütün env dəyişənlərini (JWT_SECRET, DB_PASSWORD daxil)
+        # və ya heap-in tam surətini verir.
+        include: health,info,prometheus
+
   endpoint:
     health:
       probes:
         enabled: true
+      # Sağlamlıq detalları (DB adı, disk yolu) yalnız daxili portdadır, yenə də
+      # minimuma endirilir — xarici müştəriyə "UP/DOWN"-dan artığı lazım deyil.
+      show-details: never
   health:
     livenessstate:
       enabled: true
     readinessstate:
       enabled: true
+
+  metrics:
+    tags:
+      # Prometheus-da bütün metrikalara mühit etiketi əlavə olunur ki, staging və
+      # prod eyni Prometheus-a yazanda qarışmasın.
+      application: nexora-academy
+      environment: prod
 
 logging:
   level:

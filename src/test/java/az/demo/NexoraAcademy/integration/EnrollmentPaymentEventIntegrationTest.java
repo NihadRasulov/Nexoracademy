@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -32,14 +33,9 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -57,6 +53,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
+@Import(TestcontainersConfiguration.class)
 class EnrollmentPaymentEventIntegrationTest {
 
     @Autowired
@@ -85,7 +82,8 @@ class EnrollmentPaymentEventIntegrationTest {
         // --- fixtures, created directly via repositories for speed ---
         User student = new User();
         student.setEmail("event-flow-" + UUID.randomUUID() + "@example.com");
-        student.setFullName("Event Flow Student");
+        student.setFirstName("Event");
+        student.setLastName("Flow Student");
         student.setPasswordHash(passwordEncoder.encode("studentpass123"));
         student.setRole(UserRole.STUDENT);
         student.setStatus(AccountStatus.ACTIVE);
@@ -94,7 +92,8 @@ class EnrollmentPaymentEventIntegrationTest {
 
         User admin = new User();
         admin.setEmail("event-flow-admin-" + UUID.randomUUID() + "@example.com");
-        admin.setFullName("Event Flow Admin");
+        admin.setFirstName("Event");
+        admin.setLastName("Flow Admin");
         admin.setPasswordHash(passwordEncoder.encode("adminpass123"));
         admin.setRole(UserRole.ADMIN);
         admin.setStatus(AccountStatus.ACTIVE);
@@ -127,23 +126,13 @@ class EnrollmentPaymentEventIntegrationTest {
         group.setSchedule(List.of());
         group = courseGroupRepository.save(group);
 
-        // login is now 2-step: email+password gets an emailed OTP, no tokens yet.
-        mockMvc.perform(post("/api/v1/auth/login")
+        // Admin-panel işçiləri (ADMIN/SYSTEM_ADMIN/SALES_CRM/CONTENT_MANAGER) üçün login
+        // TƏK addımlıdır — bax AuthService#login → isAdminPanelStaff(): OTP göndərilmir,
+        // token-lər birbaşa /login cavabında qayıdır. Bu blok əvvəllər hər rol üçün OTP
+        // tələb olunan köhnə axına görə yazılmışdı və heç vaxt gəlməyəcək məktubu gözləyirdi.
+        String loginResponse = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType("application/json")
                         .content("{\"email\":\"" + admin.getEmail() + "\",\"password\":\"adminpass123\"}"))
-                .andExpect(status().isOk());
-
-        org.mockito.ArgumentCaptor<String> otpBodyCaptor = org.mockito.ArgumentCaptor.forClass(String.class);
-        verify(emailService).send(eq(admin.getEmail()), anyString(), otpBodyCaptor.capture());
-        Matcher otpMatcher = Pattern.compile("\\b(\\d{6})\\b").matcher(otpBodyCaptor.getValue());
-        if (!otpMatcher.find()) {
-            throw new IllegalStateException("No 6-digit OTP found in email body: " + otpBodyCaptor.getValue());
-        }
-        String loginOtp = otpMatcher.group(1);
-
-        String loginResponse = mockMvc.perform(post("/api/v1/auth/login/verify-otp")
-                        .contentType("application/json")
-                        .content("{\"email\":\"" + admin.getEmail() + "\",\"otp\":\"" + loginOtp + "\"}"))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         String token = objectMapper.readTree(loginResponse).get("accessToken").asText();

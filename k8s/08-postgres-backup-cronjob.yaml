@@ -1,0 +1,149 @@
+# ──────────────────────────────────────────────────────────────
+# Postgres backup — gündəlik pg_dump
+# ──────────────────────────────────────────────────────────────
+# ƏVVƏLLƏR HEÇ BİR BACKUP MEXANİZMİ YOX İDİ: tək replikalı StatefulSet + PVC
+# demək idi ki, PVC silinsə və ya node itsə, bütün istifadəçilər/ödənişlər/qeydiyyatlar
+# geri dönməz itir. Bu CronJob minimum qorunmadır.
+#
+# MƏHDUDİYYƏTLƏR (DEVOPS oxumalıdır):
+#   - Backup-lar EYNİ klasterdəki PVC-də saxlanılır. Klaster/zona itsə, backup da itir.
+#     Real prod-da bunları klasterdən KƏNARA (S3/GCS/Azure Blob) köçürün —
+#     aşağıda kommentlə nümunə var.
+#   - Bərpa (restore) heç vaxt sınanmayıb. Sınanmamış backup = backup yoxdur.
+#     Bax PRODUCTION_HANDOVER.md → "Backup və bərpa təlimi".
+#   - İdarə olunan baza (RDS/Cloud SQL) istifadə edilirsə, bu fayla ehtiyac yoxdur —
+#     provayderin avtomatik snapshot + PITR funksiyasını aktivləşdirin.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nexora-postgres-backups
+  namespace: nexora-academy
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: nexora-postgres-backup
+  namespace: nexora-academy
+spec:
+  # Hər gün 02:00 (klaster saatı ilə — adətən UTC).
+  schedule: "0 2 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            runAsUser: 999
+            runAsGroup: 999
+            fsGroup: 999
+          containers:
+            - name: pg-dump
+              # Baza ilə eyni major versiya olmalıdır (pg16) — köhnə pg_dump
+              # yeni serverdən dump götürə bilmir.
+              image: pgvector/pgvector:pg16
+              env:
+                - name: PGHOST
+                  valueFrom:
+                    configMapKeyRef:
+                      name: nexora-config
+                      key: DB_HOST
+                - name: PGPORT
+                  valueFrom:
+                    configMapKeyRef:
+                      name: nexora-config
+                      key: DB_PORT
+                - name: PGDATABASE
+                  valueFrom:
+                    configMapKeyRef:
+                      name: nexora-config
+                      key: DB_NAME
+                - name: PGUSER
+                  valueFrom:
+                    configMapKeyRef:
+                      name: nexora-config
+                      key: DB_USER
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: nexora-secrets
+                      key: DB_PASSWORD
+              command:
+                - sh
+                - -c
+                - |
+                  set -eu
+                  STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+                  FILE="/backups/nexora-${STAMP}.dump"
+                  # -Fc: custom format — pg_restore ilə seçmə bərpa mümkündür və sıxılır.
+                  pg_dump -Fc -f "$FILE"
+                  # Sadə saxlama siyasəti: 14 gündən köhnə dump-ları sil.
+                  find /backups -name 'nexora-*.dump' -mtime +14 -delete
+                  ls -lh /backups
+                  # DEVOPS: xarici obyekt anbarına köçürmə buraya əlavə olunmalıdır, məs:
+                  #   aws s3 cp "$FILE" s3://nexora-backups/postgres/
+                  # (bunun üçün awscli olan image + IAM credential/IRSA lazımdır)
+              volumeMounts:
+                - name: backups
+                  mountPath: /backups
+          volumes:
+            - name: backups
+              persistentVolumeClaim:
+                claimName: nexora-postgres-backups
+---
+# Backup pod-u da default-deny NetworkPolicy-yə düşür — Postgres-ə çıxışı
+# ayrıca açılmalıdır, əks halda CronJob sükutla timeout olur.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: nexora-allow-backup-egress
+  namespace: nexora-academy
+spec:
+  podSelector:
+    matchLabels:
+      job-name: nexora-postgres-backup
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: nexora-postgres
+      ports:
+        - port: 5432
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+---
+# ...və Postgres tərəfdə backup pod-undan gələn bağlantı qəbul edilməlidir.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: nexora-allow-postgres-from-backup
+  namespace: nexora-academy
+spec:
+  podSelector:
+    matchLabels:
+      app: nexora-postgres
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              job-name: nexora-postgres-backup
+      ports:
+        - port: 5432
