@@ -6,7 +6,7 @@ Bu sənəd `API_CONTRACT.md`-dəki (backend-BFF komandası üçün yazılmış, 
 
 ## 0. ⚠️ Son Breaking Change — istifadəçi adı ikiyə bölündü
 
-**Nə dəyişdi:** `identity.users`-də tək `full_name` sahəsi silinib, yerinə **`firstName` + `lastName`** gəlib (DB migration: `V14__split_user_full_name.sql`). Bu, **breaking change**-dir — köhnə `fullName` göndərən hər request düzəldilməlidir.
+**Nə dəyişdi:** `identity.users`-də tək `full_name` sahəsi silinib, yerinə **`firstName` + `lastName`** gəlib (DB migration: `V15__split_user_full_name.sql`). Bu, **breaking change**-dir — köhnə `fullName` göndərən hər request düzəldilməlidir.
 
 **Frontend-də konkret nə edilməlidir:**
 

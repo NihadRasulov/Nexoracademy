@@ -12,7 +12,7 @@ Bu tapşırığı yerinə yetirməzdən **əvvəl** repo kökündəki **`API_CON
 - Ya bu barədə sual ver (tapşırığı verən şəxsdən aydınlaşdırma istə),
 - Ya da konservativ/təhlükəsiz defolt seç və kodda **aydın şərh** yaz ki, bu qərarın fərziyyə olduğunu bildirəsən (məs. `// FƏRZİYYƏ: backend-də X aydın deyil, buna görə Y davranışı seçildi — təsdiqlənməlidir`).
 
-**⚠️ Son breaking change (backend-də artıq tətbiq olunub):** İstifadəçinin tək `fullName` sahəsi silinib, yerinə **`firstName` + `lastName`** gəlib (DB migration `V14__split_user_full_name.sql`). Bu, `RegisterRequest`, `UserRequest`, `UpdateProfileRequest` və `UserResponse`-a toxunur. Detallar §5.1-də — BFF modellərini yazmazdan əvvəl mütləq oxu.
+**⚠️ Son breaking change (backend-də artıq tətbiq olunub):** İstifadəçinin tək `fullName` sahəsi silinib, yerinə **`firstName` + `lastName`** gəlib (DB migration `V15__split_user_full_name.sql`). Bu, `RegisterRequest`, `UserRequest`, `UpdateProfileRequest` və `UserResponse`-a toxunur. Detallar §5.1-də — BFF modellərini yazmazdan əvvəl mütləq oxu.
 
 ---
 
@@ -103,7 +103,7 @@ NexoraAcademy.AdminBff/
 
 ### 5.1 İstifadəçi adı: `fullName` → `firstName` + `lastName` (BREAKING)
 
-Backend-də `identity.users.full_name` sütunu silinib, yerinə `first_name` və `last_name` gəlib (migration `V14__split_user_full_name.sql`). BFF modellərində və admin panel UI-də aşağıdakılar nəzərə alınmalıdır:
+Backend-də `identity.users.full_name` sütunu silinib, yerinə `first_name` və `last_name` gəlib (migration `V15__split_user_full_name.sql`). BFF modellərində və admin panel UI-də aşağıdakılar nəzərə alınmalıdır:
 
 - **Backend contract modelləri** (`Contracts/Backend`): `RegisterRequest`, `UserRequest`, `UpdateProfileRequest` — `FullName` sahəsini **sil**, yerinə `FirstName` + `LastName` (`[JsonPropertyName("firstName")]` / `("lastName")`). `UserResponse`-da isə **hər üçü** var: `FirstName`, `LastName` və read-only `FullName`.
 - **`fullName` yalnız response-dadır** — backend-də `firstName + " " + lastName` kimi qurulur, bazada sütunu yoxdur. Request DTO-larına **əlavə etmə**; göndərsən belə, effekti olmayacaq (aşağıdakı tələyə bax).

@@ -15,17 +15,17 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Pins down the intermediate schema state that makes the name split deployable without
  * downtime — the half the rest of the suite never sees.
  *
- * <p>The suite normally migrates all the way to V15, where {@code full_name} is gone. In
- * production the rollout stops at V14 (see {@code application-prod.yml →
+ * <p>The suite normally migrates all the way to V16, where {@code full_name} is gone. In
+ * production the rollout stops at V15 (see {@code application-prod.yml →
  * spring.flyway.target}) precisely so that old pods, which still SELECT and INSERT
  * {@code full_name}, keep working while new pods write {@code first_name}/{@code last_name}.
- * A regression in the V14 trigger would not fail any other test, but it would corrupt names
+ * A regression in the V15 trigger would not fail any other test, but it would corrupt names
  * — or drop them entirely — during every rolling deploy.
  *
- * <p>{@code spring.flyway.target=14} gives this class its own context and its own container,
+ * <p>{@code spring.flyway.target=15} gives this class its own context and its own container,
  * migrated only as far as the expand step.
  */
-@SpringBootTest(properties = "spring.flyway.target=14")
+@SpringBootTest(properties = "spring.flyway.target=15")
 @Import(TestcontainersConfiguration.class)
 class UserNameExpandMigrationIntegrationTest {
 
@@ -41,7 +41,7 @@ class UserNameExpandMigrationIntegrationTest {
                 """, Integer.class);
 
         assertThat(nullable)
-                .as("full_name must still exist after V14, and be nullable so new code need not write it")
+                .as("full_name must still exist after V15, and be nullable so new code need not write it")
                 .isEqualTo(1);
     }
 
@@ -97,7 +97,7 @@ class UserNameExpandMigrationIntegrationTest {
         assertThat(row.get("last_name")).isEqualTo("Məmmədova Qızı");
     }
 
-    /** A single-word legacy name has no surname to split off; the placeholder keeps NOT NULL reachable in V15. */
+    /** A single-word legacy name has no surname to split off; the placeholder keeps NOT NULL reachable in V16. */
     @Test
     void singleWordLegacyNameGetsThePlaceholderSurname() {
         String email = insertWithFullName("Madonna");

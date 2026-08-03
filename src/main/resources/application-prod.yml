@@ -27,21 +27,21 @@ spring:
 
   flyway:
     enabled: true
-    # V15 (identity.users.full_name-in silinməsi) qəsdən bloklanıb.
+    # V16 (identity.users.full_name-in silinməsi) qəsdən bloklanıb.
     #
-    # V14 geriyə uyğundur — icra olunandan sonra köhnə və yeni podlar eyni anda işləyə
-    # bilir (bax V14-dəki sinxronizasiya trigger-i), ona görə RollingUpdate downtime-sız
-    # keçir. V15 isə full_name-i DROP edir: hələ işləyən köhnə pod həmin an çökər.
+    # V15 geriyə uyğundur — icra olunandan sonra köhnə və yeni podlar eyni anda işləyə
+    # bilir (bax V15-dəki sinxronizasiya trigger-i), ona görə RollingUpdate downtime-sız
+    # keçir. V16 isə full_name-i DROP edir: hələ işləyən köhnə pod həmin an çökər.
     #
-    # AKTİVLƏŞDİRMƏ ARDICILLIĞI (V14-lü reliz tam yayıldıqdan sonra):
+    # AKTİVLƏŞDİRMƏ ARDICILLIĞI (V15-li reliz tam yayıldıqdan sonra):
     #   1. `kubectl rollout status deploy/nexora-app` ilə köhnə podların söndüyünü təsdiqlə
-    #   2. Bazanın backup-ını al (V15 geri qaytarıla bilməz)
-    #   3. Bu sətri 15-ə dəyiş və ya `target` açarını tamamilə sil
+    #   2. Bazanın backup-ını al (V16 geri qaytarıla bilməz)
+    #   3. Bu sətri 16-ya dəyiş və ya `target` açarını tamamilə sil
     #   4. Yenidən deploy et
     #
     # QEYD: dev/test profillərində bu məhdudiyyət yoxdur — orada rolling deploy olmadığı
-    # üçün V15 dərhal işləyir və sxem son formasına düşür.
-    target: "14"
+    # üçün V16 dərhal işləyir və sxem son formasına düşür.
+    target: "15"
 
 # Prod-da default/insecure JWT sirri ilə işə düşməsin deyə placeholder-siz —
 # JWT_SECRET təyin olunmayıbsa tətbiq başlamayacaq (əvəzinə sussuzca dev

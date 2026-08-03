@@ -228,24 +228,24 @@ tək instans olduğu üçün münaqişə yoxdur.
 
 **Deploy-dan əvvəl həmişə backup alın** (§3.6) — `up -d` migration işlədir.
 
-#### 3.4.1 V14/V15 — istifadəçi adının bölünməsi (iki mərhələli, indiki relizdə aktual)
+#### 3.4.1 V15/V16 — istifadəçi adının bölünməsi (iki mərhələli, indiki relizdə aktual)
 
 `identity.users.full_name` → `first_name` + `last_name`. Yuxarıdakı qaydaya uyğun olaraq
 **iki migration**-a bölünüb:
 
 | Migration | Nə edir | Nə vaxt işləyir |
 |---|---|---|
-| `V14__split_user_full_name.sql` | Yeni sütunları əlavə edir, backfill edir, `full_name`-i **nullable** edir və iki tərəfi sinxron saxlayan trigger qurur | **İndi** — geriyə uyğundur, köhnə və yeni kod eyni anda işləyə bilir |
-| `V15__drop_user_full_name.sql` | Trigger-i silir, `NOT NULL` qoyur, `full_name`-i **DROP** edir | **Növbəti relizdə** — yalnız köhnə konteyner/pod tam söndükdən sonra |
+| `V15__split_user_full_name.sql` | Yeni sütunları əlavə edir, backfill edir, `full_name`-i **nullable** edir və iki tərəfi sinxron saxlayan trigger qurur | **İndi** — geriyə uyğundur, köhnə və yeni kod eyni anda işləyə bilir |
+| `V16__drop_user_full_name.sql` | Trigger-i silir, `NOT NULL` qoyur, `full_name`-i **DROP** edir | **Növbəti relizdə** — yalnız köhnə konteyner/pod tam söndükdən sonra |
 
-V15 prod-da `application-prod.yml → spring.flyway.target: "14"` ilə **bloklanıb**.
+V16 prod-da `application-prod.yml → spring.flyway.target: "15"` ilə **bloklanıb**.
 
-**V15-i aktivləşdirmə ardıcıllığı:**
+**V16-nı aktivləşdirmə ardıcıllığı:**
 ```bash
-# 1) V14-lü reliz tam yayılıb və köhnə konteyner söndürülüb?
+# 1) V15-li reliz tam yayılıb və köhnə konteyner söndürülüb?
 docker compose -f docker-compose.prod.yml ps
 
-# 2) Backup — V15 geri qaytarıla bilməz (DROP COLUMN)
+# 2) Backup — V16 geri qaytarıla bilməz (DROP COLUMN)
 docker compose -f docker-compose.prod.yml exec -T backup \
   sh -c 'pg_dump -Fc -f /backups/pre-v15-$(date -u +%Y%m%dT%H%M%SZ).dump'
 
@@ -254,18 +254,18 @@ docker compose -f docker-compose.prod.yml exec -T postgres \
   psql -U "$DB_USER" -d "$DB_NAME" \
   -c "SELECT id, email, first_name, last_name FROM identity.users WHERE last_name = 'Yoxdur';"
 
-# 4) application-prod.yml-də `target: "14"` sətrini 15 et və ya tamamilə sil, sonra deploy
+# 4) application-prod.yml-də `target: "15"` sətrini 16 et və ya tamamilə sil, sonra deploy
 docker compose -f docker-compose.prod.yml up -d --build app
 ```
 
-> ⚠️ **`target` açarını sonra silməyi unutmayın.** `target: "14"` qaldığı müddətdə V15 **və
-> bütün gələcək migration-lar** (V16, V17 …) səssizcə tətbiq olunmayacaq — Flyway sadəcə
+> ⚠️ **`target` açarını sonra silməyi unutmayın.** `target: "15"` qaldığı müddətdə V16 **və
+> bütün gələcək migration-lar** (V17, V18 …) səssizcə tətbiq olunmayacaq — Flyway sadəcə
 > onları atlayır, xəta vermir. Bu, ən asan gözdən qaçan risklərdəndir.
 
 > **K8s qeydi:** `k8s/04-app-deployment.yaml` `RollingUpdate` + `maxUnavailable: 0` ilə
-> işləyir, yəni yeni pod hazır olana qədər köhnə pod trafik alır. V14 məhz buna görə
+> işləyir, yəni yeni pod hazır olana qədər köhnə pod trafik alır. V15 məhz buna görə
 > geriyə uyğun yazılıb — trigger sayəsində köhnə pod `full_name` yazsa da yeni sütunlar,
-> yeni pod `first_name`/`last_name` yazsa da `full_name` avtomatik dolur. V15-i isə
+> yeni pod `first_name`/`last_name` yazsa da `full_name` avtomatik dolur. V16-nı isə
 > rollout bitmədən işlətmək köhnə podu dərhal çökdürər.
 
 ### 3.5 Yenilənmə (yeni versiya yayımı)

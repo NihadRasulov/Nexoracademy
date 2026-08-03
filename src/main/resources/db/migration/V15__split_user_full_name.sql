@@ -1,4 +1,4 @@
--- V14__split_user_full_name.sql
+-- V15__split_user_full_name.sql
 -- identity.users.full_name -> first_name + last_name  (EXPAND mərhələsi)
 --
 -- Qeydiyyat formasında ad və soyad ayrı-ayrı alındığı üçün tək sütun bölünür.
@@ -12,7 +12,7 @@
 --   köhnə pod full_name yazır  -> trigger first_name/last_name-i doldurur
 --   yeni pod first/last yazır  -> trigger full_name-i doldurur
 --
--- full_name sütununun silinməsi AYRI migration-dadır: V15__drop_user_full_name.sql.
+-- full_name sütununun silinməsi AYRI migration-dadır: V16__drop_user_full_name.sql.
 -- V15 yalnız bütün köhnə podlar söndükdən sonra işə salınmalıdır — bax
 -- application-prod.yml -> spring.flyway.target.
 
