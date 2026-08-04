@@ -181,6 +181,7 @@ services:
       dockerfile: Dockerfile
     container_name: nexora-main-ui
     restart: unless-stopped
+    env_file: .env
     networks:
       - nexora-net
     volumes:

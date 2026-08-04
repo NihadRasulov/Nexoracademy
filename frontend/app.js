@@ -11,7 +11,7 @@
     document.body.dataset.router === "legacy" && Boolean(PAGES[DEFAULT_ROUTE]);
   const API_BASE_URL = (
     document.querySelector('meta[name="nexora-api-base"]')?.content ||
-    "http://192.168.0.103:8081"
+    "http://__PUBLIC_HOST__:8081"
   ).replace(/\/+$/, "");
   const ACCESS_TOKEN_KEY = "nexora_access_token";
   const REFRESH_TOKEN_KEY = "nexora_refresh_token";
