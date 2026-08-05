@@ -88,10 +88,9 @@
   const IS_LEGACY_ROUTER =
     document.body.dataset.router === "legacy" && Boolean(PAGES[DEFAULT_ROUTE]);
   const API_BASE_URL = (
-    document.querySelector('meta[name="nexora-api-base"]')?.content ||
-    "http://__PUBLIC_HOST__:8081"
+    document.querySelector('meta[name="nexora-api-base"]')?.content || ""
   ).replace(/\/+$/, "");
-  const CHATBOT_API_BASE_URL = API_BASE_URL;
+  const CHATBOT_API_BASE_URL = "";
   const ACCESS_TOKEN_KEY = "nexora_access_token";
   const REFRESH_TOKEN_KEY = "nexora_refresh_token";
   const AUTH_USER_KEY = "nexora_auth_user";
