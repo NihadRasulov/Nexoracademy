@@ -1,5 +1,8 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
-RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends curl && \
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    apt-get install -y --no-install-recommends nodejs && \
+    rm -rf /var/lib/apt/lists/*
 WORKDIR /build
 
 COPY NexoraAdminPanel/NexoraAdminPanel/src/NexoraAcademy.AdminBff/ NexoraAcademy.AdminBff/
