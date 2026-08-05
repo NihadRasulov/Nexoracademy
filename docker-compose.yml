@@ -130,49 +130,25 @@ services:
 #        limits:
 #          memory: 400M
 
-#  admin-bff:
-#    build:
-#      context: ./adminpanel/NexoraAdminPanel/src/NexoraAcademy.AdminBff
-#      dockerfile: Dockerfile
-#    container_name: nexora-admin-bff
-#    restart: unless-stopped
-#    environment:
-#      ASPNETCORE_ENVIRONMENT: Production
-#      NexoraApi__BaseUrl: http://app:8081
-#      Cors__AllowedOrigins__0: https://${PUBLIC_HOST}
-#      Cookie__RequireHttps: "true"
-#    ports:
-#      - "${ADMIN_BFF_PORT:-8090}:8080"
-#    networks:
-#      - nexora-net
-#    depends_on:
-#      - app
-#    deploy:
-#      resources:
-#        limits:
-#          memory: 250M
-
-
 
 
   admin-bff:
     build:
-      context: ./adminpanel/NexoraAdminPanel/src/NexoraAcademy.AdminBff
-      dockerfile: Dockerfile
+      context: ./admin_panel
+      dockerfile: NexoraAdminPanel/NexoraAdminPanel/src/NexoraAcademy.AdminBff/Dockerfile
     container_name: nexora-admin-bff
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-      NexoraApi__BaseUrl: http://host.docker.internal:8081  # <--- DƏYİŞDİ
+      NexoraApi__BaseUrl: http://host.docker.internal:8081
       Cors__AllowedOrigins__0: https://${PUBLIC_HOST}
       Cookie__RequireHttps: "true"
     extra_hosts:
-      - "host.docker.internal:host-gateway"                 # <--- ƏLAVƏ EDİLDİ
+      - "host.docker.internal:host-gateway"
     ports:
       - "${ADMIN_BFF_PORT:-8090}:8080"
     networks:
       - nexora-net
-    # depends_on bloku silindi (çünki app artıq docker-də yoxdur)
     deploy:
       resources:
         limits:
@@ -200,7 +176,7 @@ services:
   # --- SEPARATED ADMIN UI ---
   admin-ui:
     build:
-      context: ./adminpanelUI
+      context: ./admin_panel/NexoraAdminPanelUI
       dockerfile: Dockerfile
       args:
         VITE_API_BASE_URL: "https://${PUBLIC_HOST}"
