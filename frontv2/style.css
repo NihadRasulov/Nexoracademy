@@ -282,7 +282,7 @@
 }
 
 @media(max-width:992px) {
-  .Footer_footer--naic-faq__X_2LI {
+  .Footer_footer--Nexora Academy-faq__X_2LI {
     display: block !important
   }
 
@@ -763,7 +763,7 @@
 }
 
 @media(max-width:992px) {
-  .Header_header--naic-faq__DQdsB {
+  .Header_header--Nexora Academy-faq__DQdsB {
     display: block !important
   }
 
@@ -1308,7 +1308,7 @@ input:-webkit-autofill:hover {
 
 .section--projects .section__header__title,
 .section--values .section__header__title,
-.section--view--naic .section__header__title {
+.section--view--Nexora Academy .section__header__title {
   font-size: var(--fs-h3);
   font-weight: var(--fw-bold)
 }
@@ -1331,24 +1331,24 @@ input:-webkit-autofill:hover {
   margin-bottom: 20px
 }
 
-.section--naic-faq {
+.section--Nexora Academy-faq {
   height: 100dvh;
   width: 100%;
   padding-top: 92px
 }
 
-.section--naic-faq .content {
+.section--Nexora Academy-faq .content {
   height: 100%;
   width: 100%
 }
 
-.section--naic-faq .content__mobile {
+.section--Nexora Academy-faq .content__mobile {
   display: none !important;
   height: 100%;
   width: 100%
 }
 
-.section--naic-faq .content__mobile .ai-btn--gradient {
+.section--Nexora Academy-faq .content__mobile .ai-btn--gradient {
   padding: 1rem;
   border-radius: 16px;
   font-weight: 600;
@@ -1358,13 +1358,13 @@ input:-webkit-autofill:hover {
   gap: 10px
 }
 
-.section--naic-faq .content__desktop {
+.section--Nexora Academy-faq .content__desktop {
   overflow: hidden;
   height: 100%;
   width: 100%
 }
 
-.section--naic-faq .content__desktop .pdf {
+.section--Nexora Academy-faq .content__desktop .pdf {
   width: 100%;
   height: 100%;
   border: none
@@ -1857,7 +1857,7 @@ input:-webkit-autofill:hover {
   opacity: 1 !important
 }
 
-.section--view--naic .swiper-slide-active {
+.section--view--Nexora Academy .swiper-slide-active {
   opacity: 1 !important;
   margin: 0 -20px;
   transform: translate3d(0, 0, 0) !important
@@ -1977,15 +1977,15 @@ input:-webkit-autofill:hover {
     margin: 15px 0
   }
 
-  .section--naic-faq {
+  .section--Nexora Academy-faq {
     height: calc(100vh - 350px)
   }
 
-  .section--naic-faq .content__desktop {
+  .section--Nexora Academy-faq .content__desktop {
     display: none !important
   }
 
-  .section--naic-faq .content__mobile {
+  .section--Nexora Academy-faq .content__mobile {
     display: flex !important;
     align-items: center;
     justify-content: center
@@ -2005,7 +2005,7 @@ input:-webkit-autofill:hover {
 }
 
 @media(max-width:768px) {
-  .section--view--naic .swiper-slide-active {
+  .section--view--Nexora Academy .swiper-slide-active {
     margin: 0;
     transform: translateX(0) !important
   }
@@ -2020,7 +2020,7 @@ input:-webkit-autofill:hover {
     margin-top: -20px
   }
 
-  .section--view--naic .section__header__title {
+  .section--view--Nexora Academy .section__header__title {
     font-size: 48px;
     font-weight: var(--fw-bold)
   }
@@ -2096,7 +2096,7 @@ input:-webkit-autofill:hover {
     font-weight: var(--fw-bold)
   }
 
-  .section--view--naic .section__header__title {
+  .section--view--Nexora Academy .section__header__title {
     font-size: var(--fs-h4);
     font-weight: var(--fw-bold)
   }
@@ -6880,7 +6880,7 @@ input:-webkit-autofill:hover {
   }
 }
 
-.ViewsFromNaic_section__header__7f_vO {
+.ViewsFromNexora Academy_section__header__7f_vO {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -6888,12 +6888,12 @@ input:-webkit-autofill:hover {
 }
 
 @media(max-width:768px) {
-  .ViewsFromNaic_section__header__7f_vO {
+  .ViewsFromNexora Academy_section__header__7f_vO {
     gap: 24px
   }
 }
 
-.ViewsFromNaic_section__header__controller__BHIzS {
+.ViewsFromNexora Academy_section__header__controller__BHIzS {
   display: flex;
   gap: 10px;
   user-select: none;
@@ -6901,27 +6901,27 @@ input:-webkit-autofill:hover {
 }
 
 @media(max-width:576px) {
-  .ViewsFromNaic_section__header__controller__BHIzS {
+  .ViewsFromNexora Academy_section__header__controller__BHIzS {
     display: none
   }
 }
 
-.ViewsFromNaic_section__header__controller__next__wERDV,
-.ViewsFromNaic_section__header__controller__prev__cyPxK {
+.ViewsFromNexora Academy_section__header__controller__next__wERDV,
+.ViewsFromNexora Academy_section__header__controller__prev__cyPxK {
   cursor: pointer
 }
 
-.ViewsFromNaic_ai-views--from--naic__Zd_6I {
+.ViewsFromNexora Academy_ai-views--from--Nexora Academy__Zd_6I {
   height: 100%;
   width: 100%;
   overflow: hidden
 }
 
-.ViewsFromNaic_ai-views--from--naic__Zd_6I .swiper-wrapper {
+.ViewsFromNexora Academy_ai-views--from--Nexora Academy__Zd_6I .swiper-wrapper {
   align-items: center
 }
 
-.ViewsFromNaic_swiper-slide-views__bo_mL {
+.ViewsFromNexora Academy_swiper-slide-views__bo_mL {
   width: 330px !important;
   max-width: 100vw;
   display: flex;
@@ -6932,12 +6932,12 @@ input:-webkit-autofill:hover {
 }
 
 @media(max-width:576px) {
-  .ViewsFromNaic_swiper-slide-views__bo_mL {
+  .ViewsFromNexora Academy_swiper-slide-views__bo_mL {
     width: 304px !important
   }
 }
 
-.ViewsFromNaic_ai-views--from--naic__item__ItEpu {
+.ViewsFromNexora Academy_ai-views--from--Nexora Academy__item__ItEpu {
   width: 100%;
   height: 630px;
   border-radius: 24px;
@@ -6945,12 +6945,12 @@ input:-webkit-autofill:hover {
 }
 
 @media(max-width:576px) {
-  .ViewsFromNaic_ai-views--from--naic__item__ItEpu {
+  .ViewsFromNexora Academy_ai-views--from--Nexora Academy__item__ItEpu {
     height: 400px
   }
 }
 
-.ViewsFromNaic_ai-views--from--naic__item__image__7v2_L {
+.ViewsFromNexora Academy_ai-views--from--Nexora Academy__item__image__7v2_L {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -6963,36 +6963,36 @@ input:-webkit-autofill:hover {
   display: none !important;
 }
 
-html.naic-menu-open,
-body.naic-menu-open {
+html.Nexora Academy-menu-open,
+body.Nexora Academy-menu-open {
   overflow: hidden !important;
 }
 
-.naic-form-message {
+.Nexora Academy-form-message {
   margin-top: 12px;
   font-size: 14px;
   line-height: 1.5;
   color: var(--neutral-1, #fff);
 }
 
-.naic-form-message[data-state="error"] {
+.Nexora Academy-form-message[data-state="error"] {
   color: #ff9d9d;
 }
 
-.naic-form-message[data-state="success"] {
+.Nexora Academy-form-message[data-state="success"] {
   color: #9ff0bd;
 }
 
-.naic-field-invalid {
+.Nexora Academy-field-invalid {
   outline: 1px solid #ff7f7f !important;
   outline-offset: 1px;
 }
 
-.naic-target-flash {
-  animation: naicTargetFlash 1.15s ease;
+.Nexora Academy-target-flash {
+  animation: Nexora AcademyTargetFlash 1.15s ease;
 }
 
-@keyframes naicTargetFlash {
+@keyframes Nexora AcademyTargetFlash {
 
   0%,
   100% {

@@ -204,7 +204,7 @@
   }
 
   function setMeta(meta) {
-    document.title = meta.title || "NAIC";
+    document.title = meta.title || "Nexora Academy";
     const desc = document.querySelector('meta[name="description"]');
     const keywords = document.querySelector('meta[name="keywords"]');
     if (desc) desc.content = meta.description || "";
@@ -230,8 +230,8 @@
         const node = document.getElementById(target);
         if (node) {
           node.scrollIntoView({ block: "center" });
-          node.classList.remove("naic-target-flash");
-          requestAnimationFrame(() => node.classList.add("naic-target-flash"));
+          node.classList.remove("Nexora Academy-target-flash");
+          requestAnimationFrame(() => node.classList.add("Nexora Academy-target-flash"));
           return;
         }
       }
@@ -247,10 +247,10 @@
   }
 
   function announce(form, message, state = "success") {
-    let node = $(".naic-form-message", form);
+    let node = $(".Nexora Academy-form-message", form);
     if (!node) {
       node = document.createElement("p");
-      node.className = "naic-form-message";
+      node.className = "Nexora Academy-form-message";
       node.setAttribute("role", "status");
       node.setAttribute("aria-live", "polite");
       form.appendChild(node);
@@ -260,17 +260,17 @@
   }
 
   function clearInvalid(form) {
-    $$(".naic-field-invalid", form).forEach((field) =>
-      field.classList.remove("naic-field-invalid"),
+    $$(".Nexora Academy-field-invalid", form).forEach((field) =>
+      field.classList.remove("Nexora Academy-field-invalid"),
     );
   }
 
   function markInvalid(field) {
     if (!field) return;
-    field.classList.add("naic-field-invalid");
+    field.classList.add("Nexora Academy-field-invalid");
     field.addEventListener(
       "input",
-      () => field.classList.remove("naic-field-invalid"),
+      () => field.classList.remove("Nexora Academy-field-invalid"),
       { once: true },
     );
   }
@@ -328,7 +328,7 @@
   }
 
   function saveOffline(kind, form) {
-    const key = `naic_${kind}_submissions`;
+    const key = `Nexora Academy_${kind}_submissions`;
     let current = [];
     try {
       current = JSON.parse(localStorage.getItem(key) || "[]");
@@ -797,14 +797,14 @@
     if (mobileMenu && menuButtons.length) {
       const open = () => {
         mobileMenu.classList.add('HeaderMobile_show__tPAoO');
-        document.documentElement.classList.add('naic-menu-open');
-        document.body.classList.add('naic-menu-open');
+        document.documentElement.classList.add('Nexora Academy-menu-open');
+        document.body.classList.add('Nexora Academy-menu-open');
         menuButtons[0]?.setAttribute('aria-expanded', 'true');
       };
       const close = () => {
         mobileMenu.classList.remove('HeaderMobile_show__tPAoO');
-        document.documentElement.classList.remove('naic-menu-open');
-        document.body.classList.remove('naic-menu-open');
+        document.documentElement.classList.remove('Nexora Academy-menu-open');
+        document.body.classList.remove('Nexora Academy-menu-open');
         menuButtons[0]?.setAttribute('aria-expanded', 'false');
       };
       menuButtons[0]?.setAttribute('aria-label', 'Open menu');
@@ -1558,9 +1558,9 @@
     );
     setupCoverflow(
       {
-        containerSelector: ".ViewsFromNaic_ai-views--from--naic__Zd_6I .swiper",
-        prevSelector: ".ViewsFromNaic_section__header__controller__prev__cyPxK",
-        nextSelector: ".ViewsFromNaic_section__header__controller__next__wERDV",
+        containerSelector: ".ViewsFromNexora Academy_ai-views--from--Nexora Academy__Zd_6I .swiper",
+        prevSelector: ".ViewsFromNexora Academy_section__header__controller__prev__cyPxK",
+        nextSelector: ".ViewsFromNexora Academy_section__header__controller__next__wERDV",
         depth: 125,
         centerFromLayout: true,
         autoplayMs: SCHOLARSHIPS_SLIDER_AUTOPLAY_MS,
@@ -4323,8 +4323,8 @@
     requestAnimationFrame(() =>
       requestAnimationFrame(() => {
         node.scrollIntoView({ behavior: "smooth", block: "center" });
-        node.classList.remove("naic-target-flash");
-        requestAnimationFrame(() => node.classList.add("naic-target-flash"));
+        node.classList.remove("Nexora Academy-target-flash");
+        requestAnimationFrame(() => node.classList.add("Nexora Academy-target-flash"));
       }),
     );
   }
