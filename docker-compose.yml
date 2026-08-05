@@ -107,50 +107,54 @@ services:
         limits:
           memory: 150M
 
-  app:
-    build: .
-    container_name: nexora-app
-    restart: unless-stopped
-    env_file: .env
-    environment:
-      SPRING_PROFILES_ACTIVE: dev
-      DB_HOST: postgres
-      JAVA_OPTS: "-Xmx256m -Xms128m"
-    ports:
-      - "8081:8081"
-    networks:
-      - nexora-net
-    volumes:
-      - nexora_app_logs:/app/logs
-    depends_on:
-      flyway:
-        condition: service_completed_successfully
-    deploy:
-      resources:
-        limits:
-          memory: 400M
+#  app:
+#    build: .
+#    container_name: nexora-app
+#    restart: unless-stopped
+#    env_file: .env
+#    environment:
+#      SPRING_PROFILES_ACTIVE: dev
+#      DB_HOST: postgres
+#      JAVA_OPTS: "-Xmx256m -Xms128m"
+#    ports:
+#      - "8081:8081"
+#    networks:
+#      - nexora-net
+#    volumes:
+#      - nexora_app_logs:/app/logs
+#    depends_on:
+#      flyway:
+#        condition: service_completed_successfully
+#    deploy:
+#      resources:
+#        limits:
+#          memory: 400M
 
-  #admin-bff:
-   # build:
-    #  context: ./adminpanel/NexoraAdminPanel/src/NexoraAcademy.AdminBff
-     # dockerfile: Dockerfile
-    #container_name: nexora-admin-bff
-    #restart: unless-stopped
-    #environment:
-    #  ASPNETCORE_ENVIRONMENT: Production
-    #  NexoraApi__BaseUrl: http://app:8081
-    #  Cors__AllowedOrigins__0: https://${PUBLIC_HOST}
-    #  Cookie__RequireHttps: ${ADMIN_BFF_COOKIE_REQUIRE_HTTPS:-true}
-    #ports:
-    #  - "${ADMIN_BFF_PORT:-8090}:8080"
-    #networks:
-    #  - nexora-net
-    #depends_on:
-    #  - app
-    #deploy:
-    #  resources:
-    #    limits:
-    #      memory: 250M
+#  admin-bff:
+#    build:
+#      context: ./adminpanel/NexoraAdminPanel/src/NexoraAcademy.AdminBff
+#      dockerfile: Dockerfile
+#    container_name: nexora-admin-bff
+#    restart: unless-stopped
+#    environment:
+#      ASPNETCORE_ENVIRONMENT: Production
+#      NexoraApi__BaseUrl: http://app:8081
+#      Cors__AllowedOrigins__0: https://${PUBLIC_HOST}
+#      Cookie__RequireHttps: "true"
+#    ports:
+#      - "${ADMIN_BFF_PORT:-8090}:8080"
+#    networks:
+#      - nexora-net
+#    depends_on:
+#      - app
+#    deploy:
+#      resources:
+#        limits:
+#          memory: 250M
+
+
+
+
   admin-bff:
     build:
       context: ./adminpanel/NexoraAdminPanel/src/NexoraAcademy.AdminBff
@@ -159,19 +163,21 @@ services:
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Production
-      NexoraApi__BaseUrl: http://app:8081
+      NexoraApi__BaseUrl: http://host.docker.internal:8081  # <--- DƏYİŞDİ
       Cors__AllowedOrigins__0: https://${PUBLIC_HOST}
       Cookie__RequireHttps: "true"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"                 # <--- ƏLAVƏ EDİLDİ
     ports:
       - "${ADMIN_BFF_PORT:-8090}:8080"
     networks:
       - nexora-net
-    depends_on:
-      - app
+    # depends_on bloku silindi (çünki app artıq docker-də yoxdur)
     deploy:
       resources:
         limits:
           memory: 250M
+
 
 
   # --- SEPARATED MAIN FRONTEND ---

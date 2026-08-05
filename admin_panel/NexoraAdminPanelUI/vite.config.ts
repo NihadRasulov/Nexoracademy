@@ -25,7 +25,12 @@ export default defineConfig(({ command }) => {
   const adminBasePath = command === 'serve' ? readAdminBasePath() : undefined
 
   return {
-    base: './',
+    // Vite's development server must know the same prefix as the HTML base tag.
+    // Otherwise it receives `/sys-control-9912/src/main.tsx`, while it only
+    // exposes the module at `/src/main.tsx`, resulting in a 404 on the entry
+    // module. Keep relative paths for the production bundle so it remains
+    // deployable under the BFF's configurable secret path.
+    base: command === 'serve' ? `${adminBasePath}/` : './',
     plugins: [
       command === 'serve' && {
         name: 'admin-base-path',
