@@ -11,6 +11,8 @@ import az.demo.NexoraAcademy.repository.identity.UserRepository;
 import az.demo.NexoraAcademy.repository.notify.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.security.access.AccessDeniedException;
+import az.demo.NexoraAcademy.security.SecurityUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
@@ -33,6 +35,22 @@ public class NotificationService {
     @Transactional(readOnly = true)
     public NotificationResponse findById(UUID id) {
         return toResponse(getOrThrow(id));
+    }
+
+    @Transactional(readOnly = true)
+    public List<NotificationResponse> findMine() {
+        UUID userId = SecurityUtils.currentUserId();
+        if (userId == null) throw new AccessDeniedException("Authentication is required");
+        return notificationRepository.findByUser_Id(userId).stream().map(this::toResponse).toList();
+    }
+
+    public NotificationResponse markMineRead(UUID id) {
+        Notification notification = getOrThrow(id);
+        UUID userId = SecurityUtils.currentUserId();
+        if (userId == null || !userId.equals(notification.getUser().getId())) {
+            throw new AccessDeniedException("You may only read your own notifications");
+        }
+        return markRead(id);
     }
 
     public NotificationResponse create(NotificationRequest request) {

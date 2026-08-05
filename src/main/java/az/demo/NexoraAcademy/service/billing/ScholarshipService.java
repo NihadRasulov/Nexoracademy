@@ -2,6 +2,7 @@ package az.demo.NexoraAcademy.service.billing;
 
 import az.demo.NexoraAcademy.dto.billing.ScholarshipRequest;
 import az.demo.NexoraAcademy.dto.billing.ScholarshipResponse;
+import az.demo.NexoraAcademy.dto.billing.PublicScholarshipResponse;
 import az.demo.NexoraAcademy.entity.billing.Scholarship;
 import az.demo.NexoraAcademy.exception.ResourceNotFoundException;
 import az.demo.NexoraAcademy.repository.billing.ScholarshipRepository;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.time.LocalDate;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +28,14 @@ public class ScholarshipService {
     @Transactional(readOnly = true)
     public ScholarshipResponse findById(Short id) {
         return toResponse(getOrThrow(id));
+    }
+
+    @Transactional(readOnly = true)
+    public List<PublicScholarshipResponse> findPublicActive() {
+        LocalDate today = LocalDate.now();
+        return scholarshipRepository.findPublicActive(today)
+                .stream().map(s -> new PublicScholarshipResponse(s.getId(), s.getName(), s.getDescription(),
+                        s.getDiscountPct(), s.getMaxRecipients(), s.getValidFrom(), s.getValidUntil())).toList();
     }
 
     public ScholarshipResponse create(ScholarshipRequest request) {

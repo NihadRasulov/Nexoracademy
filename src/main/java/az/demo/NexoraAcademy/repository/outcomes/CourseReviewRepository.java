@@ -9,4 +9,8 @@ import java.util.UUID;
 public interface CourseReviewRepository extends JpaRepository<CourseReview, Long> {
 
     List<CourseReview> findByCourse_Id(UUID courseId);
+
+    List<CourseReview> findByCourse_IdAndPublishedTrueOrderByCreatedAtDesc(UUID courseId);
+
+    List<CourseReview> findByUser_IdOrderByCreatedAtDesc(UUID userId);
 }

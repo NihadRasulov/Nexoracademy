@@ -2,6 +2,7 @@ package az.demo.NexoraAcademy.service.outcomes;
 
 import az.demo.NexoraAcademy.dto.outcomes.CourseReviewRequest;
 import az.demo.NexoraAcademy.dto.outcomes.CourseReviewResponse;
+import az.demo.NexoraAcademy.dto.outcomes.PublicCourseReviewResponse;
 import az.demo.NexoraAcademy.entity.academics.Enrollment;
 import az.demo.NexoraAcademy.entity.catalog.Course;
 import az.demo.NexoraAcademy.entity.identity.User;
@@ -44,6 +45,13 @@ public class CourseReviewService {
     @Transactional(readOnly = true)
     public CourseReviewResponse findById(Long id) {
         return toResponse(getOrThrow(id));
+    }
+
+    @Transactional(readOnly = true)
+    public List<PublicCourseReviewResponse> findPublishedByCourse(UUID courseId) {
+        return courseReviewRepository.findByCourse_IdAndPublishedTrueOrderByCreatedAtDesc(courseId).stream()
+                .map(review -> new PublicCourseReviewResponse(review.getRating(), review.getComment(), review.getCreatedAt()))
+                .toList();
     }
 
     public CourseReviewResponse create(CourseReviewRequest request) {
@@ -94,6 +102,12 @@ public class CourseReviewService {
 
     /** Moderation: publish/unpublish a review. */
     public CourseReviewResponse setPublished(Long id, boolean published, UUID moderatorId) {
+        if (!SecurityUtils.hasAnyRole(STAFF_ROLES)) {
+            throw new AccessDeniedException("Only staff may moderate reviews");
+        }
+        if (moderatorId == null) {
+            throw new AccessDeniedException("Authentication is required");
+        }
         CourseReview review = getOrThrow(id);
         review.setPublished(published);
         review.setModeratedBy(resolveUser(moderatorId));

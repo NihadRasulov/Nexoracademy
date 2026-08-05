@@ -2,7 +2,9 @@ package az.demo.NexoraAcademy.controller.outcomes;
 
 import az.demo.NexoraAcademy.dto.outcomes.CourseReviewRequest;
 import az.demo.NexoraAcademy.dto.outcomes.CourseReviewResponse;
+import az.demo.NexoraAcademy.dto.outcomes.ReviewPublicationRequest;
 import az.demo.NexoraAcademy.service.outcomes.CourseReviewService;
+import az.demo.NexoraAcademy.security.SecurityUtils;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import az.demo.NexoraAcademy.validation.ValidationGroups;
 import jakarta.validation.Valid;
@@ -47,6 +49,12 @@ public class CourseReviewController {
     @PatchMapping("/{id}")
     public ResponseEntity<CourseReviewResponse> patch(@PathVariable Long id, @Valid @RequestBody CourseReviewRequest request) {
         return ResponseEntity.ok(courseReviewService.patch(id, request));
+    }
+
+    @PatchMapping("/{id}/publication")
+    public ResponseEntity<CourseReviewResponse> setPublication(@PathVariable Long id,
+                                                                @Valid @RequestBody ReviewPublicationRequest request) {
+        return ResponseEntity.ok(courseReviewService.setPublished(id, request.published(), SecurityUtils.currentUserId()));
     }
 
     @DeleteMapping("/{id}")

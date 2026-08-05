@@ -2,6 +2,7 @@ package az.demo.NexoraAcademy.service.crm;
 
 import az.demo.NexoraAcademy.dto.crm.LeadRequest;
 import az.demo.NexoraAcademy.dto.crm.LeadResponse;
+import az.demo.NexoraAcademy.dto.crm.NewsletterSubscriptionRequest;
 import az.demo.NexoraAcademy.entity.catalog.Course;
 import az.demo.NexoraAcademy.entity.crm.Lead;
 import az.demo.NexoraAcademy.entity.enums.LeadStatus;
@@ -17,6 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.time.Instant;
+import az.demo.NexoraAcademy.entity.enums.LeadSource;
 
 @Service
 @RequiredArgsConstructor
@@ -50,6 +53,19 @@ public class LeadService {
         lead.setActivityLog(new ArrayList<>());
 
         return toResponse(leadRepository.saveAndFlush(lead));
+    }
+
+    /** Idempotent newsletter capture; a second submit refreshes consent evidence. */
+    public void subscribe(NewsletterSubscriptionRequest request) {
+        Lead lead = leadRepository.findFirstByEmailAndSource(request.email(), LeadSource.NEWSLETTER)
+                .orElseGet(Lead::new);
+        lead.setEmail(request.email());
+        lead.setSource(LeadSource.NEWSLETTER);
+        lead.setStatus(LeadStatus.NEW);
+        lead.setConsentVersion(request.consentVersion());
+        lead.setConsentGivenAt(Instant.now());
+        if (lead.getActivityLog() == null) lead.setActivityLog(new ArrayList<>());
+        leadRepository.saveAndFlush(lead);
     }
 
     public LeadResponse update(UUID id, LeadRequest request) {

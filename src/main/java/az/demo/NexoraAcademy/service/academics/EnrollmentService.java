@@ -58,6 +58,15 @@ public class EnrollmentService {
     }
 
     @Transactional(readOnly = true)
+    public List<EnrollmentResponse> findMine() {
+        UUID userId = SecurityUtils.currentUserId();
+        if (userId == null) {
+            throw new AccessDeniedException("Authentication is required");
+        }
+        return enrollmentRepository.findByUser_Id(userId).stream().map(this::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
     public EnrollmentResponse findById(UUID id) {
         Enrollment enrollment = getOrThrow(id);
         assertOwnerOrStaff(enrollment);

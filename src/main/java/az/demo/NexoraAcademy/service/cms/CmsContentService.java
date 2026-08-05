@@ -2,6 +2,7 @@ package az.demo.NexoraAcademy.service.cms;
 
 import az.demo.NexoraAcademy.dto.cms.CmsContentRequest;
 import az.demo.NexoraAcademy.dto.cms.CmsContentResponse;
+import az.demo.NexoraAcademy.dto.cms.PublicCmsContentResponse;
 import az.demo.NexoraAcademy.entity.cms.CmsContent;
 import az.demo.NexoraAcademy.exception.DuplicateResourceException;
 import az.demo.NexoraAcademy.exception.ResourceNotFoundException;
@@ -28,6 +29,19 @@ public class CmsContentService {
     @Transactional(readOnly = true)
     public CmsContentResponse findById(Long id) {
         return toResponse(getOrThrow(id));
+    }
+
+    @Transactional(readOnly = true)
+    public PublicCmsContentResponse findPublishedByKey(String key) {
+        CmsContent content = cmsContentRepository.findByKeyAndPublishedTrue(key)
+                .orElseThrow(() -> ResourceNotFoundException.of("PublishedCmsContent", key));
+        return toPublicResponse(content);
+    }
+
+    @Transactional(readOnly = true)
+    public List<PublicCmsContentResponse> findPublishedByType(az.demo.NexoraAcademy.entity.enums.CmsContentType type) {
+        return cmsContentRepository.findByTypeAndPublishedTrueOrderBySortOrderAscUpdatedAtDesc(type)
+                .stream().map(this::toPublicResponse).toList();
     }
 
     public CmsContentResponse create(CmsContentRequest request) {
@@ -108,5 +122,10 @@ public class CmsContentService {
                 content.getUpdatedBy() != null ? content.getUpdatedBy().getId() : null,
                 content.getUpdatedAt()
         );
+    }
+
+    private PublicCmsContentResponse toPublicResponse(CmsContent content) {
+        return new PublicCmsContentResponse(content.getKey(), content.getType(), content.getTitle(),
+                content.getBody(), content.getData(), content.getSortOrder(), content.getUpdatedAt());
     }
 }

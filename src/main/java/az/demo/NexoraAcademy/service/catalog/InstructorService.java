@@ -2,6 +2,7 @@ package az.demo.NexoraAcademy.service.catalog;
 
 import az.demo.NexoraAcademy.dto.catalog.InstructorRequest;
 import az.demo.NexoraAcademy.dto.catalog.InstructorResponse;
+import az.demo.NexoraAcademy.dto.catalog.PublicInstructorResponse;
 import az.demo.NexoraAcademy.entity.catalog.Instructor;
 import az.demo.NexoraAcademy.entity.identity.User;
 import az.demo.NexoraAcademy.exception.ResourceNotFoundException;
@@ -27,6 +28,15 @@ public class InstructorService {
     @Transactional(readOnly = true)
     public List<InstructorResponse> findAll() {
         return instructorRepository.findAll().stream().map(this::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<PublicInstructorResponse> findPublicActive() {
+        return instructorRepository.findAll().stream()
+                .filter(instructor -> Boolean.TRUE.equals(instructor.getActive()))
+                .map(instructor -> new PublicInstructorResponse(instructor.getId(), instructor.getFullName(),
+                        instructor.getBio(), instructor.getPhotoUrl(), instructor.getLinkedinUrl(),
+                        instructor.getAvgRating(), instructor.getCertifications())).toList();
     }
 
     @Transactional(readOnly = true)

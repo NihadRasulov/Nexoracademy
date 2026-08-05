@@ -36,6 +36,11 @@ public class EnrollmentController {
         return ResponseEntity.ok(enrollmentService.findAll());
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<List<EnrollmentResponse>> findMine() {
+        return ResponseEntity.ok(enrollmentService.findMine());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<EnrollmentResponse> findById(@PathVariable UUID id) {
         return ResponseEntity.ok(enrollmentService.findById(id));

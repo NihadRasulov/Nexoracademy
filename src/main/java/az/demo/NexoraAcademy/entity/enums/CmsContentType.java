@@ -6,7 +6,10 @@ public enum CmsContentType implements PgEnum {
     PAGE("page"),
     FAQ("faq"),
     SOCIAL_LINK("social_link"),
-    BANNER("banner");
+    BANNER("banner"),
+    NEWS("news"),
+    PROJECT("project"),
+    VACANCY("vacancy");
 
     private final String dbValue;
 

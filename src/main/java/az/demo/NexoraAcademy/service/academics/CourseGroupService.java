@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.time.Instant;
 
 @Service
 @RequiredArgsConstructor
@@ -34,6 +35,15 @@ public class CourseGroupService {
     @Transactional(readOnly = true)
     public CourseGroupResponse findById(UUID id) {
         return toResponse(getOrThrow(id));
+    }
+
+    @Transactional(readOnly = true)
+    public List<CourseGroupResponse> findPublicOpenByCourse(UUID courseId) {
+        Instant now = Instant.now();
+        return courseGroupRepository.findByCourse_IdAndStatus(courseId, GroupStatus.OPEN).stream()
+                .filter(group -> group.getRegistrationDeadline() == null || !group.getRegistrationDeadline().isBefore(now))
+                .filter(group -> group.getReservedSeats() < group.getTotalSeats())
+                .map(this::toResponse).toList();
     }
 
     public CourseGroupResponse create(CourseGroupRequest request) {

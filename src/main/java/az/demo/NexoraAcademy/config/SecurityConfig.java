@@ -62,6 +62,7 @@ public class SecurityConfig {
                         ).permitAll()
 
                         .requestMatchers(
+                                HttpMethod.POST,
                                 "/api/v1/applications"
                         ).permitAll()
 
@@ -79,6 +80,20 @@ public class SecurityConfig {
                                 "/api/v1/courses/**",
                                 "/api/v1/categories/**"
                         ).permitAll()
+
+                        // Public marketing data is exposed through deliberately small,
+                        // published-only projections; admin CRUD endpoints stay protected.
+                        .requestMatchers(HttpMethod.GET, "/api/v1/public/**").permitAll()
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/v1/public/newsletter/subscriptions",
+                                "/api/v1/public/contact-submissions").permitAll()
+
+                        // Self-service notification endpoints must precede the admin-only
+                        // notifications wildcard below.
+                        .requestMatchers(
+                                "/api/v1/notifications/me",
+                                "/api/v1/notifications/*/read"
+                        ).authenticated()
 
                         // Swagger
                         .requestMatchers(

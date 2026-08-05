@@ -35,6 +35,16 @@ public class NotificationController {
         return ResponseEntity.ok(notificationService.findAll());
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<List<NotificationResponse>> findMine() {
+        return ResponseEntity.ok(notificationService.findMine());
+    }
+
+    @PostMapping("/{id}/read")
+    public ResponseEntity<NotificationResponse> markMineRead(@PathVariable UUID id) {
+        return ResponseEntity.ok(notificationService.markMineRead(id));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<NotificationResponse> findById(@PathVariable UUID id) {
         return ResponseEntity.ok(notificationService.findById(id));
