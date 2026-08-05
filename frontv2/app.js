@@ -136,7 +136,7 @@
   }
 
   function resolveApiBaseUrl(value) {
-    const raw = String(value || "http://localhost:8081")
+    const raw = String(value || "http://__PUBLIC_HOST__:8081")
       .trim()
       .replace(/\/+$/, "");
     if (location.protocol === "file:") return raw;
