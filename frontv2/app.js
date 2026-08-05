@@ -87,10 +87,11 @@
   const DEFAULT_ROUTE = "home";
   const IS_LEGACY_ROUTER =
     document.body.dataset.router === "legacy" && Boolean(PAGES[DEFAULT_ROUTE]);
-  const API_BASE_URL = resolveApiBaseUrl(
-    document.querySelector('meta[name="nexora-api-base"]')?.content,
-  );
-  const CHATBOT_API_BASE_URL = resolveChatbotApiBaseUrl(API_BASE_URL);
+  const API_BASE_URL = (
+    document.querySelector('meta[name="nexora-api-base"]')?.content ||
+    "http://__PUBLIC_HOST__:8081"
+  ).replace(/\/+$/, "");
+  const CHATBOT_API_BASE_URL = API_BASE_URL;
   const ACCESS_TOKEN_KEY = "nexora_access_token";
   const REFRESH_TOKEN_KEY = "nexora_refresh_token";
   const AUTH_USER_KEY = "nexora_auth_user";
@@ -133,40 +134,6 @@
         },
       ),
     );
-  }
-
-  function resolveApiBaseUrl(value) {
-    const raw = String(value || "http://__PUBLIC_HOST__:8081")
-      .trim()
-      .replace(/\/+$/, "");
-    if (location.protocol === "file:") return raw;
-    try {
-      const configured = new URL(raw, location.href);
-      const loopback = new Set(["localhost", "127.0.0.1", "::1"]);
-      if (
-        loopback.has(configured.hostname) &&
-        !loopback.has(location.hostname)
-      ) {
-        return location.origin.replace(/\/+$/, "");
-      }
-    } catch (_) {
-      return location.origin.replace(/\/+$/, "");
-    }
-    return raw;
-  }
-
-  function resolveChatbotApiBaseUrl(platformBase) {
-    try {
-      const parsed = new URL(platformBase, location.href);
-      const loopback = new Set(["localhost", "127.0.0.1", "::1"]);
-      if (loopback.has(parsed.hostname) && parsed.port === "8081") {
-        parsed.port = "8000";
-        return parsed.origin;
-      }
-    } catch (_) {
-      // Deployed traffic uses the same-origin reverse proxy.
-    }
-    return platformBase;
   }
 
   function applyDataImageFallbacks(root = document) {
