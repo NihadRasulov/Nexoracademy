@@ -177,7 +177,7 @@ services:
   # --- SEPARATED MAIN FRONTEND ---
   main-ui:
     build:
-      context: ./frontend
+      context: ./frontv2
       dockerfile: Dockerfile
     container_name: nexora-main-ui
     restart: unless-stopped
