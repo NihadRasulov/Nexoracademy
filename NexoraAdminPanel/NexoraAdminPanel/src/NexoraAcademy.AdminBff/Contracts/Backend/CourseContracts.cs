@@ -1,0 +1,51 @@
+using System.Text.Json.Serialization;
+
+namespace NexoraAcademy.AdminBff.Contracts.Backend;
+
+public record CourseRequest(
+    [property: JsonPropertyName("slug")] string? Slug,
+    [property: JsonPropertyName("categoryId")] short? CategoryId,
+    [property: JsonPropertyName("title")] string? Title,
+    [property: JsonPropertyName("shortDescription")] string? ShortDescription,
+    [property: JsonPropertyName("fullDescription")] string? FullDescription,
+    [property: JsonPropertyName("targetAudience")] string? TargetAudience,
+    [property: JsonPropertyName("difficulty")] string? Difficulty,
+    [property: JsonPropertyName("durationWeeks")] short? DurationWeeks,
+    [property: JsonPropertyName("deliveryFormat")] string? DeliveryFormat,
+    [property: JsonPropertyName("locationText")] string? LocationText,
+    [property: JsonPropertyName("basePrice")] decimal? BasePrice,
+    [property: JsonPropertyName("currency")] string? Currency,
+    [property: JsonPropertyName("pricePeriod")] string? PricePeriod,
+    [property: JsonPropertyName("published")] bool? Published,
+    [property: JsonPropertyName("active")] bool? Active,
+    [property: JsonPropertyName("archived")] bool? Archived,
+    [property: JsonPropertyName("validFrom")] DateTimeOffset? ValidFrom,
+    [property: JsonPropertyName("validUntil")] DateTimeOffset? ValidUntil,
+    [property: JsonPropertyName("content")] Dictionary<string, object>? Content,
+    [property: JsonPropertyName("relatedCourseIds")] List<Guid>? RelatedCourseIds);
+
+public record CourseResponse(
+    [property: JsonPropertyName("id")] Guid Id,
+    [property: JsonPropertyName("slug")] string Slug,
+    [property: JsonPropertyName("categoryId")] short CategoryId,
+    [property: JsonPropertyName("title")] string Title,
+    [property: JsonPropertyName("shortDescription")] string? ShortDescription,
+    [property: JsonPropertyName("fullDescription")] string? FullDescription,
+    [property: JsonPropertyName("targetAudience")] string? TargetAudience,
+    [property: JsonPropertyName("difficulty")] string Difficulty,
+    [property: JsonPropertyName("durationWeeks")] short? DurationWeeks,
+    [property: JsonPropertyName("deliveryFormat")] string DeliveryFormat,
+    [property: JsonPropertyName("locationText")] string? LocationText,
+    [property: JsonPropertyName("basePrice")] decimal? BasePrice,
+    [property: JsonPropertyName("currency")] string? Currency,
+    [property: JsonPropertyName("pricePeriod")] string? PricePeriod,
+    [property: JsonPropertyName("published")] bool Published,
+    [property: JsonPropertyName("active")] bool Active,
+    [property: JsonPropertyName("archived")] bool Archived,
+    [property: JsonPropertyName("validFrom")] DateTimeOffset? ValidFrom,
+    [property: JsonPropertyName("validUntil")] DateTimeOffset? ValidUntil,
+    [property: JsonPropertyName("content")] Dictionary<string, object>? Content,
+    [property: JsonPropertyName("relatedCourseIds")] List<Guid>? RelatedCourseIds,
+    [property: JsonPropertyName("createdBy")] Guid? CreatedBy,
+    [property: JsonPropertyName("createdAt")] DateTimeOffset CreatedAt,
+    [property: JsonPropertyName("updatedAt")] DateTimeOffset UpdatedAt);
