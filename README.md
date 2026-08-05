@@ -188,12 +188,11 @@ npm run dev
 
 ## Autentifikasiya Axını
 
-1. İstifadəçi interfeysdəki giriş formundan e-poçt + parol göndərir → `POST /api/auth/login`.
-2. BFF kimlik məlumatlarını Nexora backend-ə ötürür.
-   - Backend **OTP** tələb edərsə, BFF `OtpRequiredException` yaradır və interfeys OTP addımına yönləndirir.
-3. Təsdiq uğurludursa, BFF backend giriş token-ını server tərəfindəki session store-a yazır və brauzerə yalnız bir sessiya cookie-si qaytarır.
-4. Sonrakı hər sorğuda `BackendAuthorizationHandler` sessiyadakı token-ı backend çağırışlarına `Authorization` başlığı kimi əlavə edir.
-5. Sessiya məlumatı `GET /api/auth/me` ilə oxunur; `POST /api/auth/logout` sessiyanı bitirir.
+1. İstifadəçi interfeysdəki giriş formundan e-poçt + parol göndərir → `POST /api/v1/auth/login`.
+2. Spring Backend **OTP** tələb edərsə, `OTP_REQUIRED` qaytarır. Tam OTP təsdiq axını ayrıca əlavə olunmalıdır.
+3. Təsdiq uğurludursa, backend giriş token-larını (access + refresh) qaytarır.
+4. Sonrakı hər sorğuda admin UI backend-ə Bearer token ilə sorğu göndərir.
+5. İstifadəçi məlumatı `GET /api/v1/users/me` ilə oxunur; `POST /api/v1/auth/logout` sessiyanı bitirir.
 
 İcazəsiz və ya vaxtı bitmiş sorğularda BFF HTML yönləndirməsi əvəzinə JSON qaytarır: `401 UNAUTHORIZED` / `403 FORBIDDEN`.
 

@@ -47,7 +47,7 @@ Nexora Academy platformasının idarəetmə panelidir. İki hissədən ibarətdi
 - **İnterfeys** birbaşa backend-ə deyil, yalnız BFF-ə sorğu göndərir (`VITE_API_BASE_URL`).
 - **BFF** istifadəçinin sessiyasını cookie-yə bağlayır; backend giriş token-ını server tərəfindəki session store-da saxlayır və hər sorğuya `BackendAuthorizationHandler` vasitəsilə əlavə edir.
 - Bu dizayn sayəsində giriş token-ları heç vaxt brauzerə çatmır və XSS zamanı token sızması riski əhəmiyyətli dərəcədə azalır.
-- Admin SPA və bütün BFF endpoint-ləri `AdminSettings:SecretPath` ilə verilən ortaq prefix altındadır. Məsələn, `sys-control-9912` üçün login səhifəsi `/sys-control-9912/login`, login API-si isə `/sys-control-9912/api/auth/login` olur.
+- Admin SPA BFF endpoint-ləri `AdminSettings:SecretPath` ilə verilən ortaq prefix altındadır. Məsələn, `sys-control-9912` üçün login səhifəsi `/sys-control-9912/login` olur. Admin UI Spring Backend ilə birbaşa `/api/v1/...` yolları üzərindən əlaqə qurur.
 
 ---
 
@@ -210,12 +210,11 @@ AdminSettings__SecretPath=your-random-production-path
 
 ## Autentifikasiya Axını
 
-1. İstifadəçi interfeysdəki giriş formundan e-poçt + parol göndərir → `POST /{secret-path}/api/auth/login`.
-2. BFF kimlik məlumatlarını Nexora backend-ə ötürür.
-   - Backend **OTP** tələb edərsə, BFF brauzer sessiyası yaratmadan `OTP_REQUIRED` qaytarır. Tam OTP təsdiq axını ayrıca əlavə olunmalıdır.
-3. Təsdiq uğurludursa, BFF backend giriş token-ını server tərəfindəki session store-a yazır və brauzerə yalnız bir sessiya cookie-si qaytarır.
-4. Sonrakı hər sorğuda `BackendAuthorizationHandler` sessiyadakı token-ı backend çağırışlarına `Authorization` başlığı kimi əlavə edir.
-5. Sessiya məlumatı `GET /{secret-path}/api/auth/me` ilə oxunur; `POST /{secret-path}/api/auth/logout` sessiyanı bitirir.
+1. İstifadəçi interfeysdəki giriş formundan e-poçt + parol göndərir → `POST /api/v1/auth/login`.
+2. Spring Backend **OTP** tələb edərsə, BFF brauzer sessiyası yaratmadan `OTP_REQUIRED` qaytarır. Tam OTP təsdiq axını ayrıca əlavə olunmalıdır.
+3. Təsdiq uğurludursa, backend giriş token-larını (access + refresh) qaytarır.
+4. Sonrakı hər sorğuda admin UI backend-ə Bearer token ilə sorğu göndərir.
+5. İstifadəçi məlumatı `GET /api/v1/users/me` ilə oxunur; `POST /api/v1/auth/logout` sessiyanı bitirir.
 
 İcazəsiz və ya vaxtı bitmiş sorğularda BFF HTML yönləndirməsi əvəzinə JSON qaytarır: `401 UNAUTHORIZED` / `403 FORBIDDEN`.
 
