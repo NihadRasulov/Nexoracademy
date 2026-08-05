@@ -21,7 +21,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshMe = useCallback(async () => {
     try {
-      const me = await api.get<MeResponse>("/api/auth/me");
+      const me = await api.get<MeResponse>("/api/v1/users/me");
       setUser(me);
       setInitializationError(null);
     } catch (error) {
@@ -47,14 +47,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refreshMe]);
 
   const login = useCallback(async (email: string, password: string) => {
-    const me = await api.post<MeResponse>("/api/auth/login", { email, password });
+    const me = await api.post<MeResponse>("/api/v1/auth/login", { email, password });
     setUser(me);
     setInitializationError(null);
   }, []);
 
   const logout = useCallback(async () => {
     try {
-      await api.post("/api/auth/logout");
+      await api.post("/api/v1/auth/logout");
     } finally {
       setUser(null);
       setInitializationError(null);
