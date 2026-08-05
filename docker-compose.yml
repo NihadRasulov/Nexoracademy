@@ -159,7 +159,7 @@ services:
   # --- SEPARATED MAIN FRONTEND ---
   main-ui:
     build:
-      context: ./frontv2
+      context: ./frontv3
       dockerfile: Dockerfile
     container_name: nexora-main-ui
     restart: unless-stopped
@@ -167,7 +167,7 @@ services:
     networks:
       - nexora-net
     volumes:
-      - "./frontv2/nginx.conf:/etc/nginx/conf.d/default.conf:ro"
+      - "./frontv3/nginx.conf:/etc/nginx/conf.d/default.conf:ro"
     deploy:
       resources:
         limits:

@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Nexora Academy açıq kurs kateqoriyalarının kataloqu.">
+  <meta name="description" content="Nexora Academy hesab vəziyyəti məlumatı.">
   <meta name="keywords" content="Nexora Academy, kurslar, təhsil, süni intellekt">
   <meta name="nexora-api-base" content="">
-  <title>Kurs kateqoriyaları | Nexora Academy</title>
+  <title>Hesab vəziyyəti | Nexora Academy</title>
   <link rel="stylesheet" href="style.css">
   <script defer src="app.js"></script>
 </head>
-<body class="__variable_7fc4d2 antialiased" style="overflow:auto" data-page="categories">
+<body class="__variable_7fc4d2 antialiased" style="overflow:auto" data-page="account-status">
   <noscript>Bu saytın işləməsi üçün JavaScript aktiv olmalıdır.</noscript>
 
 <div>
@@ -42,7 +42,7 @@
               Bütün kurslar
              </a>
 </div>
-<p class="Header_header__menu__link__i1AD1 Header_active__9DNVy">
+<p class="Header_header__menu__link__i1AD1">
 <span>
               Kurslar
              </span>
@@ -64,7 +64,7 @@
 <li>
 <a class="Header_header__menu__link__i1AD1" href="scholarships.html">
 <span>
-              Təqaüdlər
+              Karyera
              </span>
 </a>
 </li>
@@ -167,7 +167,7 @@
 <div class="HeaderMobile_menu__accordion__item__lNOEz">
 <div class="HeaderMobile_menu__accordion__item__header__tKY8U">
 <a class="HeaderMobile_menu__accordion__item__header__title__m4g5z" href="scholarships.html">
-          Təqaüdlər
+          Karyera
          </a>
 </div>
 </div>
@@ -235,7 +235,7 @@
 </a>
 </li>
 <li>
-<a href="#/nav/privacy" rel="noopener noreferrer" target="_blank">
+<a href="privacy.html" rel="noopener noreferrer" target="_blank">
 <div>
 <svg class="" fill="white" height="16" viewbox="0 0 24 25" width="16" xmlns="http://www.w3.org/2000/svg">
 <rect fill="#454545" height="24" rx="5" width="24" y="0.0371094">
@@ -250,7 +250,7 @@
 </a>
 </li>
 <li>
-<a href="#/nav/terms" rel="noopener noreferrer" target="_blank">
+<a href="terms.html" rel="noopener noreferrer" target="_blank">
 <div>
 <svg class="" fill="white" height="16" viewbox="0 0 24 24" width="16" xmlns="http://www.w3.org/2000/svg">
 <rect fill="#454545" height="24" rx="5" width="24" y="0.0371094">
@@ -265,7 +265,7 @@
 </a>
 </li>
 <li>
-<a href="#/nav/accessibility" rel="noopener noreferrer" target="_blank">
+<a href="accessibility.html" rel="noopener noreferrer" target="_blank">
 <div>
 <svg class="" fill="white" height="16" viewbox="0 0 24 24" width="16" xmlns="http://www.w3.org/2000/svg">
 <rect fill="#454545" height="24" rx="5" width="24">
@@ -286,26 +286,18 @@
 </div>
 <!--$-->
 <main class="main--about Nexora_page">
-<section class="Nexora_pageHero Nexora_pageHero--compact">
+<section class="Nexora_authSection">
 <div class="container">
-<div class="section__content">
-<a class="ai-btn ai-btn--text Nexora_backLink" href="courses.html">Kurslara qayıt</a>
-<div class="section__header__content">
-<p class="Nexora_eyebrow">Nexora Academy</p>
-<h1 class="Nexora_pageTitle">Kurs kateqoriyaları</h1>
-<p class="Nexora_pageLead">Yalnız açıq və aktiv iyerarxiyaya daxil olan kateqoriyalara baxın.</p>
+<div class="section__content section__content--center">
+<div class="Nexora_authCard">
+<div class="Nexora_formHeading">
+<p class="Nexora_eyebrow">Hesab vəziyyəti</p>
+<h1 class="Nexora_authTitle" id="accountStatusTitle">Hesab yoxlanılır…</h1>
+<p id="accountStatusMessage">Zəhmət olmasa gözləyin.</p>
 </div>
+<button class="ai-btn ai-btn--gradient Nexora_submit" id="accountStatusLogout" type="button">Hesabdan çıx</button>
+<p class="Nexora_formMessage" id="accountStatusHint" role="status" aria-live="polite"></p>
 </div>
-</div>
-</section>
-<section class="section">
-<div class="container">
-<div class="section__content">
-<div class="Nexora_resultsHeader">
-<h2 class="Nexora_sectionTitle">Kateqoriya kataloqu</h2>
-<p class="Nexora_status" id="categoriesStatus" role="status" aria-live="polite">Kateqoriyalar yüklənir…</p>
-</div>
-<div class="Nexora_courseGrid" id="categoriesGrid" aria-live="polite"></div>
 </div>
 </div>
 </section>
@@ -328,7 +320,7 @@
           </div>
           <div class="Footer_footer__contact__f4V1c">
             <span class="Footer_footer__contactLabel__n7L5s">E-po&#231;t</span>
-            <a href="mailto:info@Nexora Academy.az">info@Nexora Academy.az</a>
+            <a href="mailto:info@naic.az">info@naic.az</a>
           </div>
         </div>
       </div>
@@ -338,7 +330,7 @@
           <li><a href="index.html">Ana s&#601;hif&#601;</a></li>
           <li><a href="courses.html">B&#252;t&#252;n kurslar</a></li>
           <li><a href="index.html#/nav/haqqimizda">Akademiya</a></li>
-          <li><a href="scholarships.html">T&#601;qa&#252;dl&#601;r</a></li>
+          <li><a href="scholarships.html">Karyera</a></li>
           <li><a href="faq.html">Tez-tez veril&#601;n suallar</a></li>
           <li><a href="index.html#/nav/elaqe">&#399;laq&#601;</a></li>
           <li><a href="login.html">Daxil ol</a></li>
@@ -358,9 +350,9 @@
       <div class="Footer_footer__column__t5C9p">
         <h2 class="Footer_footer__heading__x3Q8v">H&#252;quqi</h2>
         <ul class="Footer_footer__menu__list__Q4jxf">
-          <li><a href="#/nav/terms">&#350;&#601;rtl&#601;r</a></li>
-          <li><a href="#/nav/privacy">M&#601;xfilik</a></li>
-          <li><a href="#/nav/accessibility">&#399;l&#231;atanl&#305;q</a></li>
+          <li><a href="terms.html">&#350;&#601;rtl&#601;r</a></li>
+          <li><a href="privacy.html">M&#601;xfilik</a></li>
+          <li><a href="accessibility.html">&#399;l&#231;atanl&#305;q</a></li>
         </ul>
       </div>
     </div>

@@ -87,10 +87,10 @@
   const DEFAULT_ROUTE = "home";
   const IS_LEGACY_ROUTER =
     document.body.dataset.router === "legacy" && Boolean(PAGES[DEFAULT_ROUTE]);
-  const API_BASE_URL = (
-    document.querySelector('meta[name="nexora-api-base"]')?.content || ""
-  ).replace(/\/+$/, "");
-  const CHATBOT_API_BASE_URL = "";
+  const API_BASE_URL = resolveApiBaseUrl(
+    document.querySelector('meta[name="nexora-api-base"]')?.content,
+  );
+  const CHATBOT_API_BASE_URL = resolveChatbotApiBaseUrl(API_BASE_URL);
   const ACCESS_TOKEN_KEY = "nexora_access_token";
   const REFRESH_TOKEN_KEY = "nexora_refresh_token";
   const AUTH_USER_KEY = "nexora_auth_user";
@@ -133,6 +133,40 @@
         },
       ),
     );
+  }
+
+  function resolveApiBaseUrl(value) {
+    const raw = String(value || "")
+      .trim()
+      .replace(/\/+$/, "");
+    if (location.protocol === "file:") return raw;
+    try {
+      const configured = new URL(raw, location.href);
+      const loopback = new Set(["localhost", "127.0.0.1", "::1"]);
+      if (
+        loopback.has(configured.hostname) &&
+        !loopback.has(location.hostname)
+      ) {
+        return location.origin.replace(/\/+$/, "");
+      }
+    } catch (_) {
+      return location.origin.replace(/\/+$/, "");
+    }
+    return raw;
+  }
+
+  function resolveChatbotApiBaseUrl(platformBase) {
+    try {
+      const parsed = new URL(platformBase, location.href);
+      const loopback = new Set(["localhost", "127.0.0.1", "::1"]);
+      if (loopback.has(parsed.hostname) && parsed.port === "8081") {
+        parsed.port = "8000";
+        return parsed.origin;
+      }
+    } catch (_) {
+      // Deployed traffic uses the same-origin reverse proxy.
+    }
+    return platformBase;
   }
 
   function applyDataImageFallbacks(root = document) {
@@ -230,8 +264,8 @@
         const node = document.getElementById(target);
         if (node) {
           node.scrollIntoView({ block: "center" });
-          node.classList.remove("Nexora Academy-target-flash");
-          requestAnimationFrame(() => node.classList.add("Nexora Academy-target-flash"));
+          node.classList.remove("naic-target-flash");
+          requestAnimationFrame(() => node.classList.add("naic-target-flash"));
           return;
         }
       }
@@ -247,10 +281,10 @@
   }
 
   function announce(form, message, state = "success") {
-    let node = $(".Nexora Academy-form-message", form);
+    let node = $(".naic-form-message", form);
     if (!node) {
       node = document.createElement("p");
-      node.className = "Nexora Academy-form-message";
+      node.className = "naic-form-message";
       node.setAttribute("role", "status");
       node.setAttribute("aria-live", "polite");
       form.appendChild(node);
@@ -260,17 +294,17 @@
   }
 
   function clearInvalid(form) {
-    $$(".Nexora Academy-field-invalid", form).forEach((field) =>
-      field.classList.remove("Nexora Academy-field-invalid"),
+    $$(".naic-field-invalid", form).forEach((field) =>
+      field.classList.remove("naic-field-invalid"),
     );
   }
 
   function markInvalid(field) {
     if (!field) return;
-    field.classList.add("Nexora Academy-field-invalid");
+    field.classList.add("naic-field-invalid");
     field.addEventListener(
       "input",
-      () => field.classList.remove("Nexora Academy-field-invalid"),
+      () => field.classList.remove("naic-field-invalid"),
       { once: true },
     );
   }
@@ -328,7 +362,7 @@
   }
 
   function saveOffline(kind, form) {
-    const key = `Nexora Academy_${kind}_submissions`;
+    const key = `naic_${kind}_submissions`;
     let current = [];
     try {
       current = JSON.parse(localStorage.getItem(key) || "[]");
@@ -785,6 +819,118 @@
     return user;
   }
 
+  function createCourseMenuLink(course, className = "") {
+    const link = document.createElement("a");
+    if (className) link.className = className;
+    link.href = course?.id
+      ? `course-details.html?id=${encodeURIComponent(course.id)}`
+      : "courses.html";
+    link.textContent = course?.title || "Bütün kurslar";
+    return link;
+  }
+
+  async function initCourseMenus(signal, closeMobileMenu) {
+    const desktopMenus = $$(".Header_header__menu__drowpdown__KnfZg");
+    const mobileCourseBodies = $$(
+      '.HeaderMobile_menu__accordion__item__lNOEz[type="button"]',
+    )
+      .filter((button) => {
+        const title = $(
+          '[class*="menu__accordion__item__header__title"]',
+          button,
+        );
+        return title?.textContent.replace(/\s+/g, " ").trim() === "Kurslar";
+      })
+      .map((button) => $('[class*="menu__accordion__item__body"]', button))
+      .filter(Boolean);
+    if (!desktopMenus.length && !mobileCourseBodies.length) return;
+
+    try {
+      const { courses } = await loadPublicCourseCatalog(signal);
+      if (signal.aborted) return;
+      const visibleCourses = courses.filter(
+        (course) => course?.id && String(course.title || "").trim(),
+      );
+
+      desktopMenus.forEach((menu) => {
+        const links = visibleCourses.map((course) =>
+          createCourseMenuLink(
+            course,
+            "Header_header__menu__drowpdown__item__jIbqp",
+          ),
+        );
+        links.push(
+          createCourseMenuLink(
+            null,
+            "Header_header__menu__drowpdown__item__jIbqp",
+          ),
+        );
+        menu.replaceChildren(...links);
+      });
+
+      mobileCourseBodies.forEach((body) => {
+        const links = visibleCourses.map((course) =>
+          createCourseMenuLink(course),
+        );
+        links.push(createCourseMenuLink(null));
+        if (closeMobileMenu) {
+          links.forEach((link) =>
+            link.addEventListener("click", closeMobileMenu, { signal }),
+          );
+        }
+        body.replaceChildren(...links);
+      });
+    } catch (error) {
+      if (error?.name === "AbortError" || signal.aborted) return;
+      // Keep the static "Bütün kurslar" link as a resilient fallback.
+    }
+  }
+
+  function headerUserDisplayName(user) {
+    return (
+      String(user?.fullName || "").trim() ||
+      [user?.firstName, user?.lastName]
+        .map((part) => String(part || "").trim())
+        .filter(Boolean)
+        .join(" ") ||
+      String(user?.email || "").trim()
+    );
+  }
+
+  async function initHeaderUser(signal, header, mobileMenu) {
+    const loginLinks = [
+      ...(header
+        ? $$('a.Header_header__menu__link__i1AD1[href="login.html"]', header)
+        : []),
+      ...(mobileMenu
+        ? $$(
+            'a.HeaderMobile_menu__accordion__item__header__title__m4g5z[href="login.html"]',
+            mobileMenu,
+          )
+        : []),
+    ];
+    const hasSession = Boolean(
+      accessToken || readStorage(localStorage, REFRESH_TOKEN_KEY),
+    );
+    if (!loginLinks.length || !hasSession) return;
+
+    try {
+      const user = await loadCurrentUser(signal);
+      if (signal.aborted) return;
+      const displayName = headerUserDisplayName(user);
+      if (!displayName) return;
+      loginLinks.forEach((link) => {
+        link.setAttribute("href", "profile.html");
+        const label = $("span", link) || link;
+        label.textContent = displayName;
+        link.setAttribute("aria-label", `${displayName} profilinə keç`);
+      });
+    } catch (error) {
+      if (error?.name === "AbortError" || signal.aborted) return;
+      // Keep the static "Daxil ol" link when the session cannot be restored.
+    }
+  }
+
   function initHeader(signal) {
     const header = $('.Header_header__8yaFd');
     if (header) {
@@ -794,19 +940,21 @@
     }
     const mobileMenu = $('.HeaderMobile_header_mobile_menu__b38W_');
     const menuButtons = $$('.header__menu__btn');
+    let closeMobileMenu = null;
     if (mobileMenu && menuButtons.length) {
       const open = () => {
         mobileMenu.classList.add('HeaderMobile_show__tPAoO');
-        document.documentElement.classList.add('Nexora Academy-menu-open');
-        document.body.classList.add('Nexora Academy-menu-open');
+        document.documentElement.classList.add('naic-menu-open');
+        document.body.classList.add('naic-menu-open');
         menuButtons[0]?.setAttribute('aria-expanded', 'true');
       };
       const close = () => {
         mobileMenu.classList.remove('HeaderMobile_show__tPAoO');
-        document.documentElement.classList.remove('Nexora Academy-menu-open');
-        document.body.classList.remove('Nexora Academy-menu-open');
+        document.documentElement.classList.remove('naic-menu-open');
+        document.body.classList.remove('naic-menu-open');
         menuButtons[0]?.setAttribute('aria-expanded', 'false');
       };
+      closeMobileMenu = close;
       menuButtons[0]?.setAttribute('aria-label', 'Open menu');
       menuButtons[0]?.setAttribute('aria-expanded', 'false');
       menuButtons[0]?.addEventListener('click', open, { signal });
@@ -829,6 +977,8 @@
         body.hidden = expanded;
       }, { signal });
     });
+    void initHeaderUser(signal, header, mobileMenu);
+    void initCourseMenus(signal, closeMobileMenu);
   }
 
   function initHeroMedia(signal) {
@@ -1558,9 +1708,9 @@
     );
     setupCoverflow(
       {
-        containerSelector: ".ViewsFromNexora Academy_ai-views--from--Nexora Academy__Zd_6I .swiper",
-        prevSelector: ".ViewsFromNexora Academy_section__header__controller__prev__cyPxK",
-        nextSelector: ".ViewsFromNexora Academy_section__header__controller__next__wERDV",
+        containerSelector: ".ViewsFromNaic_ai-views--from--naic__Zd_6I .swiper",
+        prevSelector: ".ViewsFromNaic_section__header__controller__prev__cyPxK",
+        nextSelector: ".ViewsFromNaic_section__header__controller__next__wERDV",
         depth: 125,
         centerFromLayout: true,
         autoplayMs: SCHOLARSHIPS_SLIDER_AUTOPLAY_MS,
@@ -2424,6 +2574,70 @@
         isPublicCourse(course, categoryState.visibleIds),
       );
     return { courses, categoryNames };
+  }
+
+  function featuredCourseTimestamp(course) {
+    const timestamp = Date.parse(course?.updatedAt || course?.createdAt || "");
+    return Number.isFinite(timestamp) ? timestamp : 0;
+  }
+
+  async function initHomeFeaturedCourses(signal) {
+    const container = $(".ProjectsSection_ai-projects__NQP37");
+    if (!container) return;
+    const template = $(".ProjectCard_ai-projects__item__oGKFx", container);
+    if (!template) return;
+
+    container.setAttribute("aria-busy", "true");
+    container.replaceChildren(
+      projectCourseStateCard(
+        template,
+        "Kurslar yüklənir…",
+        "Seçilmiş kurslar serverdən alınır.",
+      ),
+    );
+
+    try {
+      const { courses, categoryNames } = await loadPublicCourseCatalog(signal);
+      if (signal.aborted) return;
+      const featuredCourses = [...courses]
+        .sort(
+          (left, right) =>
+            featuredCourseTimestamp(right) - featuredCourseTimestamp(left) ||
+            String(left?.title || "").localeCompare(
+              String(right?.title || ""),
+              "az",
+            ),
+        )
+        .slice(0, 3);
+      if (!featuredCourses.length) {
+        container.replaceChildren(
+          projectCourseStateCard(
+            template,
+            "Seçilmiş kurs tapılmadı",
+            "Hazırda göstərilə bilən aktiv kurs yoxdur.",
+            { href: "courses.html", label: "Bütün kurslara bax" },
+          ),
+        );
+        return;
+      }
+      container.replaceChildren(
+        ...featuredCourses.map((course) =>
+          projectCourseCard(template, course, categoryNames),
+        ),
+      );
+    } catch (error) {
+      if (error?.name === "AbortError" || signal.aborted) return;
+      container.replaceChildren(
+        projectCourseStateCard(
+          template,
+          "Kurslar hazırda əlçatan deyil",
+          apiErrorMessage(error),
+          { href: "courses.html", label: "Bütün kurslara bax" },
+        ),
+      );
+    } finally {
+      if (!signal.aborted) container.removeAttribute("aria-busy");
+    }
   }
 
   function initProjectCoursesPage(signal) {
@@ -4240,6 +4454,7 @@
     switch (document.body.dataset.page) {
       case "home":
         void initHomeBanner(signal);
+        void initHomeFeaturedCourses(signal);
         break;
       case "courses":
         initCoursesPage(signal);
@@ -4323,8 +4538,8 @@
     requestAnimationFrame(() =>
       requestAnimationFrame(() => {
         node.scrollIntoView({ behavior: "smooth", block: "center" });
-        node.classList.remove("Nexora Academy-target-flash");
-        requestAnimationFrame(() => node.classList.add("Nexora Academy-target-flash"));
+        node.classList.remove("naic-target-flash");
+        requestAnimationFrame(() => node.classList.add("naic-target-flash"));
       }),
     );
   }
