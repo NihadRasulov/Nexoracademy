@@ -174,6 +174,17 @@
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || "").trim());
   }
 
+  // Backend-dəki @PersonName qaydasının eynisi (bax
+  // az.demo.NexoraAcademy.validation.PersonName): 2-40 simvol, yalnız hərflər,
+  // söz araları üçün tək boşluq/defis/apostrof. Burada təkrarlanır ki, istifadəçi
+  // 400 cavabını gözləmədən dərhal geri bildirim alsın — həqiqət mənbəyi backend-dir.
+  const PERSON_NAME_PATTERN = /^\p{L}[\p{L}\p{M}]*(?:[ '’-][\p{L}\p{M}]+)*$/u;
+
+  function validPersonName(value) {
+    const name = String(value || "").trim();
+    return name.length >= 2 && name.length <= 40 && PERSON_NAME_PATTERN.test(name);
+  }
+
   function safeStoredValue(value) {
     if (value instanceof File) {
       return { name: value.name, size: value.size, type: value.type };
@@ -203,7 +214,10 @@
     return (
       password.length >= 8 &&
       password.length <= 72 &&
-      /\p{L}/u.test(password) &&
+      // Backend ASCII hərf tələb edir: ^(?=.*[A-Za-z])(?=.*\d).{8,72}$
+      // Əvvəl burada \p{L} idi — "şəkər123" kimi yalnız Azərbaycan hərfli şifrə
+      // brauzerdə keçir, sonra serverdən 400 alırdı. İndi hər iki tərəf eynidir.
+      /[A-Za-z]/.test(password) &&
       /\d/.test(password)
     );
   }
@@ -2098,15 +2112,18 @@
       async (event) => {
         event.preventDefault();
         clearFormErrors(registerForm);
-        const fullName = registerForm.elements.fullName.value.trim();
+        const firstName = registerForm.elements.firstName.value.trim();
+        const lastName = registerForm.elements.lastName.value.trim();
         const email = registerForm.elements.email.value.trim();
         const phone = registerForm.elements.phone.value.trim();
         const password = registerForm.elements.password.value;
         const passwordConfirm = registerForm.elements.passwordConfirm.value;
         const termsAccepted = registerForm.elements.termsAccepted.checked;
         const privacyAccepted = registerForm.elements.privacyAccepted.checked;
-        if (fullName.length < 2)
-          markFormField(registerForm.elements.fullName);
+        if (!validPersonName(firstName))
+          markFormField(registerForm.elements.firstName);
+        if (!validPersonName(lastName))
+          markFormField(registerForm.elements.lastName);
         if (!validEmail(email)) markFormField(registerForm.elements.email);
         if (!validPassword(password))
           markFormField(registerForm.elements.password);
@@ -2116,7 +2133,8 @@
         if (!privacyAccepted)
           markFormField(registerForm.elements.privacyAccepted);
         if (
-          fullName.length < 2 ||
+          !validPersonName(firstName) ||
+          !validPersonName(lastName) ||
           !validEmail(email) ||
           !validPassword(password) ||
           passwordConfirm !== password ||
@@ -2140,7 +2158,8 @@
               signal,
               body: JSON.stringify({
                 email,
-                fullName,
+                firstName,
+                lastName,
                 ...(phone ? { phone } : {}),
                 password,
               }),
@@ -2378,7 +2397,8 @@
     }
 
     try {
-      profileForm.elements.fullName.value = user.fullName || "";
+      profileForm.elements.firstName.value = user.firstName || "";
+      profileForm.elements.lastName.value = user.lastName || "";
       profileForm.elements.email.value = user.email || "";
       profileForm.elements.phone.value = user.phone || "";
       profileForm.elements.locale.value = user.locale || "az";
@@ -2398,19 +2418,29 @@
       async (event) => {
         event.preventDefault();
         clearFormErrors(profileForm);
-        const fullName = profileForm.elements.fullName.value.trim();
+        const firstName = profileForm.elements.firstName.value.trim();
+        const lastName = profileForm.elements.lastName.value.trim();
         const phone = profileForm.elements.phone.value.trim();
         const locale = profileForm.elements.locale.value.trim() || "az";
-        const phoneValid = !phone || /^[+0-9() -]{7,25}$/.test(phone);
+        // Telefon həddi backend-dəki @PhoneNumber ilə eynidir: maksimum 20 simvol
+        // (identity.users.phone VARCHAR(20)) — əvvəlki 25 həddi serverdən 400 qaytarırdı.
+        const phoneValid = !phone || /^[+0-9() -]{7,20}$/.test(phone);
         const localeValid = /^[a-z]{2}(?:-[A-Z]{2})?$/.test(locale);
-        if (fullName.length < 2)
-          markFormField(profileForm.elements.fullName);
+        if (!validPersonName(firstName))
+          markFormField(profileForm.elements.firstName);
+        if (!validPersonName(lastName))
+          markFormField(profileForm.elements.lastName);
         if (!phoneValid) markFormField(profileForm.elements.phone);
         if (!localeValid) markFormField(profileForm.elements.locale);
-        if (fullName.length < 2 || !phoneValid || !localeValid) {
+        if (
+          !validPersonName(firstName) ||
+          !validPersonName(lastName) ||
+          !phoneValid ||
+          !localeValid
+        ) {
           setFormMessage(
             profileForm,
-            "Ad, telefon və dil məlumatlarını düzgün formatda daxil edin.",
+            "Ad, soyad, telefon və dil məlumatlarını düzgün formatda daxil edin.",
             "error",
           );
           return;
@@ -2422,7 +2452,8 @@
             method: "PATCH",
             signal,
             body: JSON.stringify({
-              fullName,
+              firstName,
+              lastName,
               phone,
               locale,
             }),

@@ -313,9 +313,13 @@
 <p>Məlumatlar birbaşa profil xidməti ilə yenilənir.</p>
 </div>
 <div class="Nexora_formGrid">
-<label class="Nexora_field Nexora_field--full" for="profileFullName">
-<span>Ad və soyad</span>
-<input id="profileFullName" name="fullName" type="text" autocomplete="name">
+<label class="Nexora_field" for="profileFirstName">
+<span>Ad</span>
+<input id="profileFirstName" name="firstName" type="text" autocomplete="given-name" minlength="2" maxlength="40">
+</label>
+<label class="Nexora_field" for="profileLastName">
+<span>Soyad</span>
+<input id="profileLastName" name="lastName" type="text" autocomplete="family-name" minlength="2" maxlength="40">
 </label>
 <label class="Nexora_field" for="profileEmail">
 <span>E-poçt</span>
