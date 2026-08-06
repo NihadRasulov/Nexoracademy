@@ -1,10 +1,9 @@
 import { ApiError, type ErrorResponse } from "@/lib/api-error";
 import { DEMO_MODE } from "@/lib/demo/demo-mode";
 import { demoRequest } from "@/lib/demo/demo-router";
-import { ADMIN_BASE_PATH } from "@/config/admin-base-path";
 
 const configuredApiOrigin = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/+$/, "");
-export const API_BASE_URL = `${configuredApiOrigin || window.location.origin}${ADMIN_BASE_PATH}`;
+export const API_BASE_URL = configuredApiOrigin || "";
 const REQUEST_TIMEOUT_MS = 30_000;
 
 export type QueryParams = Record<string, string | number | boolean | undefined | null>;
