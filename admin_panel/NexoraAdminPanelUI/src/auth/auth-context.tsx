@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import { api, setAccessToken, setRefreshToken, clearTokens, getRefreshToken } from "@/lib/api";
+import { api, getAccessToken, setAccessToken, setRefreshToken, clearTokens, getRefreshToken } from "@/lib/api";
 import { ApiError } from "@/lib/api-error";
 import type { MeResponse } from "@/types/common";
 
