@@ -41,7 +41,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     void (async () => {
-      await refreshMe();
+      if (getAccessToken()) {
+        await refreshMe();
+      }
       setLoading(false);
     })();
   }, [refreshMe]);

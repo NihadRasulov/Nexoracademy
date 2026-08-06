@@ -6,6 +6,38 @@ const configuredApiOrigin = (import.meta.env.VITE_API_BASE_URL as string | undef
 export const API_BASE_URL = configuredApiOrigin || "";
 const REQUEST_TIMEOUT_MS = 30_000;
 
+const ACCESS_TOKEN_KEY = "nexora_access_token";
+const REFRESH_TOKEN_KEY = "nexora_refresh_token";
+
+export function getAccessToken(): string | null {
+  return localStorage.getItem(ACCESS_TOKEN_KEY);
+}
+
+export function setAccessToken(token: string | null): void {
+  if (token) {
+    localStorage.setItem(ACCESS_TOKEN_KEY, token);
+  } else {
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+  }
+}
+
+export function getRefreshToken(): string | null {
+  return localStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
+export function setRefreshToken(token: string | null): void {
+  if (token) {
+    localStorage.setItem(REFRESH_TOKEN_KEY, token);
+  } else {
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+  }
+}
+
+export function clearTokens(): void {
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+}
+
 export type QueryParams = Record<string, string | number | boolean | undefined | null>;
 
 function buildUrl(path: string, query?: QueryParams): string {
@@ -31,10 +63,18 @@ async function request<T>(
 
   let response: Response;
   try {
+    const headers: Record<string, string> = {};
+    if (options?.body !== undefined) {
+      headers["Content-Type"] = "application/json";
+    }
+    const token = getAccessToken();
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
     response = await fetch(buildUrl(path, options?.query), {
       method,
       credentials: "include",
-      headers: options?.body !== undefined ? { "Content-Type": "application/json" } : undefined,
+      headers,
       body: options?.body !== undefined ? JSON.stringify(options.body) : undefined,
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
