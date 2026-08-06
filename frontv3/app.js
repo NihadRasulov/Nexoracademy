@@ -464,8 +464,11 @@
       return "Çox sayda cəhd edildi. Bir az sonra yenidən yoxlayın.";
     if (error?.status === 0)
       return "Serverlə əlaqə yaratmaq mümkün olmadı. Server tərəfinin işlədiyini və CORS ayarlarını yoxlayın.";
-    if (error?.status === 401)
+    if (error?.status === 401) {
+      if (error?.message && error.message !== "Unauthorized")
+        return error.message;
       return "Sessiya etibarsızdır. Yenidən daxil olun.";
+    }
     if (error?.status === 403)
       return "Bu əməliyyat üçün icazəniz yoxdur.";
     return error?.message || "Sorğu zamanı xəta baş verdi.";
