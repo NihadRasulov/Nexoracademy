@@ -46,13 +46,13 @@ export function CourseInstructorsPage() {
 
   const listQuery = useQuery({
     queryKey: ["course-instructors"],
-    queryFn: () => api.get<CourseInstructorRow[]>("/api/course-instructors"),
+    queryFn: () => api.get<CourseInstructorRow[]>("/api/v1/course-instructors"),
   });
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["course-instructors"] });
 
   const createMutation = useMutation({
-    mutationFn: () => api.post("/api/course-instructors", { courseId, instructorId, role }),
+    mutationFn: () => api.post("/api/v1/course-instructors", { courseId, instructorId, role }),
     onSuccess: () => {
       toast.success("Əlaqə yaradıldı.");
       setFormOpen(false);
@@ -63,7 +63,7 @@ export function CourseInstructorsPage() {
 
   const updateMutation = useMutation({
     mutationFn: () =>
-      api.patch(`/api/course-instructors/${courseId}/${instructorId}`, { courseId, instructorId, role }),
+      api.patch(`/api/v1/course-instructors/${courseId}/${instructorId}`, { courseId, instructorId, role }),
     onSuccess: () => {
       toast.success("Əlaqə yeniləndi.");
       setFormOpen(false);
@@ -74,7 +74,7 @@ export function CourseInstructorsPage() {
 
   const deleteMutation = useMutation({
     mutationFn: (row: CourseInstructorRow) =>
-      api.delete<void>(`/api/course-instructors/${row.courseId}/${row.instructorId}`),
+      api.delete<void>(`/api/v1/course-instructors/${row.courseId}/${row.instructorId}`),
     onSuccess: () => {
       toast.success("Əlaqə silindi.");
       setDeleting(null);

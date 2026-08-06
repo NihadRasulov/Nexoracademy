@@ -70,13 +70,13 @@ export function EnrollmentsPage() {
 
   const listQuery = useQuery({
     queryKey: ["enrollments"],
-    queryFn: () => api.get<EnrollmentRow[]>("/api/enrollments"),
+    queryFn: () => api.get<EnrollmentRow[]>("/api/v1/enrollments"),
   });
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["enrollments"] });
 
   const createMutation = useMutation({
-    mutationFn: (body: Record<string, unknown>) => api.post("/api/enrollments", body),
+    mutationFn: (body: Record<string, unknown>) => api.post("/api/v1/enrollments", body),
     onSuccess: () => {
       toast.success("Qeydiyyat yaradıldı.");
       setFormOpen(false);
@@ -87,7 +87,7 @@ export function EnrollmentsPage() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) =>
-      api.patch(`/api/enrollments/${id}`, body),
+      api.patch(`/api/v1/enrollments/${id}`, body),
     onSuccess: () => {
       toast.success("Qeydiyyat yeniləndi.");
       setFormOpen(false);
@@ -97,7 +97,7 @@ export function EnrollmentsPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete<void>(`/api/enrollments/${id}`),
+    mutationFn: (id: string) => api.delete<void>(`/api/v1/enrollments/${id}`),
     onSuccess: () => {
       toast.success("Qeydiyyat silindi.");
       setDeleting(null);
@@ -108,7 +108,7 @@ export function EnrollmentsPage() {
 
   const cancelMutation = useMutation({
     mutationFn: ({ id, reason }: { id: string; reason: string }) =>
-      api.post(`/api/enrollments/${id}/cancel`, reason ? { reason } : {}),
+      api.post(`/api/v1/enrollments/${id}/cancel`, reason ? { reason } : {}),
     onSuccess: () => {
       toast.success("Qeydiyyat ləğv edildi.");
       setCancelling(null);

@@ -85,7 +85,7 @@ export function CoursesPage() {
   const listQuery = useQuery({
     queryKey,
     queryFn: () =>
-      api.get<PagedResult<CourseRow>>("/api/courses", {
+      api.get<PagedResult<CourseRow>>("/api/v1/courses", {
         q: q || undefined,
         page,
         size,
@@ -96,7 +96,7 @@ export function CoursesPage() {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["courses"] });
 
   const createMutation = useMutation({
-    mutationFn: (body: Record<string, unknown>) => api.post<CourseRow>("/api/courses", body),
+    mutationFn: (body: Record<string, unknown>) => api.post<CourseRow>("/api/v1/courses", body),
     onSuccess: () => {
       toast.success("Kurs yaradıldı.");
       setFormOpen(false);
@@ -107,7 +107,7 @@ export function CoursesPage() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) =>
-      api.patch<CourseRow>(`/api/courses/${id}`, body),
+      api.patch<CourseRow>(`/api/v1/courses/${id}`, body),
     onSuccess: () => {
       toast.success("Kurs yeniləndi.");
       setFormOpen(false);
@@ -117,7 +117,7 @@ export function CoursesPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete<void>(`/api/courses/${id}`),
+    mutationFn: (id: string) => api.delete<void>(`/api/v1/courses/${id}`),
     onSuccess: () => {
       toast.success("Kurs silindi.");
       setDeleting(null);

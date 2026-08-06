@@ -55,13 +55,13 @@ export function PaymentsPage() {
 
   const listQuery = useQuery({
     queryKey: ["payments"],
-    queryFn: () => api.get<PaymentRow[]>("/api/payments"),
+    queryFn: () => api.get<PaymentRow[]>("/api/v1/payments"),
   });
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["payments"] });
 
   const createMutation = useMutation({
-    mutationFn: (body: Record<string, unknown>) => api.post("/api/payments", body),
+    mutationFn: (body: Record<string, unknown>) => api.post("/api/v1/payments", body),
     onSuccess: () => {
       toast.success("Ödəniş yaradıldı.");
       setFormOpen(false);
@@ -72,7 +72,7 @@ export function PaymentsPage() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, body }: { id: string; body: Record<string, unknown> }) =>
-      api.patch(`/api/payments/${id}`, body),
+      api.patch(`/api/v1/payments/${id}`, body),
     onSuccess: () => {
       toast.success("Ödəniş yeniləndi.");
       setFormOpen(false);
@@ -82,7 +82,7 @@ export function PaymentsPage() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => api.delete<void>(`/api/payments/${id}`),
+    mutationFn: (id: string) => api.delete<void>(`/api/v1/payments/${id}`),
     onSuccess: () => {
       toast.success("Ödəniş silindi.");
       setDeleting(null);
@@ -92,7 +92,7 @@ export function PaymentsPage() {
   });
 
   const captureMutation = useMutation({
-    mutationFn: (id: string) => api.post(`/api/payments/${id}/capture`),
+    mutationFn: (id: string) => api.post(`/api/v1/payments/${id}/capture`),
     onSuccess: () => {
       toast.success("Ödəniş capture edildi.");
       setCapturing(null);
