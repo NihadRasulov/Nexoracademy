@@ -120,7 +120,10 @@ function parseJson(text: string, status: number): unknown {
 function isErrorResponse(value: unknown): value is ErrorResponse {
   if (!value || typeof value !== "object") return false;
   const candidate = value as Partial<ErrorResponse>;
-  return typeof candidate.code === "string" && typeof candidate.message === "string";
+  return (
+    (typeof candidate.code === "string" || typeof candidate.error === "string") &&
+    typeof candidate.message === "string"
+  );
 }
 
 export const api = {
