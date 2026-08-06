@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PrivateAttr
 from typing import Optional, Literal
 
 
@@ -32,6 +32,7 @@ class ChatResponse(BaseModel):
     actions: list[ActionButton] = Field(default_factory=list)
     courses: list[CourseCard] = Field(default_factory=list)
     capture: str = "none"
+    _llm_called: bool = PrivateAttr(default=False)
 
 
 class LeadRequest(BaseModel):

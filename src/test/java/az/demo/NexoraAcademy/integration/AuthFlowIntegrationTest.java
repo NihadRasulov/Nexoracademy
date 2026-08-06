@@ -23,9 +23,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Exercises the full auth flow (register -> verify email OTP -> login -> login OTP
- * -> refresh -> logout) over real HTTP, through the real Spring Security filter
- * chain, against the live Postgres database.
+ * Exercises the full auth flow (register -> verify email OTP -> login -> refresh -> logout)
+ * over real HTTP, through the real Spring Security filter chain, against the live
+ * Postgres database.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -70,29 +70,17 @@ class AuthFlowIntegrationTest {
                         .content("{\"email\":\"" + email + "\",\"otp\":\"" + verifyOtp + "\"}"))
                 .andExpect(status().isNoContent());
 
-        // 3. login step 1 (email+password) -> no tokens yet, an OTP is emailed
+        // 3. login (email+password) -> tokens issued directly
         String loginBody = "{\"email\":\"" + email + "\",\"password\":\"" + password + "\"}";
-        mockMvc.perform(post("/api/v1/auth/login")
+        String loginResponse = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType("application/json")
                         .content(loginBody))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.email").value(email));
-
-        org.mockito.ArgumentCaptor<String> loginOtpBodyCaptor = org.mockito.ArgumentCaptor.forClass(String.class);
-        verify(emailService, timeout(EMAIL_TIMEOUT_MS).times(2))
-                .send(eq(email), anyString(), loginOtpBodyCaptor.capture());
-        String loginOtp = extractOtp(loginOtpBodyCaptor.getAllValues().get(1));
-
-        // 3b. login step 2 (submit the OTP) -> actual tokens
-        String loginOtpResponse = mockMvc.perform(post("/api/v1/auth/login/verify-otp")
-                        .contentType("application/json")
-                        .content("{\"email\":\"" + email + "\",\"otp\":\"" + loginOtp + "\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").exists())
                 .andExpect(jsonPath("$.refreshToken").exists())
                 .andReturn().getResponse().getContentAsString();
 
-        String refreshToken = objectMapper.readTree(loginOtpResponse).get("refreshToken").asText();
+        String refreshToken = objectMapper.readTree(loginResponse).get("refreshToken").asText();
 
         // 4. refresh — must succeed once, and the old token must not be reusable
         String refreshResponse = mockMvc.perform(post("/api/v1/auth/refresh")

@@ -3,8 +3,6 @@ package az.demo.NexoraAcademy.service;
 import az.demo.NexoraAcademy.config.AuthProperties;
 import az.demo.NexoraAcademy.config.MailProperties;
 import az.demo.NexoraAcademy.dto.auth.ForgotPasswordRequest;
-import az.demo.NexoraAcademy.dto.auth.LoginOtpResponse;
-import az.demo.NexoraAcademy.dto.auth.LoginOtpVerifyRequest;
 import az.demo.NexoraAcademy.dto.auth.LoginRequest;
 import az.demo.NexoraAcademy.dto.auth.RefreshTokenRequest;
 import az.demo.NexoraAcademy.dto.auth.RegisterRequest;
@@ -88,11 +86,9 @@ public class AuthService {
     }
 
     /**
-     * Step 1 of login: checks email+password. Admin-panel staff roles (ADMIN, SYSTEM_ADMIN,
-     * SALES_CRM, CONTENT_MANAGER) are trusted to log in with just credentials, so tokens are
-     * issued immediately for them. Regular end-user roles (STUDENT, GUEST) still go through
-     * the OTP step — an email is sent and no tokens are issued here; step 2 is
-     * {@link #verifyLoginOtp}.
+     * Login: checks email+password. If credentials are correct and the account is active,
+     * tokens are issued immediately — no OTP needed since regular users already proved
+     * ownership of the email at registration time.
      */
     @Transactional
     public Object login(LoginRequest request, String ipAddress) {
@@ -106,39 +102,19 @@ public class AuthService {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
 
-        if (isAdminPanelStaff(user)) {
-            user.setLastLoginAt(Instant.now());
-            userRepository.saveAndFlush(user);
-            eventPublisher.publishEvent(new UserLoggedInEvent(user.getId(), user.getEmail(), ipAddress));
-            return issueTokens(user);
+        if (user.getStatus() == AccountStatus.SUSPENDED || user.getStatus() == AccountStatus.BANNED) {
+            throw new InvalidCredentialsException("Account is suspended or banned");
         }
 
-        sendLoginOtp(user);
-
-        return new LoginOtpResponse("A 6-digit login code has been sent to your email.", user.getEmail(),
-                authProperties.getLoginOtpExpirationMs() / 1000);
-    }
-
-    private boolean isAdminPanelStaff(User user) {
-        return switch (user.getRole()) {
-            case ADMIN, SYSTEM_ADMIN, SALES_CRM, CONTENT_MANAGER -> true;
-            case STUDENT, GUEST -> false;
-        };
-    }
-
-    /** Step 2 of login: confirms the OTP emailed by {@link #login}, then issues real tokens. */
-    @Transactional
-    public TokenResponse verifyLoginOtp(LoginOtpVerifyRequest request, String ipAddress) {
-        User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new InvalidTokenException("Invalid or expired code"));
-
-        verifyOtp(user, SessionType.LOGIN_OTP, request.otp());
+        // Regular users (STUDENT, GUEST) must have verified their email during registration
+        if ((user.getRole() == UserRole.STUDENT || user.getRole() == UserRole.GUEST)
+                && user.getEmailVerifiedAt() == null) {
+            throw new InvalidCredentialsException("Email not verified. Please verify your email first.");
+        }
 
         user.setLastLoginAt(Instant.now());
         userRepository.saveAndFlush(user);
-
         eventPublisher.publishEvent(new UserLoggedInEvent(user.getId(), user.getEmail(), ipAddress));
-
         return issueTokens(user);
     }
 
@@ -246,16 +222,6 @@ public class AuthService {
                 "Welcome to NexoraAcademy! Your verification code is: " + otp
                         + "\n\nEnter this code in the app to verify your email. It is valid for "
                         + (authProperties.getEmailVerifyExpirationMs() / 60000) + " minutes.");
-    }
-
-    private void sendLoginOtp(User user) {
-        String otp = issueOtp(user, SessionType.LOGIN_OTP, authProperties.getLoginOtpExpirationMs());
-
-        emailService.send(user.getEmail(), "Your NexoraAcademy login code",
-                "Your login code is: " + otp
-                        + "\n\nEnter this code to finish signing in. It is valid for "
-                        + (authProperties.getLoginOtpExpirationMs() / 60000) + " minutes."
-                        + "\n\nIf you did not attempt to log in, you can safely ignore this email.");
     }
 
     /**

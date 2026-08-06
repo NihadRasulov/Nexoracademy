@@ -27,6 +27,14 @@ public class ApplicationController {
 
     private final ApplicationService applicationService;
 
+    private static final long MAX_CV_SIZE = 5 * 1024 * 1024L; // 5 MB
+    private static final List<String> ALLOWED_CV_TYPES = List.of(
+            "application/pdf",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    );
+    private static final List<String> ALLOWED_CV_EXTENSIONS = List.of(".pdf", ".doc", ".docx");
+
     @PostMapping(consumes = "multipart/form-data")
     public ResponseEntity<ApplicationResponse> create(
             @org.springframework.web.bind.annotation.RequestPart("data") ApplicationRequest request,
@@ -35,7 +43,26 @@ public class ApplicationController {
         ApplicationResponse response = applicationService.create(request);
 
         if (cv != null && !cv.isEmpty()) {
-            String filename = UUID.randomUUID() + "_" + cv.getOriginalFilename();
+            if (cv.getSize() > MAX_CV_SIZE) {
+                throw new IllegalArgumentException("CV file size exceeds maximum allowed (5 MB)");
+            }
+            String contentType = cv.getContentType();
+            if (contentType == null || !ALLOWED_CV_TYPES.contains(contentType.toLowerCase())) {
+                throw new IllegalArgumentException("CV file type not allowed. Accepted: PDF, DOC, DOCX");
+            }
+            String originalName = cv.getOriginalFilename();
+            if (originalName != null) {
+                String lowerName = originalName.toLowerCase();
+                boolean validExt = ALLOWED_CV_EXTENSIONS.stream().anyMatch(lowerName::endsWith);
+                if (!validExt) {
+                    throw new IllegalArgumentException("CV file extension not allowed. Accepted: .pdf, .doc, .docx");
+                }
+            }
+            String extension = "";
+            if (originalName != null && originalName.lastIndexOf('.') > 0) {
+                extension = originalName.substring(originalName.lastIndexOf('.'));
+            }
+            String filename = UUID.randomUUID() + extension;
             Path uploadDir = Paths.get("/app/uploads/cvs");
             Files.createDirectories(uploadDir);
             Path filePath = uploadDir.resolve(filename);

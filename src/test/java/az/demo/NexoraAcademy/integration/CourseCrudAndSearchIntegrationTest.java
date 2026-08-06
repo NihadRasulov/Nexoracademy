@@ -65,11 +65,7 @@ class CourseCrudAndSearchIntegrationTest {
         admin.setProfile(new HashMap<>());
         userRepository.save(admin);
 
-        // Admin-panel işçiləri (ADMIN/SYSTEM_ADMIN/SALES_CRM/CONTENT_MANAGER) OTP
-        // addımını KEÇMİR — bax AuthService#login → isAdminPanelStaff(): token-lər
-        // birbaşa /login cavabında gəlir. Bu test əvvəllər hər rol üçün OTP göndərilən
-        // köhnə axına görə yazılmışdı və /login/verify-otp çağırırdı; heç vaxt
-        // gəlməyəcək OTP məktubunu gözlədiyi üçün setUp həmişə uğursuz olurdu.
+        // Login is single-step — credentials checked, tokens issued directly.
         String loginResponse = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType("application/json")
                         .content("{\"email\":\"" + adminEmail + "\",\"password\":\"adminpass123\"}"))

@@ -39,8 +39,15 @@ public class PaymentGatewaySignatureVerifier {
 
     public boolean verify(byte[] rawBody, String signatureHeaderValue) {
         if (!isConfigured()) {
+            if (properties.isSignatureVerificationRequired()) {
+                log.error("PAYMENT_GATEWAY_WEBHOOK_SECRET is not set and signature verification is required "
+                        + "- rejecting /api/v1/payments/callback. Set PAYMENT_GATEWAY_WEBHOOK_SECRET or set "
+                        + "APP_PAYMENT_GATEWAY_SIGNATURE_VERIFICATION_REQUIRED=false for development.");
+                return false;
+            }
             log.warn("PAYMENT_GATEWAY_WEBHOOK_SECRET is not set - /api/v1/payments/callback signature is "
-                    + "NOT being verified. Do not go live with a real payment gateway until this is configured.");
+                    + "NOT being verified (signature-verification-required=false). Do not go live with a real "
+                    + "payment gateway until this is configured.");
             return true;
         }
 

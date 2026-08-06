@@ -126,10 +126,8 @@ class EnrollmentPaymentEventIntegrationTest {
         group.setSchedule(List.of());
         group = courseGroupRepository.save(group);
 
-        // Admin-panel işçiləri (ADMIN/SYSTEM_ADMIN/SALES_CRM/CONTENT_MANAGER) üçün login
-        // TƏK addımlıdır — bax AuthService#login → isAdminPanelStaff(): OTP göndərilmir,
-        // token-lər birbaşa /login cavabında qayıdır. Bu blok əvvəllər hər rol üçün OTP
-        // tələb olunan köhnə axına görə yazılmışdı və heç vaxt gəlməyəcək məktubu gözləyirdi.
+        // Login is single-step for all roles — credentials checked, tokens issued directly.
+        // (Email ownership was already proven at registration via the email-verification OTP.)
         String loginResponse = mockMvc.perform(post("/api/v1/auth/login")
                         .contentType("application/json")
                         .content("{\"email\":\"" + admin.getEmail() + "\",\"password\":\"adminpass123\"}"))

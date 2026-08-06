@@ -21,4 +21,7 @@ public class PaymentGatewayProperties {
     private String webhookSecret = "";
 
     private String signatureHeader = "X-Gateway-Signature";
+
+    /** When true (default), unsigned callbacks are rejected if no secret is configured. */
+    private boolean signatureVerificationRequired = true;
 }

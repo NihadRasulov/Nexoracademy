@@ -3383,30 +3383,7 @@
 
   function initLoginPage(signal) {
     const loginForm = $("#loginForm");
-    const otpForm = $("#loginOtpForm");
-    const otpHint = $("#loginOtpHint");
-    const otpBack = $("#loginOtpBack");
-    if (!loginForm || !otpForm) return;
-
-    let pendingEmail = "";
-    const showLogin = () => {
-      loginForm.hidden = false;
-      otpForm.hidden = true;
-      setFormMessage(otpForm, "");
-    };
-    const showOtp = (email, expiresInSeconds) => {
-      pendingEmail = email;
-      loginForm.hidden = true;
-      otpForm.hidden = false;
-      if (otpHint) {
-        const minutes = Math.max(
-          1,
-          Math.ceil((Number(expiresInSeconds) || 600) / 60),
-        );
-        otpHint.textContent = `${email} ünvanına göndərilən 6 rəqəmli kodu daxil edin. Kod təxminən ${minutes} dəqiqə etibarlıdır.`;
-      }
-      $("#loginOtp")?.focus();
-    };
+    if (!loginForm) return;
 
     loginForm.addEventListener(
       "submit",
@@ -3437,17 +3414,13 @@
             },
             false,
           );
-          if (response?.accessToken) {
-            setTokens(response);
-            setFormMessage(
-              loginForm,
-              "Giriş uğurludur. Yönləndirilirsiniz…",
-              "success",
-            );
-            await redirectAfterLogin(signal);
-            return;
-          }
-          showOtp(response?.email || email, response?.expiresInSeconds);
+          setTokens(response);
+          setFormMessage(
+            loginForm,
+            "Giriş uğurludur. Yönləndirilirsiniz…",
+            "success",
+          );
+          await redirectAfterLogin(signal);
         } catch (error) {
           if (error?.name !== "AbortError") showFormError(loginForm, error);
         } finally {
@@ -3456,47 +3429,6 @@
       },
       { signal },
     );
-
-    otpForm.addEventListener(
-      "submit",
-      async (event) => {
-        event.preventDefault();
-        clearFormErrors(otpForm);
-        const otp = otpForm.elements.otp.value.trim();
-        if (!/^\d{6}$/.test(otp)) {
-          markFormField(otpForm.elements.otp);
-          setFormMessage(otpForm, "6 rəqəmli kodu daxil edin.", "error");
-          return;
-        }
-
-        setFormBusy(otpForm, true);
-        try {
-          const response = await apiFetch(
-            "/api/v1/auth/login/verify-otp",
-            {
-              method: "POST",
-              signal,
-              body: JSON.stringify({ email: pendingEmail, otp }),
-            },
-            false,
-          );
-          setTokens(response);
-          setFormMessage(
-            otpForm,
-            "Kod təsdiqləndi. Yönləndirilirsiniz…",
-            "success",
-          );
-          await redirectAfterLogin(signal);
-        } catch (error) {
-          if (error?.name !== "AbortError") showFormError(otpForm, error);
-        } finally {
-          setFormBusy(otpForm, false);
-        }
-      },
-      { signal },
-    );
-
-    otpBack?.addEventListener("click", showLogin, { signal });
   }
 
   function initRegisterPage(signal) {
@@ -4457,7 +4389,12 @@
         void initHomeFeaturedCourses(signal);
         break;
       case "courses":
-        initCoursesPage(signal);
+        void initCoursesPage(signal).catch((error) => {
+          if (error?.name !== "AbortError") {
+            const status = $("#coursesStatus");
+            if (status) status.textContent = apiErrorMessage(error);
+          }
+        });
         break;
       case "categories":
         void initCategoriesPage(signal);
@@ -4466,7 +4403,12 @@
         void initCategoryPage(signal);
         break;
       case "course-details":
-        initCourseDetailsPage(signal);
+        void initCourseDetailsPage(signal).catch((error) => {
+          if (error?.name !== "AbortError") {
+            const container = $("#courseDetailsContainer");
+            if (container) container.innerHTML = `<div class="Nexora_emptyState"><h1>Kurs hazırda əlçatan deyil</h1><p>${escapeHtml(apiErrorMessage(error))}</p></div>`;
+          }
+        });
         break;
       case "faq":
         void initFaqPage(signal);

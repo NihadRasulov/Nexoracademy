@@ -112,12 +112,21 @@ public class AdminSeeder implements CommandLineRunner {
     }
 
     private void seedIfMissing(String email, String rawPassword, UserRole role, String firstName, String lastName) {
-        if (userRepository.existsByEmail(email)) {
-            log.info("{} ({}) artıq mövcuddur, seed edilmir.", role, email);
+        User user = userRepository.findByEmail(email).orElse(null);
+
+        if (user != null) {
+            // Ensure previously-seeded admins have emailVerifiedAt set so they can log in
+            if (user.getEmailVerifiedAt() == null) {
+                user.setEmailVerifiedAt(Instant.now());
+                userRepository.saveAndFlush(user);
+                log.info("{} ({}) üçün emailVerifiedAt təyin edildi.", role, email);
+            } else {
+                log.info("{} ({}) artıq mövcuddur, seed edilmir.", role, email);
+            }
             return;
         }
 
-        User user = new User();
+        user = new User();
         user.setEmail(email);
         user.setFirstName(firstName);
         user.setLastName(lastName);

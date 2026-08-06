@@ -107,28 +107,28 @@ services:
         limits:
           memory: 150M
 
-  app:
-    build: .
-    container_name: nexora-app
-    restart: unless-stopped
-    env_file: .env
-    environment:
-      SPRING_PROFILES_ACTIVE: dev
-      DB_HOST: postgres
-      JAVA_OPTS: "-Xmx256m -Xms128m"
-    ports:
-      - "8081:8081"
-    networks:
-      - nexora-net
-    volumes:
-      - nexora_app_logs:/app/logs
-    depends_on:
-      flyway:
-        condition: service_completed_successfully
-    deploy:
-      resources:
-        limits:
-          memory: 400M
+#  app:
+#    build: .
+#    container_name: nexora-app
+#    restart: unless-stopped
+#    env_file: .env
+#    environment:
+#      SPRING_PROFILES_ACTIVE: dev
+#      DB_HOST: postgres
+#      JAVA_OPTS: "-Xmx256m -Xms128m"
+#    ports:
+#      - "8081:8081"
+#    networks:
+#      - nexora-net
+#    volumes:
+#      - nexora_app_logs:/app/logs
+#    depends_on:
+#      flyway:
+#        condition: service_completed_successfully
+#    deploy:
+#      resources:
+#        limits:
+#          memory: 400M
 
 
 
@@ -147,8 +147,6 @@ services:
       - "${ADMIN_BFF_PORT:-8090}:8080"
     networks:
       - nexora-net
-    depends_on:
-      - app
     deploy:
       resources:
         limits:

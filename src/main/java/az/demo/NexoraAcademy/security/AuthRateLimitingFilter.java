@@ -36,7 +36,6 @@ public class AuthRateLimitingFilter extends OncePerRequestFilter {
     private static final Map<String, Integer> LIMITS_PER_MINUTE = Map.of(
             "/api/v1/auth/register", 5,
             "/api/v1/auth/login", 10,
-            "/api/v1/auth/login/verify-otp", 10,
             "/api/v1/auth/forgot-password", 5,
             "/api/v1/auth/resend-verification", 5
     );
