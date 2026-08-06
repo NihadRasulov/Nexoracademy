@@ -19,7 +19,7 @@ export function DashboardPage() {
 
   const healthQuery = useQuery({
     queryKey: ["backend-health"],
-    queryFn: () => api.get<BackendHealth>("/api/health/backend"),
+    queryFn: () => api.get<BackendHealth>("/actuator/health"),
     retry: false,
     refetchInterval: 30_000,
   });
