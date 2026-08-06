@@ -82,7 +82,8 @@ export async function demoRequest<T>(
 
   const segments = path.split("/").filter(Boolean);
 
-  if (path === "/api/v1/auth/login" && method === "POST") return meState as T;
+  if (path === "/api/v1/auth/login" && method === "POST")
+    return { accessToken: "demo-access-token", refreshToken: "demo-refresh-token", tokenType: "Bearer", expiresInSeconds: 3600 } as T;
   if (path === "/api/v1/auth/logout" && method === "POST") return undefined as T;
   if (path === "/api/v1/users/me" && method === "GET") return meState as T;
   if (path === "/api/health/backend" && method === "GET") return seed.DEMO_HEALTH as T;
