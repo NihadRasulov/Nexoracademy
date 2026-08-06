@@ -3,16 +3,15 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Nexora Academy tələbə kabinetinin ümumi görünüşü.">
+  <meta name="description" content="Nexora Academy hesab vəziyyəti məlumatı.">
   <meta name="keywords" content="Nexora Academy, kurslar, təhsil, süni intellekt">
   <meta name="nexora-api-base" content="">
-  <title>Tələbə kabineti | Nexora Academy</title>
+  <title>Hesab vəziyyəti | Nexora Academy</title>
   <link rel="stylesheet" href="style.css">
   <script defer src="app.js"></script>
 </head>
-<body class="__variable_7fc4d2 antialiased" style="overflow:auto" data-page="student">
+<body class="__variable_7fc4d2 antialiased" style="overflow:auto" data-page="account-status">
   <noscript>Bu saytın işləməsi üçün JavaScript aktiv olmalıdır.</noscript>
-  
 
 <div>
 <header class="Header_header__8yaFd">
@@ -42,6 +41,7 @@
 <a class="Header_header__menu__drowpdown__item__jIbqp" href="courses.html">
               Bütün kurslar
              </a>
+<a class="Header_header__menu__drowpdown__item__jIbqp" href="categories.html">Kurs kateqoriyaları</a>
 </div>
 <p class="Header_header__menu__link__i1AD1">
 <span>
@@ -152,6 +152,7 @@
 <a href="courses.html">
           Bütün kurslar
          </a>
+<a href="categories.html">Kurs kateqoriyaları</a>
 </div>
 </button>
 <div class="HeaderMobile_divider__RUyAL">
@@ -287,48 +288,18 @@
 </div>
 <!--$-->
 <main class="main--about Nexora_page">
-<section class="Nexora_pageHero Nexora_pageHero--compact">
+<section class="Nexora_authSection">
 <div class="container">
-<div class="section__content">
-<div class="Nexora_profileHeader">
-<div class="section__header__content">
-<p class="Nexora_eyebrow">Tələbə kabineti</p>
-<h1 class="Nexora_pageTitle" id="studentOverviewTitle">Ümumi görünüş</h1>
-<p class="Nexora_pageLead" id="studentOverviewSummary">Hesab məlumatları yüklənir…</p>
+<div class="section__content section__content--center">
+<div class="Nexora_authCard">
+<div class="Nexora_formHeading">
+<p class="Nexora_eyebrow">Hesab vəziyyəti</p>
+<h1 class="Nexora_authTitle" id="accountStatusTitle">Hesab yoxlanılır…</h1>
+<p id="accountStatusMessage">Zəhmət olmasa gözləyin.</p>
 </div>
-<a class="ai-btn ai-btn--gray" href="profile.html">Profil</a>
+<button class="ai-btn ai-btn--gradient Nexora_submit" id="accountStatusLogout" type="button">Hesabdan çıx</button>
+<p class="Nexora_formMessage" id="accountStatusHint" role="status" aria-live="polite"></p>
 </div>
-</div>
-</div>
-</section>
-<section class="section">
-<div class="container">
-<div class="section__content">
-<div class="Nexora_twoColumn">
-<article class="Nexora_panel">
-<p class="Nexora_eyebrow">Kurslar</p>
-<h2>Açıq proqramlar</h2>
-<p>Kurs kataloqunda yalnız açıq görünürlük qaydalarından keçən proqramlar göstərilir.</p>
-<a class="ai-btn ai-btn--text" href="courses.html">Kurslara bax</a>
-</article>
-<article class="Nexora_panel">
-<p class="Nexora_eyebrow">Qeydiyyatlar</p>
-<h2>Yadda saxlanmış qeydlər</h2>
-<p>Server tərəfində “mənim qeydiyyatlarım” kolleksiyası olmadığı üçün yalnız məlum ID-lər göstərilir.</p>
-<a class="ai-btn ai-btn--text" href="enrollments.html">Qeydiyyatlara bax</a>
-</article>
-</div>
-</div>
-</div>
-</section>
-<section class="section">
-<div class="container">
-<div class="section__content">
-<div class="Nexora_resultsHeader">
-<h2 class="Nexora_sectionTitle">Yadda saxlanmış qeydiyyatlar</h2>
-<p class="Nexora_status" id="studentKnownEnrollmentStatus" role="status" aria-live="polite"></p>
-</div>
-<div class="Nexora_courseGrid" id="studentKnownEnrollments"></div>
 </div>
 </div>
 </section>
@@ -351,7 +322,7 @@
           </div>
           <div class="Footer_footer__contact__f4V1c">
             <span class="Footer_footer__contactLabel__n7L5s">E-po&#231;t</span>
-            <a href="mailto:info@naic.az">info@naic.az</a>
+            <a href="mailto:info@nexoraacademy.az">info@nexoraacademy.az</a>
           </div>
         </div>
       </div>
@@ -364,7 +335,6 @@
           <li><a href="scholarships.html">Karyera</a></li>
           <li><a href="faq.html">Tez-tez veril&#601;n suallar</a></li>
           <li><a href="index.html#/nav/elaqe">&#399;laq&#601;</a></li>
-          <li><a href="login.html">Daxil ol</a></li>
         </ul>
       </nav>
       <div class="Footer_footer__column__t5C9p">

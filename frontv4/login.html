@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Nexora Academy hesab şifrəsinin bərpası.">
+  <meta name="description" content="Nexora Academy hesabına təhlükəsiz giriş.">
   <meta name="keywords" content="Nexora Academy, kurslar, təhsil, süni intellekt">
   <meta name="nexora-api-base" content="">
-  <title>Şifrəni bərpa et | Nexora Academy</title>
+  <title>Daxil ol | Nexora Academy</title>
   <link rel="stylesheet" href="style.css">
   <script defer src="app.js"></script>
 </head>
-<body class="__variable_7fc4d2 antialiased" style="overflow:auto" data-page="password">
+<body class="__variable_7fc4d2 antialiased" style="overflow:auto" data-page="login">
   <noscript>Bu saytın işləməsi üçün JavaScript aktiv olmalıdır.</noscript>
 
 <div>
@@ -41,6 +41,7 @@
 <a class="Header_header__menu__drowpdown__item__jIbqp" href="courses.html">
               Bütün kurslar
              </a>
+<a class="Header_header__menu__drowpdown__item__jIbqp" href="categories.html">Kurs kateqoriyaları</a>
 </div>
 <p class="Header_header__menu__link__i1AD1">
 <span>
@@ -83,7 +84,7 @@
 </a>
 </li>
 <li>
-<a class="Header_header__menu__link__i1AD1" href="login.html">
+<a class="Header_header__menu__link__i1AD1 Header_active__9DNVy" href="login.html">
 <span>
               Daxil ol
              </span>
@@ -151,6 +152,7 @@
 <a href="courses.html">
           Bütün kurslar
          </a>
+<a href="categories.html">Kurs kateqoriyaları</a>
 </div>
 </button>
 <div class="HeaderMobile_divider__RUyAL">
@@ -291,33 +293,38 @@
 <div class="section__content section__content--center">
 <div class="Nexora_authCard">
 <div class="Nexora_formHeading">
-<p class="Nexora_eyebrow">Hesabın bərpası</p>
-<h1 class="Nexora_authTitle" id="passwordPageTitle">Şifrəni unutmusunuz?</h1>
-<p id="passwordPageLead">E-poçt ünvanınızı yazın, bərpa keçidini göndərək.</p>
+<p class="Nexora_eyebrow">Nexora Academy</p>
+<h1 class="Nexora_authTitle">Hesabına daxil ol</h1>
+<p>Tələbə hesabında giriş iki mərhələlidir.</p>
 </div>
-<form class="Nexora_form" id="forgotPasswordForm">
-<label class="Nexora_field" for="forgotEmail">
+<form class="Nexora_form" id="loginForm">
+<label class="Nexora_field" for="loginEmail">
 <span>E-poçt</span>
-<input id="forgotEmail" name="email" type="email" autocomplete="email" required>
+<input id="loginEmail" name="email" type="email" autocomplete="email" required>
 </label>
-<button class="ai-btn ai-btn--gradient Nexora_submit" type="submit">Bərpa keçidini göndər</button>
+<label class="Nexora_field" for="loginPassword">
+<span>Şifrə</span>
+<input id="loginPassword" name="password" type="password" autocomplete="current-password" required>
+</label>
+<button class="ai-btn ai-btn--gradient Nexora_submit" type="submit">Daxil ol</button>
 <p class="Nexora_formMessage" role="status" aria-live="polite"></p>
 </form>
-<form class="Nexora_form" id="resetPasswordForm" hidden>
-<label class="Nexora_field" for="newPassword">
-<span>Yeni şifrə</span>
-<input id="newPassword" name="newPassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required>
-<small>8–72 simvol, ən azı bir hərf və bir rəqəm.</small>
+<form class="Nexora_form Nexora_otpPanel" id="loginOtpForm" hidden>
+<div class="Nexora_formHeading">
+<h2>Təsdiq kodu</h2>
+<p id="loginOtpHint">E-poçtunuza göndərilən 6 rəqəmli kodu daxil edin.</p>
+</div>
+<label class="Nexora_field" for="loginOtp">
+<span>6 rəqəmli kod</span>
+<input id="loginOtp" name="otp" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required>
 </label>
-<label class="Nexora_field" for="newPasswordConfirm">
-<span>Yeni şifrəni təsdiqlə</span>
-<input id="newPasswordConfirm" name="newPasswordConfirm" type="password" autocomplete="new-password" minlength="8" maxlength="72" required>
-</label>
-<button class="ai-btn ai-btn--gradient Nexora_submit" type="submit">Şifrəni yenilə</button>
+<button class="ai-btn ai-btn--gradient Nexora_submit" type="submit">Kodu təsdiqlə</button>
+<button class="ai-btn ai-btn--text" id="loginOtpBack" type="button">Geri qayıt</button>
 <p class="Nexora_formMessage" role="status" aria-live="polite"></p>
 </form>
 <div class="Nexora_authLinks">
-<a href="login.html">Giriş səhifəsinə qayıt</a>
+<a href="password.html">Şifrəni unutmusunuz?</a>
+<a href="register.html">Yeni hesab yarat</a>
 </div>
 </div>
 </div>
@@ -342,7 +349,7 @@
           </div>
           <div class="Footer_footer__contact__f4V1c">
             <span class="Footer_footer__contactLabel__n7L5s">E-po&#231;t</span>
-            <a href="mailto:info@naic.az">info@naic.az</a>
+            <a href="mailto:info@nexoraacademy.az">info@nexoraacademy.az</a>
           </div>
         </div>
       </div>
@@ -355,7 +362,6 @@
           <li><a href="scholarships.html">Karyera</a></li>
           <li><a href="faq.html">Tez-tez veril&#601;n suallar</a></li>
           <li><a href="index.html#/nav/elaqe">&#399;laq&#601;</a></li>
-          <li><a href="login.html">Daxil ol</a></li>
         </ul>
       </nav>
       <div class="Footer_footer__column__t5C9p">

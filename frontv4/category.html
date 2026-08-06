@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Nexora Academy profil və hesab ayarları.">
+  <meta name="description" content="Nexora Academy kateqoriya məlumatı və açıq kursları.">
   <meta name="keywords" content="Nexora Academy, kurslar, təhsil, süni intellekt">
   <meta name="nexora-api-base" content="">
-  <title>Profilim | Nexora Academy</title>
+  <title>Kateqoriya | Nexora Academy</title>
   <link rel="stylesheet" href="style.css">
   <script defer src="app.js"></script>
 </head>
-<body class="__variable_7fc4d2 antialiased" style="overflow:auto" data-page="profile">
+<body class="__variable_7fc4d2 antialiased" style="overflow:auto" data-page="category">
   <noscript>Bu saytın işləməsi üçün JavaScript aktiv olmalıdır.</noscript>
 
 <div>
@@ -41,8 +41,9 @@
 <a class="Header_header__menu__drowpdown__item__jIbqp" href="courses.html">
               Bütün kurslar
              </a>
+<a class="Header_header__menu__drowpdown__item__jIbqp" href="categories.html">Kurs kateqoriyaları</a>
 </div>
-<p class="Header_header__menu__link__i1AD1">
+<p class="Header_header__menu__link__i1AD1 Header_active__9DNVy">
 <span>
               Kurslar
              </span>
@@ -151,6 +152,7 @@
 <a href="courses.html">
           Bütün kurslar
          </a>
+<a href="categories.html">Kurs kateqoriyaları</a>
 </div>
 </button>
 <div class="HeaderMobile_divider__RUyAL">
@@ -289,16 +291,9 @@
 <section class="Nexora_pageHero Nexora_pageHero--compact">
 <div class="container">
 <div class="section__content">
-<div class="Nexora_profileHeader">
-<div class="section__header__content">
-<p class="Nexora_eyebrow">Şəxsi kabinet</p>
-<h1 class="Nexora_pageTitle">Profilim</h1>
-<p class="Nexora_pageLead" id="profileSummary">Profil məlumatları yüklənir…</p>
-</div>
-<div class="Nexora_profileActions">
-<a class="ai-btn ai-btn--gray" href="enrollments.html">Qeydiyyatlarım</a>
-<button class="ai-btn ai-btn--text" id="logoutButton" type="button">Çıxış</button>
-</div>
+<a class="ai-btn ai-btn--text Nexora_backLink" href="categories.html">Kateqoriyalara qayıt</a>
+<div id="categoryDetails" aria-live="polite">
+<p class="Nexora_status" role="status">Kateqoriya yüklənir…</p>
 </div>
 </div>
 </div>
@@ -306,58 +301,22 @@
 <section class="section">
 <div class="container">
 <div class="section__content">
-<div class="Nexora_twoColumn">
-<form class="Nexora_form Nexora_panel" id="profileForm">
-<div class="Nexora_formHeading">
-<h2>Şəxsi məlumatlar</h2>
-<p>Məlumatlar birbaşa profil xidməti ilə yenilənir.</p>
+<div class="Nexora_resultsHeader">
+<h2 class="Nexora_sectionTitle">Alt kateqoriyalar</h2>
+<p class="Nexora_status" id="categoryChildrenStatus" role="status" aria-live="polite"></p>
 </div>
-<div class="Nexora_formGrid">
-<label class="Nexora_field Nexora_field--full" for="profileFullName">
-<span>Ad və soyad</span>
-<input id="profileFullName" name="fullName" type="text" autocomplete="name">
-</label>
-<label class="Nexora_field" for="profileEmail">
-<span>E-poçt</span>
-<input id="profileEmail" name="email" type="email" autocomplete="email">
-</label>
-<label class="Nexora_field" for="profilePhone">
-<span>Telefon</span>
-<input id="profilePhone" name="phone" type="tel" autocomplete="tel">
-</label>
-<label class="Nexora_field" for="profileLocale">
-<span>Dil</span>
-<input id="profileLocale" name="locale" type="text" maxlength="12" placeholder="az">
-</label>
-<label class="Nexora_field Nexora_field--full" for="profileJson">
-<span>Əlavə profil məlumatı (JSON)</span>
-<textarea id="profileJson" name="profile" rows="6" spellcheck="false">{}</textarea>
-</label>
+<div class="Nexora_courseGrid" id="categoryChildren"></div>
 </div>
-<button class="ai-btn ai-btn--gradient" type="submit">Dəyişiklikləri saxla</button>
-<p class="Nexora_formMessage" role="status" aria-live="polite"></p>
-</form>
-<form class="Nexora_form Nexora_panel" id="changePasswordForm">
-<div class="Nexora_formHeading">
-<h2>Şifrəni dəyiş</h2>
-<p>Yeni şifrə 8–72 simvol, ən azı bir hərf və bir rəqəm olmalıdır.</p>
 </div>
-<label class="Nexora_field" for="currentPassword">
-<span>Cari şifrə</span>
-<input id="currentPassword" name="currentPassword" type="password" autocomplete="current-password" required>
-</label>
-<label class="Nexora_field" for="profileNewPassword">
-<span>Yeni şifrə</span>
-<input id="profileNewPassword" name="newPassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required>
-</label>
-<label class="Nexora_field" for="profileNewPasswordConfirm">
-<span>Yeni şifrəni təsdiqlə</span>
-<input id="profileNewPasswordConfirm" name="newPasswordConfirm" type="password" autocomplete="new-password" minlength="8" maxlength="72" required>
-</label>
-<button class="ai-btn ai-btn--gray" type="submit">Şifrəni yenilə</button>
-<p class="Nexora_formMessage" role="status" aria-live="polite"></p>
-</form>
+</section>
+<section class="section Nexora_catalogSection">
+<div class="container">
+<div class="section__content">
+<div class="Nexora_resultsHeader">
+<h2 class="Nexora_sectionTitle">Açıq kurslar</h2>
+<p class="Nexora_status" id="categoryCoursesStatus" role="status" aria-live="polite"></p>
 </div>
+<div class="Nexora_courseGrid" id="categoryCourses" aria-live="polite"></div>
 </div>
 </div>
 </section>
@@ -380,7 +339,7 @@
           </div>
           <div class="Footer_footer__contact__f4V1c">
             <span class="Footer_footer__contactLabel__n7L5s">E-po&#231;t</span>
-            <a href="mailto:info@naic.az">info@naic.az</a>
+            <a href="mailto:info@nexoraacademy.az">info@nexoraacademy.az</a>
           </div>
         </div>
       </div>
@@ -393,7 +352,6 @@
           <li><a href="scholarships.html">Karyera</a></li>
           <li><a href="faq.html">Tez-tez veril&#601;n suallar</a></li>
           <li><a href="index.html#/nav/elaqe">&#399;laq&#601;</a></li>
-          <li><a href="login.html">Daxil ol</a></li>
         </ul>
       </nav>
       <div class="Footer_footer__column__t5C9p">
