@@ -245,6 +245,16 @@
     if (keywords) keywords.content = meta.keywords || "";
   }
 
+  const CHAT_WIDGET_HTML = '<button class="chat-fab" id="chat-fab" aria-label="Open AI chat"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></button><div class="chat-widget" id="chat-widget" hidden><div class="chat-widget__header"><div class="chat-widget__identity"><div class="chat-widget__avatar">✦</div><div><h3>Nexora AI</h3><p>Academy guidance assistant</p></div></div><button class="chat-widget__close" id="chat-close" aria-label="Close chat">&times;</button></div><div class="chat-widget__messages" id="chat-messages" role="log" aria-live="polite"></div><div class="chat-widget__composer"><form class="chat-widget__form" id="chat-form" novalidate><textarea class="chat-widget__input" id="chat-input" name="message" rows="1" maxlength="2000" placeholder="Ask Nexora AI anything..." autocomplete="off" required></textarea><button class="chat-widget__send" id="chat-send" type="submit" aria-label="Send" disabled><svg viewBox="0 0 24 24"><path d="m5 12 14-7-4.4 14-2.5-5.1L5 12Z"/><path d="m12.1 13.9 3.6-3.7"/></svg></button></form></div></div>';
+
+  function injectChatWidget() {
+    if (document.getElementById("chat-fab")) return;
+    const tmp = document.createElement("div");
+    tmp.innerHTML = CHAT_WIDGET_HTML;
+    while (tmp.firstChild) document.body.appendChild(tmp.firstChild);
+    window.__rebindChatWidget?.();
+  }
+
   function renderRoute({ route, target = "" }, options = {}) {
     const page = PAGES[route] || PAGES[DEFAULT_ROUTE];
     pageController?.abort();
@@ -256,6 +266,7 @@
     document.body.setAttribute("style", attrs.style || "overflow:auto");
     document.body.dataset.page = route;
     document.body.innerHTML = page.html;
+    injectChatWidget();
     setMeta(page.meta);
     initPage(signal);
 
@@ -4637,13 +4648,17 @@
 
   function $(sel, root) { return (root || document).querySelector(sel); }
 
-  const fab = $("#chat-fab");
-  const widget = $("#chat-widget");
-  const closeBtn = $("#chat-close");
-  const messagesEl = $("#chat-messages");
-  const chatForm = $("#chat-form");
-  const chatInput = $("#chat-input");
-  const chatSend = $("#chat-send");
+  const elements = {
+    fab: $("#chat-fab"),
+    widget: $("#chat-widget"),
+    close: $("#chat-close"),
+    messages: $("#chat-messages"),
+    form: $("#chat-form"),
+    input: $("#chat-input"),
+    send: $("#chat-send"),
+  };
+
+  let { fab, widget, close: closeBtn, messages: messagesEl, form: chatForm, input: chatInput, send: chatSend } = elements;
 
   if (!fab || !widget) return;
 
@@ -4665,6 +4680,42 @@
   }
 
   function normalizeText(v, fb) { return typeof v === "string" ? v : (fb || ""); }
+
+  /* ── Rebind after SPA route change ── */
+  function rebindChatWidget() {
+    const newFab = $("#chat-fab");
+    const newWidget = $("#chat-widget");
+    const newClose = $("#chat-close");
+    const newForm = $("#chat-form");
+    const newInput = $("#chat-input");
+    const newSend = $("#chat-send");
+    const newMessages = $("#chat-messages");
+    if (!newFab || !newWidget) return;
+
+    Object.assign(elements, {
+      fab: newFab, widget: newWidget, close: newClose,
+      form: newForm, input: newInput, send: newSend, messages: newMessages
+    });
+    fab = elements.fab; widget = elements.widget; closeBtn = elements.close;
+    chatForm = elements.form; chatInput = elements.input; chatSend = elements.send;
+    messagesEl = elements.messages;
+
+    newFab.onclick = () => { if (isOpen) closeWidget(); else openWidget(); };
+    newClose.onclick = closeWidget;
+    newForm.onsubmit = (e) => {
+      e.preventDefault();
+      const v = newInput.value.trim();
+      if (!v || pending) return;
+      newInput.value = "";
+      resizeInput();
+      newSend.disabled = true;
+      sendMessage(v);
+    };
+    newInput.oninput = () => { resizeInput(); newSend.disabled = pending || !newInput.value.trim(); };
+    newInput.onkeydown = (e) => {
+      if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); newForm.requestSubmit(); }
+    };
+  }
 
   /* ── Open / Close ── */
   let isOpen = false;
@@ -4918,4 +4969,6 @@
   // New chat button — add to header if exists
   const newChatBtn = $("#chat-new-btn");
   if (newChatBtn) newChatBtn.addEventListener("click", resetChat);
+
+  window.__rebindChatWidget = rebindChatWidget;
 })();
