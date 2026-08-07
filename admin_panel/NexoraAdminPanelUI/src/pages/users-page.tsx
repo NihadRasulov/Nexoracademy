@@ -225,7 +225,7 @@ export function UsersPage() {
           { key: "status", label: "Status", render: (r) => <StatusBadge value={r.status} /> },
           { key: "lastLoginAt", label: "Son giriş", render: (r) => formatDateTime(r.lastLoginAt) },
         ]}
-        rows={listQuery.data?.items ?? []}
+        rows={listQuery.data?.content ?? []}
         rowKey={(row) => row.id}
         loading={listQuery.isLoading}
         rowActions={(row) => (
@@ -242,7 +242,7 @@ export function UsersPage() {
 
       {listQuery.data && (
         <PaginationBar
-          page={listQuery.data.page}
+          page={listQuery.data.number}
           totalPages={listQuery.data.totalPages}
           totalElements={listQuery.data.totalElements}
           onPageChange={setPage}

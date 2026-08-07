@@ -4,8 +4,10 @@ import az.demo.NexoraAcademy.dto.catalog.CategoryRequest;
 import az.demo.NexoraAcademy.dto.catalog.CategoryResponse;
 import az.demo.NexoraAcademy.entity.catalog.Category;
 import az.demo.NexoraAcademy.exception.DuplicateResourceException;
+import az.demo.NexoraAcademy.exception.InvalidStateException;
 import az.demo.NexoraAcademy.exception.ResourceNotFoundException;
 import az.demo.NexoraAcademy.repository.catalog.CategoryRepository;
+import az.demo.NexoraAcademy.repository.catalog.CourseRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +20,7 @@ import java.util.List;
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final CourseRepository courseRepository;
 
     @Transactional(readOnly = true)
     public List<CategoryResponse> findAll() {
@@ -73,6 +76,9 @@ public class CategoryService {
     public void delete(Short id) {
         if (!categoryRepository.existsById(id)) {
             throw ResourceNotFoundException.of("Category", id);
+        }
+        if (courseRepository.existsByCategoryId(id)) {
+            throw new InvalidStateException("Bu kateqoriyaya aid kurslar mövcuddur. Əvvəlcə kursları silin və ya başqa kateqoriyaya köçürün.");
         }
         categoryRepository.deleteById(id);
     }

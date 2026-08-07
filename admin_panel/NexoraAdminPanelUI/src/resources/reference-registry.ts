@@ -95,7 +95,7 @@ export function toReferenceItems(
 ): ReferenceItem[] {
   if (!data) return [];
   const def = REFERENCES[kind];
-  const rows = Array.isArray(data) ? data : data.items;
+  const rows = Array.isArray(data) ? data : data.content;
   return (rows ?? []).map((row) => ({
     id: str(row.id),
     label: def.label(row),

@@ -197,7 +197,7 @@ export function CoursesPage() {
           },
           { key: "published", label: "Yayımda", render: (r) => <BoolBadge value={r.published} /> },
         ]}
-        rows={listQuery.data?.items ?? []}
+        rows={listQuery.data?.content ?? []}
         rowKey={(row) => row.id}
         loading={listQuery.isLoading}
         rowActions={(row) => (
@@ -214,7 +214,7 @@ export function CoursesPage() {
 
       {listQuery.data && (
         <PaginationBar
-          page={listQuery.data.page}
+          page={listQuery.data.number}
           totalPages={listQuery.data.totalPages}
           totalElements={listQuery.data.totalElements}
           onPageChange={setPage}
