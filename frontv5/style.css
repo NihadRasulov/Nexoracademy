@@ -8400,6 +8400,9 @@ body[data-page="legal"] {
 .chat-fab svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .chat-fab:hover { transform: scale(1.08); box-shadow: 0 10px 40px rgba(53, 84, 209, 0.55); }
 .chat-fab:active { transform: scale(0.95); }
+.chat-fab--active { background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.2); }
+.chat-fab--active svg { display: none; }
+.chat-fab--active::after { content: "\00d7"; font-size: 28px; font-weight: 300; color: #fff; }
 
 @keyframes fab-pop-in {
   0% { opacity: 0; transform: scale(0); }

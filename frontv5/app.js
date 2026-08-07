@@ -4667,11 +4667,15 @@
   function normalizeText(v, fb) { return typeof v === "string" ? v : (fb || ""); }
 
   /* ── Open / Close ── */
+  let isOpen = false;
+
   function openWidget() {
+    if (isOpen) { closeWidget(); return; }
     widget.hidden = false;
+    isOpen = true;
     requestAnimationFrame(() => {
       widget.classList.add("open");
-      fab.style.transform = "scale(0)";
+      fab.classList.add("chat-fab--active");
       chatInput.focus();
     });
     if (!initialized) {
@@ -4681,8 +4685,9 @@
   }
 
   function closeWidget() {
+    isOpen = false;
     widget.classList.remove("open");
-    fab.style.transform = "";
+    fab.classList.remove("chat-fab--active");
     setTimeout(() => { widget.hidden = true; }, 300);
   }
 
