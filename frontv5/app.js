@@ -4600,3 +4600,317 @@
     document.addEventListener("DOMContentLoaded", boot, { once: true });
   else boot();
 })();
+
+/* ══════════════════════════════════════════════════════════════
+   Nexora AI Chat Widget
+   ══════════════════════════════════════════════════════════════ */
+(() => {
+  "use strict";
+
+  const API_URL = "/api/chat";
+  const STORAGE_KEY = "nexora-ai-session-id";
+  const MAX_HISTORY = 80;
+
+  let sessionId = getOrCreateSessionId();
+  let pending = false;
+  let history = [];
+  let requestController = null;
+  let lastRequest = null;
+  let initialized = false;
+
+  function createId() {
+    if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+    return `nexora-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  }
+
+  function getOrCreateSessionId() {
+    try {
+      const existing = window.localStorage.getItem(STORAGE_KEY);
+      if (existing) return existing;
+      const created = createId();
+      window.localStorage.setItem(STORAGE_KEY, created);
+      return created;
+    } catch (_) {
+      return createId();
+    }
+  }
+
+  function $(sel, root) { return (root || document).querySelector(sel); }
+
+  const fab = $("#chat-fab");
+  const widget = $("#chat-widget");
+  const closeBtn = $("#chat-close");
+  const messagesEl = $("#chat-messages");
+  const chatForm = $("#chat-form");
+  const chatInput = $("#chat-input");
+  const chatSend = $("#chat-send");
+
+  if (!fab || !widget) return;
+
+  function resizeInput() {
+    chatInput.style.height = "auto";
+    chatInput.style.height = Math.min(chatInput.scrollHeight, 100) + "px";
+  }
+
+  function scrollToBottom() {
+    requestAnimationFrame(() => {
+      messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior: "smooth" });
+    });
+  }
+
+  function escapeHtml(text) {
+    const d = document.createElement("div");
+    d.textContent = text;
+    return d.innerHTML;
+  }
+
+  function normalizeText(v, fb) { return typeof v === "string" ? v : (fb || ""); }
+
+  /* ── Open / Close ── */
+  function openWidget() {
+    widget.hidden = false;
+    requestAnimationFrame(() => {
+      widget.classList.add("open");
+      fab.style.transform = "scale(0)";
+      chatInput.focus();
+    });
+    if (!initialized) {
+      initialized = true;
+      initConversation();
+    }
+  }
+
+  function closeWidget() {
+    widget.classList.remove("open");
+    fab.style.transform = "";
+    setTimeout(() => { widget.hidden = true; }, 300);
+  }
+
+  fab.addEventListener("click", openWidget);
+  closeBtn.addEventListener("click", closeWidget);
+  widget.addEventListener("click", (e) => {
+    if (e.target === widget) closeWidget();
+  });
+
+  /* ── Messages ── */
+  function addMessage(role, text, response) {
+    const wrap = document.createElement("div");
+    wrap.className = "chat-msg" + (role === "user" ? " chat-msg--user" : "");
+
+    const avatar = document.createElement("div");
+    avatar.className = "chat-msg__avatar";
+    avatar.textContent = "✦";
+
+    const body = document.createElement("div");
+
+    const bubble = document.createElement("div");
+    bubble.className = "chat-msg__bubble";
+    bubble.textContent = normalizeText(text, "No response received.");
+    body.appendChild(bubble);
+
+    if (role === "assistant" && response) {
+      const actions = response.actions || [];
+      if (actions.length) {
+        const actionsWrap = document.createElement("div");
+        actionsWrap.className = "chat-msg__actions";
+        actions.forEach((a) => {
+          const label = normalizeText(a?.label).trim();
+          const value = normalizeText(a?.value, label).trim();
+          if (!label || !value) return;
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "chat-action-btn";
+          btn.textContent = label;
+          btn.addEventListener("click", () => {
+            if (!pending) sendMessage(value, label);
+          });
+          actionsWrap.appendChild(btn);
+        });
+        body.appendChild(actionsWrap);
+      }
+
+      const courses = response.courses || [];
+      if (courses.length) {
+        const coursesWrap = document.createElement("div");
+        coursesWrap.className = "chat-msg__courses";
+        courses.forEach((c) => {
+          const card = document.createElement("div");
+          card.className = "chat-course";
+          card.innerHTML =
+            '<div class="chat-course__top"><span class="chat-course__category"></span><span class="chat-course__price"></span></div>' +
+            '<div class="chat-course__name"></div>' +
+            '<div class="chat-course__meta"></div>' +
+            '<div class="chat-course__tools"></div>';
+          card.querySelector(".chat-course__category").textContent = normalizeText(c?.category, "Course");
+          card.querySelector(".chat-course__name").textContent = normalizeText(c?.name, "Nexora course");
+          card.querySelector(".chat-course__price").textContent = Number.isFinite(c?.price) ? c.price + " AZN" : "";
+          const meta = card.querySelector(".chat-course__meta");
+          [c?.level, c?.instructor, [c?.schedule?.days, c?.schedule?.time].filter(Boolean).join(" · ")]
+            .filter(Boolean).forEach((m) => {
+              const s = document.createElement("span");
+              s.textContent = m;
+              meta.appendChild(s);
+            });
+          const tools = card.querySelector(".chat-course__tools");
+          (Array.isArray(c?.tools) ? c.tools.slice(0, 5) : []).forEach((t) => {
+            const tag = document.createElement("span");
+            tag.className = "chat-course__tool";
+            tag.textContent = t;
+            tools.appendChild(tag);
+          });
+          coursesWrap.appendChild(card);
+        });
+        body.appendChild(coursesWrap);
+      }
+    }
+
+    wrap.appendChild(avatar);
+    wrap.appendChild(body);
+    messagesEl.appendChild(wrap);
+    history.push({ role, text: normalizeText(text), response });
+    if (history.length > MAX_HISTORY) history = history.slice(-MAX_HISTORY);
+    scrollToBottom();
+  }
+
+  function addError(text) {
+    const banner = document.createElement("div");
+    banner.className = "chat-error";
+    banner.innerHTML = '<span></span><button type="button">Retry</button>';
+    banner.querySelector("span").textContent = text;
+    banner.querySelector("button").addEventListener("click", () => {
+      banner.remove();
+      if (lastRequest) sendMessage(lastRequest.value, lastRequest.display, { silent: true });
+    });
+    messagesEl.appendChild(banner);
+    scrollToBottom();
+  }
+
+  function showTyping() {
+    const el = document.createElement("div");
+    el.className = "chat-typing";
+    el.id = "chat-active-typing";
+    el.innerHTML = '<div class="chat-msg__avatar">✦</div><div class="chat-typing__dots"><span></span><span></span><span></span></div>';
+    messagesEl.appendChild(el);
+    scrollToBottom();
+  }
+
+  function hideTyping() {
+    const el = document.getElementById("chat-active-typing");
+    if (el) el.remove();
+  }
+
+  function setPending(v) {
+    pending = v;
+    chatInput.disabled = v;
+    chatSend.disabled = v || !chatInput.value.trim();
+    document.querySelectorAll(".chat-action-btn").forEach((b) => {
+      b.disabled = v || b.dataset.used === "true";
+    });
+  }
+
+  /* ── API ── */
+  async function requestChat(message) {
+    requestController?.abort();
+    requestController = new AbortController();
+    const tid = setTimeout(() => requestController.abort(), 35000);
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ message, sessionId, conversationId: sessionId }),
+        signal: requestController.signal,
+      });
+      if (!res.ok) throw new Error("Server " + res.status);
+      const data = await res.json();
+      if (!data || typeof data.reply !== "string") throw new Error("Invalid response");
+      return data;
+    } finally {
+      clearTimeout(tid);
+    }
+  }
+
+  async function sendMessage(value, display, opts) {
+    const msg = normalizeText(value).trim();
+    if (!msg || pending) return;
+    lastRequest = { value: msg, display };
+    document.querySelectorAll(".chat-action-btn").forEach((b) => {
+      b.dataset.used = "true";
+      b.disabled = true;
+    });
+    if (!opts?.silent) addMessage("user", display || msg);
+    setPending(true);
+    showTyping();
+    try {
+      const data = await requestChat(msg);
+      hideTyping();
+      addMessage("assistant", data.reply, data);
+      setConnection(data.capture);
+    } catch (err) {
+      hideTyping();
+      const aborted = err?.name === "AbortError";
+      addError(aborted ? "Timeout. Try again." : "Could not reach the AI. Retry.");
+    } finally {
+      setPending(false);
+      chatInput.focus();
+    }
+  }
+
+  function setConnection(capture) {
+    // placeholder — no connection status in widget version
+  }
+
+  async function initConversation() {
+    setPending(true);
+    showTyping();
+    try {
+      const data = await requestChat("/start");
+      hideTyping();
+      addMessage("assistant", data.reply, data);
+    } catch (_) {
+      hideTyping();
+      addError("AI is not responding. Make sure chatbot-api is running.");
+    } finally {
+      setPending(false);
+    }
+  }
+
+  function resetChat() {
+    requestController?.abort();
+    sessionId = createId();
+    try { localStorage.setItem(STORAGE_KEY, sessionId); } catch (_) {}
+    history = [];
+    lastRequest = null;
+    messagesEl.innerHTML = "";
+    chatInput.value = "";
+    resizeInput();
+    initialized = true;
+    initConversation();
+  }
+
+  /* ── Events ── */
+  chatForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const v = chatInput.value.trim();
+    if (!v || pending) return;
+    chatInput.value = "";
+    resizeInput();
+    chatSend.disabled = true;
+    sendMessage(v);
+  });
+
+  chatInput.addEventListener("input", () => {
+    resizeInput();
+    chatSend.disabled = pending || !chatInput.value.trim();
+  });
+
+  chatInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
+      e.preventDefault();
+      chatForm.requestSubmit();
+    }
+  });
+
+  // New chat button — add to header if exists
+  const newChatBtn = $("#chat-new-btn");
+  if (newChatBtn) newChatBtn.addEventListener("click", resetChat);
+})();
