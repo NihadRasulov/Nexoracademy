@@ -55,7 +55,7 @@ public class CourseGroupService {
         group.setGroupCode(request.groupCode());
         applyCommonFields(group, request);
 
-        return toResponse(courseGroupRepository.saveAndFlush(group));
+        return toResponse(courseGroupRepository.save(group));
     }
 
     public CourseGroupResponse update(UUID id, CourseGroupRequest request) {
@@ -67,7 +67,7 @@ public class CourseGroupService {
         group.setGroupCode(request.groupCode());
         applyCommonFields(group, request);
 
-        return toResponse(courseGroupRepository.saveAndFlush(group));
+        return toResponse(courseGroupRepository.save(group));
     }
 
     public CourseGroupResponse patch(UUID id, CourseGroupRequest request) {
@@ -88,7 +88,7 @@ public class CourseGroupService {
         if (request.status() != null) group.setStatus(request.status());
         if (request.schedule() != null) group.setSchedule(request.schedule());
 
-        return toResponse(courseGroupRepository.saveAndFlush(group));
+        return toResponse(courseGroupRepository.save(group));
     }
 
     public void delete(UUID id) {

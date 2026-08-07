@@ -106,7 +106,7 @@ public class AdminSeeder implements CommandLineRunner {
             user.setFirstName("System");
             user.setLastName("Admin");
             user.setPasswordHash(passwordEncoder.encode(properties.getSystemAdminPassword()));
-            userRepository.saveAndFlush(user);
+            userRepository.save(user);
             log.info("Köhnə default admin hesabı miqrasiya edildi: {} -> {}", LEGACY_SYSTEM_ADMIN_EMAIL, SYSTEM_ADMIN_EMAIL);
         });
     }
@@ -118,7 +118,7 @@ public class AdminSeeder implements CommandLineRunner {
             // Ensure previously-seeded admins have emailVerifiedAt set so they can log in
             if (user.getEmailVerifiedAt() == null) {
                 user.setEmailVerifiedAt(Instant.now());
-                userRepository.saveAndFlush(user);
+                userRepository.save(user);
                 log.info("{} ({}) üçün emailVerifiedAt təyin edildi.", role, email);
             } else {
                 log.info("{} ({}) artıq mövcuddur, seed edilmir.", role, email);

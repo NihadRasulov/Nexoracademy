@@ -42,7 +42,7 @@ public class OAuthAccountService {
         account.setAccessTokenEnc(request.accessTokenEnc());
         account.setRefreshTokenEnc(request.refreshTokenEnc());
 
-        return toResponse(oAuthAccountRepository.saveAndFlush(account));
+        return toResponse(oAuthAccountRepository.save(account));
     }
 
     public OAuthAccountResponse update(Long id, OAuthAccountRequest request) {
@@ -55,7 +55,7 @@ public class OAuthAccountService {
         account.setAccessTokenEnc(request.accessTokenEnc());
         account.setRefreshTokenEnc(request.refreshTokenEnc());
 
-        return toResponse(oAuthAccountRepository.saveAndFlush(account));
+        return toResponse(oAuthAccountRepository.save(account));
     }
 
     public OAuthAccountResponse patch(Long id, OAuthAccountRequest request) {
@@ -70,7 +70,7 @@ public class OAuthAccountService {
         if (request.accessTokenEnc() != null) account.setAccessTokenEnc(request.accessTokenEnc());
         if (request.refreshTokenEnc() != null) account.setRefreshTokenEnc(request.refreshTokenEnc());
 
-        return toResponse(oAuthAccountRepository.saveAndFlush(account));
+        return toResponse(oAuthAccountRepository.save(account));
     }
 
     public void delete(Long id) {

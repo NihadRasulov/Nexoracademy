@@ -43,7 +43,7 @@ public class ChatSessionService {
         session.setChannel(request.channel() != null ? request.channel() : "web_widget");
         session.setMessages(request.messages() != null ? request.messages() : new ArrayList<>());
 
-        return toResponse(chatSessionRepository.saveAndFlush(session));
+        return toResponse(chatSessionRepository.save(session));
     }
 
     public ChatSessionResponse update(UUID id, ChatSessionRequest request) {
@@ -54,7 +54,7 @@ public class ChatSessionService {
         session.setChannel(request.channel() != null ? request.channel() : session.getChannel());
         session.setMessages(request.messages() != null ? request.messages() : session.getMessages());
 
-        return toResponse(chatSessionRepository.saveAndFlush(session));
+        return toResponse(chatSessionRepository.save(session));
     }
 
     public ChatSessionResponse patch(UUID id, ChatSessionRequest request) {
@@ -65,14 +65,14 @@ public class ChatSessionService {
         if (request.channel() != null) session.setChannel(request.channel());
         if (request.messages() != null) session.setMessages(request.messages());
 
-        return toResponse(chatSessionRepository.saveAndFlush(session));
+        return toResponse(chatSessionRepository.save(session));
     }
 
     /** Closes the chat session (sets ended_at). */
     public ChatSessionResponse end(UUID id) {
         ChatSession session = getOrThrow(id);
         session.setEndedAt(java.time.Instant.now());
-        return toResponse(chatSessionRepository.saveAndFlush(session));
+        return toResponse(chatSessionRepository.save(session));
     }
 
     public void delete(UUID id) {

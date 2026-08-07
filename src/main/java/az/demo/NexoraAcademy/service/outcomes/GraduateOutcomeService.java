@@ -41,7 +41,7 @@ public class GraduateOutcomeService {
         outcome.setCourse(resolveCourse(request.courseId()));
         applyFields(outcome, request);
 
-        return toResponse(graduateOutcomeRepository.saveAndFlush(outcome));
+        return toResponse(graduateOutcomeRepository.save(outcome));
     }
 
     public GraduateOutcomeResponse update(Long id, GraduateOutcomeRequest request) {
@@ -50,7 +50,7 @@ public class GraduateOutcomeService {
         outcome.setCourse(resolveCourse(request.courseId()));
         applyFields(outcome, request);
 
-        return toResponse(graduateOutcomeRepository.saveAndFlush(outcome));
+        return toResponse(graduateOutcomeRepository.save(outcome));
     }
 
     public GraduateOutcomeResponse patch(Long id, GraduateOutcomeRequest request) {
@@ -65,7 +65,7 @@ public class GraduateOutcomeService {
         if (request.publicStory() != null) outcome.setPublicStory(request.publicStory());
         if (request.storyText() != null) outcome.setStoryText(request.storyText());
 
-        return toResponse(graduateOutcomeRepository.saveAndFlush(outcome));
+        return toResponse(graduateOutcomeRepository.save(outcome));
     }
 
     public void delete(Long id) {

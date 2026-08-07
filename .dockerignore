@@ -8,3 +8,14 @@ logs
 .env
 .env.*
 !.env.example
+admin_panel
+frontv4
+frontv5
+chatbot-api
+deploy
+backups
+certs
+nginx.conf
+docker-compose*.yml
+demo-page.html
+api-test.html

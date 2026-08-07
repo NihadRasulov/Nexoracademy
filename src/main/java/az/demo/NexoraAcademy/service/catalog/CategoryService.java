@@ -42,7 +42,7 @@ public class CategoryService {
         category.setSortOrder(request.sortOrder() != null ? request.sortOrder() : 0);
         category.setActive(request.active() != null ? request.active() : true);
 
-        return toResponse(categoryRepository.saveAndFlush(category));
+        return toResponse(categoryRepository.save(category));
     }
 
     public CategoryResponse update(Short id, CategoryRequest request) {
@@ -55,7 +55,7 @@ public class CategoryService {
         category.setSortOrder(request.sortOrder() != null ? request.sortOrder() : category.getSortOrder());
         category.setActive(request.active() != null ? request.active() : category.getActive());
 
-        return toResponse(categoryRepository.saveAndFlush(category));
+        return toResponse(categoryRepository.save(category));
     }
 
     public CategoryResponse patch(Short id, CategoryRequest request) {
@@ -70,7 +70,7 @@ public class CategoryService {
         if (request.sortOrder() != null) category.setSortOrder(request.sortOrder());
         if (request.active() != null) category.setActive(request.active());
 
-        return toResponse(categoryRepository.saveAndFlush(category));
+        return toResponse(categoryRepository.save(category));
     }
 
     public void delete(Short id) {

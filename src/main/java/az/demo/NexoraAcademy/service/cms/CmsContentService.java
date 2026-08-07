@@ -51,7 +51,7 @@ public class CmsContentService {
         content.setKey(request.key());
         applyFields(content, request);
 
-        return toResponse(cmsContentRepository.saveAndFlush(content));
+        return toResponse(cmsContentRepository.save(content));
     }
 
     public CmsContentResponse update(Long id, CmsContentRequest request) {
@@ -61,7 +61,7 @@ public class CmsContentService {
         content.setKey(request.key());
         applyFields(content, request);
 
-        return toResponse(cmsContentRepository.saveAndFlush(content));
+        return toResponse(cmsContentRepository.save(content));
     }
 
     public CmsContentResponse patch(Long id, CmsContentRequest request) {
@@ -78,7 +78,7 @@ public class CmsContentService {
         if (request.published() != null) content.setPublished(request.published());
         if (request.sortOrder() != null) content.setSortOrder(request.sortOrder());
 
-        return toResponse(cmsContentRepository.saveAndFlush(content));
+        return toResponse(cmsContentRepository.save(content));
     }
 
     public void delete(Long id) {

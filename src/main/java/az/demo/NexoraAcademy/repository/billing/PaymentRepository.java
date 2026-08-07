@@ -1,6 +1,7 @@
 package az.demo.NexoraAcademy.repository.billing;
 
 import az.demo.NexoraAcademy.entity.billing.Payment;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -11,5 +12,6 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
 
     Optional<Payment> findByIdempotencyKey(String idempotencyKey);
 
+    @EntityGraph(attributePaths = {"enrollment", "enrollment.user", "enrollment.group"})
     List<Payment> findByEnrollment_Id(UUID enrollmentId);
 }

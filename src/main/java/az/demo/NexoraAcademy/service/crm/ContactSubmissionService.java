@@ -47,7 +47,7 @@ public class ContactSubmissionService {
         submission.setPreferredTime(request.preferredTime());
         submission.setStatus("pending");
 
-        return toResponse(contactSubmissionRepository.saveAndFlush(submission));
+        return toResponse(contactSubmissionRepository.save(submission));
     }
 
     public ContactSubmissionResponse update(UUID id, ContactSubmissionRequest request) {
@@ -62,7 +62,7 @@ public class ContactSubmissionService {
         submission.setMessage(request.message());
         submission.setPreferredTime(request.preferredTime());
 
-        return toResponse(contactSubmissionRepository.saveAndFlush(submission));
+        return toResponse(contactSubmissionRepository.save(submission));
     }
 
     public ContactSubmissionResponse patch(UUID id, ContactSubmissionRequest request) {
@@ -77,7 +77,7 @@ public class ContactSubmissionService {
         if (request.message() != null) submission.setMessage(request.message());
         if (request.preferredTime() != null) submission.setPreferredTime(request.preferredTime());
 
-        return toResponse(contactSubmissionRepository.saveAndFlush(submission));
+        return toResponse(contactSubmissionRepository.save(submission));
     }
 
     public void delete(UUID id) {

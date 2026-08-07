@@ -1,6 +1,7 @@
 package az.demo.NexoraAcademy.repository.academics;
 
 import az.demo.NexoraAcademy.entity.academics.Enrollment;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -13,7 +14,9 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, UUID> {
 
     Optional<Enrollment> findByUser_IdAndGroup_Id(UUID userId, UUID groupId);
 
+    @EntityGraph(attributePaths = {"user", "group", "group.course"})
     List<Enrollment> findByUser_Id(UUID userId);
 
+    @EntityGraph(attributePaths = {"user", "group", "group.course"})
     List<Enrollment> findByGroup_Id(UUID groupId);
 }

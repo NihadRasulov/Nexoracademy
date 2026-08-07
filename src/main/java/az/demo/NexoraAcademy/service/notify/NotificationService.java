@@ -61,7 +61,7 @@ public class NotificationService {
         notification.setPayload(request.payload() != null ? request.payload() : new HashMap<>());
         notification.setStatus(NotificationStatus.QUEUED);
 
-        return toResponse(notificationRepository.saveAndFlush(notification));
+        return toResponse(notificationRepository.save(notification));
     }
 
     public NotificationResponse update(UUID id, NotificationRequest request) {
@@ -72,7 +72,7 @@ public class NotificationService {
         notification.setChannel(request.channel());
         notification.setPayload(request.payload() != null ? request.payload() : notification.getPayload());
 
-        return toResponse(notificationRepository.saveAndFlush(notification));
+        return toResponse(notificationRepository.save(notification));
     }
 
     public NotificationResponse patch(UUID id, NotificationRequest request) {
@@ -83,7 +83,7 @@ public class NotificationService {
         if (request.channel() != null) notification.setChannel(request.channel());
         if (request.payload() != null) notification.setPayload(request.payload());
 
-        return toResponse(notificationRepository.saveAndFlush(notification));
+        return toResponse(notificationRepository.save(notification));
     }
 
     /** Marks the notification as sent. */
@@ -94,7 +94,7 @@ public class NotificationService {
         }
         notification.setStatus(NotificationStatus.SENT);
         notification.setSentAt(java.time.Instant.now());
-        return toResponse(notificationRepository.saveAndFlush(notification));
+        return toResponse(notificationRepository.save(notification));
     }
 
     /** Marks the notification as read by the recipient. */
@@ -102,7 +102,7 @@ public class NotificationService {
         Notification notification = getOrThrow(id);
         notification.setStatus(NotificationStatus.READ);
         notification.setReadAt(java.time.Instant.now());
-        return toResponse(notificationRepository.saveAndFlush(notification));
+        return toResponse(notificationRepository.save(notification));
     }
 
     public void delete(UUID id) {

@@ -35,7 +35,7 @@ COPY --from=build --chown=spring:spring /app/target/app.jar app.jar
 ENV SPRING_PROFILES_ACTIVE=prod
 # Konteyner limitinin ~75%-i heap-ə. Açıq yazılmasa JVM özü təxmin edir və
 # `docker run -m 1g` kimi limitlərdə OOM-kill riski artır.
-ENV JAVA_OPTS="-XX:MaxRAMPercentage=75"
+ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/app/logs/heapdump.hprof"
 
 # 8081 = tətbiq API-si (reverse proxy bura yönləndirir)
 # 9091 = management/actuator (health + prometheus) — bax application-prod.yml.
@@ -48,4 +48,4 @@ EXPOSE 8081 9091
 HEALTHCHECK --interval=30s --timeout=3s --start-period=90s --retries=3 \
     CMD wget -qO- http://localhost:9091/actuator/health/readiness | grep -q '"status":"UP"' || exit 1
 
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]

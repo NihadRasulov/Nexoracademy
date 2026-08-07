@@ -1,9 +1,11 @@
 package az.demo.NexoraAcademy.repository.catalog;
 
 import az.demo.NexoraAcademy.entity.catalog.Course;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -12,4 +14,7 @@ public interface CourseRepository extends JpaRepository<Course, UUID>, JpaSpecif
     Optional<Course> findBySlug(String slug);
 
     boolean existsByCategoryId(Short categoryId);
+
+    @EntityGraph(attributePaths = {"category", "createdBy"})
+    List<Course> findAll();
 }

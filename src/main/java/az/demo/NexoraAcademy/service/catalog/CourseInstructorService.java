@@ -49,19 +49,19 @@ public class CourseInstructorService {
         courseInstructor.setInstructor(resolveInstructor(request.instructorId()));
         courseInstructor.setRole(request.role() != null ? request.role() : "lead");
 
-        return toResponse(courseInstructorRepository.saveAndFlush(courseInstructor));
+        return toResponse(courseInstructorRepository.save(courseInstructor));
     }
 
     public CourseInstructorResponse update(UUID courseId, UUID instructorId, CourseInstructorRequest request) {
         CourseInstructor courseInstructor = getOrThrow(new CourseInstructorId(courseId, instructorId));
         courseInstructor.setRole(request.role() != null ? request.role() : "lead");
-        return toResponse(courseInstructorRepository.saveAndFlush(courseInstructor));
+        return toResponse(courseInstructorRepository.save(courseInstructor));
     }
 
     public CourseInstructorResponse patch(UUID courseId, UUID instructorId, CourseInstructorRequest request) {
         CourseInstructor courseInstructor = getOrThrow(new CourseInstructorId(courseId, instructorId));
         if (request.role() != null) courseInstructor.setRole(request.role());
-        return toResponse(courseInstructorRepository.saveAndFlush(courseInstructor));
+        return toResponse(courseInstructorRepository.save(courseInstructor));
     }
 
     public void delete(UUID courseId, UUID instructorId) {

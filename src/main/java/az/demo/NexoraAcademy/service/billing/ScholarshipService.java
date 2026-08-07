@@ -41,13 +41,13 @@ public class ScholarshipService {
     public ScholarshipResponse create(ScholarshipRequest request) {
         Scholarship scholarship = new Scholarship();
         applyFields(scholarship, request);
-        return toResponse(scholarshipRepository.saveAndFlush(scholarship));
+        return toResponse(scholarshipRepository.save(scholarship));
     }
 
     public ScholarshipResponse update(Short id, ScholarshipRequest request) {
         Scholarship scholarship = getOrThrow(id);
         applyFields(scholarship, request);
-        return toResponse(scholarshipRepository.saveAndFlush(scholarship));
+        return toResponse(scholarshipRepository.save(scholarship));
     }
 
     public ScholarshipResponse patch(Short id, ScholarshipRequest request) {
@@ -61,7 +61,7 @@ public class ScholarshipService {
         if (request.validUntil() != null) scholarship.setValidUntil(request.validUntil());
         if (request.active() != null) scholarship.setActive(request.active());
 
-        return toResponse(scholarshipRepository.saveAndFlush(scholarship));
+        return toResponse(scholarshipRepository.save(scholarship));
     }
 
     public void delete(Short id) {

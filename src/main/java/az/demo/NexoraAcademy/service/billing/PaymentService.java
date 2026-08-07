@@ -56,7 +56,7 @@ public class PaymentService {
         payment.setInstallments(request.installments() != null ? request.installments() : new ArrayList<>());
         payment.setRefundAmount(BigDecimal.ZERO);
 
-        return toResponse(paymentRepository.saveAndFlush(payment));
+        return toResponse(paymentRepository.save(payment));
     }
 
     public PaymentResponse update(UUID id, PaymentRequest request) {
@@ -71,7 +71,7 @@ public class PaymentService {
         payment.setIdempotencyKey(request.idempotencyKey());
         payment.setInstallments(request.installments() != null ? request.installments() : payment.getInstallments());
 
-        return toResponse(paymentRepository.saveAndFlush(payment));
+        return toResponse(paymentRepository.save(payment));
     }
 
     public PaymentResponse patch(UUID id, PaymentRequest request) {
@@ -88,7 +88,7 @@ public class PaymentService {
         }
         if (request.installments() != null) payment.setInstallments(request.installments());
 
-        return toResponse(paymentRepository.saveAndFlush(payment));
+        return toResponse(paymentRepository.save(payment));
     }
 
     /** Marks a payment captured — a common enough transition to expose as its own operation. */
@@ -99,7 +99,7 @@ public class PaymentService {
         }
         payment.setStatus(PaymentStatus.CAPTURED);
         payment.setCapturedAt(Instant.now());
-        Payment saved = paymentRepository.saveAndFlush(payment);
+        Payment saved = paymentRepository.save(payment);
 
         eventPublisher.publishEvent(new PaymentCompletedEvent(
                 saved.getId(), saved.getEnrollment().getId(), saved.getEnrollment().getUser().getId(),
@@ -132,7 +132,7 @@ public class PaymentService {
         }
         payment.setStatus(PaymentStatus.FAILED);
         payment.setFailureReason(request.failureReason());
-        return toResponse(paymentRepository.saveAndFlush(payment));
+        return toResponse(paymentRepository.save(payment));
     }
 
     /** Records a refund against a captured payment. */
@@ -150,7 +150,7 @@ public class PaymentService {
         payment.setStatus(totalRefunded.compareTo(payment.getAmount()) == 0
                 ? PaymentStatus.REFUNDED
                 : PaymentStatus.PARTIALLY_REFUNDED);
-        return toResponse(paymentRepository.saveAndFlush(payment));
+        return toResponse(paymentRepository.save(payment));
     }
 
     public void delete(UUID id) {

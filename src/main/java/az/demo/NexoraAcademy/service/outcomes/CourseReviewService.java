@@ -69,7 +69,7 @@ public class CourseReviewService {
         review.setComment(request.comment());
         review.setPublished(false);
 
-        return toResponse(courseReviewRepository.saveAndFlush(review));
+        return toResponse(courseReviewRepository.save(review));
     }
 
     public CourseReviewResponse update(Long id, CourseReviewRequest request) {
@@ -83,7 +83,7 @@ public class CourseReviewService {
         review.setRating(request.rating());
         review.setComment(request.comment());
 
-        return toResponse(courseReviewRepository.saveAndFlush(review));
+        return toResponse(courseReviewRepository.save(review));
     }
 
     public CourseReviewResponse patch(Long id, CourseReviewRequest request) {
@@ -97,7 +97,7 @@ public class CourseReviewService {
         if (request.rating() != null) review.setRating(request.rating());
         if (request.comment() != null) review.setComment(request.comment());
 
-        return toResponse(courseReviewRepository.saveAndFlush(review));
+        return toResponse(courseReviewRepository.save(review));
     }
 
     /** Moderation: publish/unpublish a review. */
@@ -111,7 +111,7 @@ public class CourseReviewService {
         CourseReview review = getOrThrow(id);
         review.setPublished(published);
         review.setModeratedBy(resolveUser(moderatorId));
-        return toResponse(courseReviewRepository.saveAndFlush(review));
+        return toResponse(courseReviewRepository.save(review));
     }
 
     public void delete(Long id) {

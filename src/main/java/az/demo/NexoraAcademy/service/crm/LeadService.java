@@ -52,7 +52,7 @@ public class LeadService {
         lead.setConsentVersion(request.consentVersion());
         lead.setActivityLog(new ArrayList<>());
 
-        return toResponse(leadRepository.saveAndFlush(lead));
+        return toResponse(leadRepository.save(lead));
     }
 
     /** Idempotent newsletter capture; a second submit refreshes consent evidence. */
@@ -65,7 +65,7 @@ public class LeadService {
         lead.setConsentVersion(request.consentVersion());
         lead.setConsentGivenAt(Instant.now());
         if (lead.getActivityLog() == null) lead.setActivityLog(new ArrayList<>());
-        leadRepository.saveAndFlush(lead);
+        leadRepository.save(lead);
     }
 
     public LeadResponse update(UUID id, LeadRequest request) {
@@ -79,7 +79,7 @@ public class LeadService {
         lead.setAssignedTo(resolveUser(request.assignedTo()));
         lead.setConsentVersion(request.consentVersion());
 
-        return toResponse(leadRepository.saveAndFlush(lead));
+        return toResponse(leadRepository.save(lead));
     }
 
     public LeadResponse patch(UUID id, LeadRequest request) {
@@ -93,14 +93,14 @@ public class LeadService {
         if (request.assignedTo() != null) lead.setAssignedTo(resolveUser(request.assignedTo()));
         if (request.consentVersion() != null) lead.setConsentVersion(request.consentVersion());
 
-        return toResponse(leadRepository.saveAndFlush(lead));
+        return toResponse(leadRepository.save(lead));
     }
 
     /** Transitions a lead's pipeline status (new -> contacted -> qualified -> converted/lost/disqualified). */
     public LeadResponse changeStatus(UUID id, LeadStatus status) {
         Lead lead = getOrThrow(id);
         lead.setStatus(status);
-        return toResponse(leadRepository.saveAndFlush(lead));
+        return toResponse(leadRepository.save(lead));
     }
 
     public void delete(UUID id) {

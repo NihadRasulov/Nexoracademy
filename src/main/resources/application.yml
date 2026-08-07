@@ -22,8 +22,8 @@ spring:
     password: ${DB_PASSWORD:1234}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: 10
-      minimum-idle: 2
+      maximum-pool-size: 20
+      minimum-idle: 5
       connection-timeout: 30000
       # Bir bağlantı bu müddətdən çox "checked out" qalıb geri qaytarılmasa
       # (kodda bağlanmamış Connection/Statement) log-a xəbərdarlıq yazılır —
@@ -41,6 +41,11 @@ spring:
         # Digər modullardakı entity-lərdə @Table(schema = "catalog") və s. göstərilməlidir.
         default_schema: identity
         format_sql: true
+        jdbc:
+          batch_size: 25
+          batch_versioned_data: true
+        order_inserts: true
+        order_updates: true
     open-in-view: false
 
   flyway:

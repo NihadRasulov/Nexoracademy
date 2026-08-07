@@ -76,7 +76,7 @@ public class AuthService {
         user.setRole(UserRole.STUDENT);
         user.setStatus(AccountStatus.PENDING_VERIFICATION);
         user.setProfile(new HashMap<>());
-        user = userRepository.saveAndFlush(user);
+        user = userRepository.save(user);
 
         eventPublisher.publishEvent(new UserRegisteredEvent(user.getId(), user.getEmail()));
         sendVerificationOtp(user);
@@ -113,7 +113,7 @@ public class AuthService {
         }
 
         user.setLastLoginAt(Instant.now());
-        userRepository.saveAndFlush(user);
+        userRepository.save(user);
         eventPublisher.publishEvent(new UserLoggedInEvent(user.getId(), user.getEmail(), ipAddress));
         return issueTokens(user);
     }
@@ -138,7 +138,7 @@ public class AuthService {
 
         session.setUsedAt(Instant.now());
         session.setRevokedAt(Instant.now());
-        sessionRepository.saveAndFlush(session);
+        sessionRepository.save(session);
 
         User user = session.getUser();
         return issueTokens(user);
@@ -150,7 +150,7 @@ public class AuthService {
                 .ifPresent(session -> {
                     if (session.getRevokedAt() == null) {
                         session.setRevokedAt(Instant.now());
-                        sessionRepository.saveAndFlush(session);
+                        sessionRepository.save(session);
                     }
                 });
     }
@@ -166,7 +166,7 @@ public class AuthService {
             session.setType(SessionType.PASSWORD_RESET);
             session.setTokenHash(hash(rawToken));
             session.setExpiresAt(Instant.now().plusMillis(authProperties.getPasswordResetExpirationMs()));
-            sessionRepository.saveAndFlush(session);
+            sessionRepository.save(session);
 
             String link = mailProperties.getFrontendBaseUrl() + "/reset-password?token=" + rawToken;
             emailService.send(user.getEmail(), "Reset your NexoraAcademy password",
@@ -186,11 +186,11 @@ public class AuthService {
 
         User user = session.getUser();
         user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
-        userRepository.saveAndFlush(user);
+        userRepository.save(user);
 
         session.setUsedAt(Instant.now());
         session.setRevokedAt(Instant.now());
-        sessionRepository.saveAndFlush(session);
+        sessionRepository.save(session);
     }
 
     @Transactional
@@ -204,7 +204,7 @@ public class AuthService {
         if (user.getStatus() == AccountStatus.PENDING_VERIFICATION) {
             user.setStatus(AccountStatus.ACTIVE);
         }
-        userRepository.saveAndFlush(user);
+        userRepository.save(user);
     }
 
     /** Always succeeds from the caller's point of view — never reveals whether the email exists. */
@@ -233,7 +233,7 @@ public class AuthService {
         sessionRepository.findFirstByUser_IdAndTypeAndRevokedAtIsNullAndUsedAtIsNullOrderByIssuedAtDesc(user.getId(), type)
                 .ifPresent(existing -> {
                     existing.setRevokedAt(Instant.now());
-                    sessionRepository.saveAndFlush(existing);
+                    sessionRepository.save(existing);
                 });
 
         String otp = generateNumericOtp();
@@ -243,7 +243,7 @@ public class AuthService {
         session.setType(type);
         session.setTokenHash(hash(otp));
         session.setExpiresAt(Instant.now().plusMillis(expirationMs));
-        sessionRepository.saveAndFlush(session);
+        sessionRepository.save(session);
 
         return otp;
     }
@@ -261,7 +261,7 @@ public class AuthService {
 
         if (session.getExpiresAt().isBefore(Instant.now())) {
             session.setRevokedAt(Instant.now());
-            sessionRepository.saveAndFlush(session);
+            sessionRepository.save(session);
             throw new InvalidTokenException("Code has expired");
         }
 
@@ -270,13 +270,13 @@ public class AuthService {
             if (session.getAttempts() >= authProperties.getOtpMaxAttempts()) {
                 session.setRevokedAt(Instant.now());
             }
-            sessionRepository.saveAndFlush(session);
+            sessionRepository.save(session);
             throw new InvalidTokenException("Invalid code");
         }
 
         session.setUsedAt(Instant.now());
         session.setRevokedAt(Instant.now());
-        sessionRepository.saveAndFlush(session);
+        sessionRepository.save(session);
     }
 
     private String generateNumericOtp() {
@@ -301,7 +301,7 @@ public class AuthService {
         session.setType(SessionType.SESSION);
         session.setTokenHash(hash(refreshToken));
         session.setExpiresAt(Instant.now().plusMillis(jwtService.getRefreshTokenExpirationMs()));
-        sessionRepository.saveAndFlush(session);
+        sessionRepository.save(session);
 
         return TokenResponse.bearer(accessToken, refreshToken, jwtService.getAccessTokenExpirationMs());
     }

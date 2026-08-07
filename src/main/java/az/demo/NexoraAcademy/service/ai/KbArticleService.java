@@ -32,13 +32,13 @@ public class KbArticleService {
     public KbArticleResponse create(KbArticleRequest request) {
         KbArticle article = new KbArticle();
         applyFields(article, request);
-        return toResponse(kbArticleRepository.saveAndFlush(article));
+        return toResponse(kbArticleRepository.save(article));
     }
 
     public KbArticleResponse update(UUID id, KbArticleRequest request) {
         KbArticle article = getOrThrow(id);
         applyFields(article, request);
-        return toResponse(kbArticleRepository.saveAndFlush(article));
+        return toResponse(kbArticleRepository.save(article));
     }
 
     public KbArticleResponse patch(UUID id, KbArticleRequest request) {
@@ -50,7 +50,7 @@ public class KbArticleService {
         if (request.content() != null) article.setContent(request.content());
         if (request.active() != null) article.setActive(request.active());
 
-        return toResponse(kbArticleRepository.saveAndFlush(article));
+        return toResponse(kbArticleRepository.save(article));
     }
 
     public void delete(UUID id) {

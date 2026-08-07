@@ -101,7 +101,7 @@ public class EnrollmentService {
             occupySeat(group);
         }
 
-        Enrollment saved = enrollmentRepository.saveAndFlush(enrollment);
+        Enrollment saved = enrollmentRepository.save(enrollment);
         if (status == EnrollmentStatus.CONFIRMED) {
             eventPublisher.publishEvent(new EnrollmentConfirmedEvent(saved.getId(), saved.getUser().getId(), group.getId()));
         }
@@ -124,7 +124,7 @@ public class EnrollmentService {
         enrollment.setConsentVersion(request.consentVersion());
         enrollment.setConsentGivenAt(request.consentGivenAt());
 
-        return toResponse(enrollmentRepository.saveAndFlush(enrollment));
+        return toResponse(enrollmentRepository.save(enrollment));
     }
 
     public EnrollmentResponse patch(UUID id, EnrollmentRequest request) {
@@ -146,7 +146,7 @@ public class EnrollmentService {
         if (request.consentVersion() != null) enrollment.setConsentVersion(request.consentVersion());
         if (request.consentGivenAt() != null) enrollment.setConsentGivenAt(request.consentGivenAt());
 
-        return toResponse(enrollmentRepository.saveAndFlush(enrollment));
+        return toResponse(enrollmentRepository.save(enrollment));
     }
 
     /** Dedicated cancel operation — releases the seat it was holding and records why. Owner or staff. */
@@ -169,7 +169,7 @@ public class EnrollmentService {
         enrollment.setCancelledAt(Instant.now());
         enrollment.setCancelReason(reason);
 
-        return toResponse(enrollmentRepository.saveAndFlush(enrollment));
+        return toResponse(enrollmentRepository.save(enrollment));
     }
 
     public void delete(UUID id) {
@@ -238,12 +238,12 @@ public class EnrollmentService {
             throw new InvalidStateException("Course group " + group.getId() + " is full");
         }
         group.setReservedSeats(group.getReservedSeats() + 1);
-        courseGroupRepository.saveAndFlush(group);
+        courseGroupRepository.save(group);
     }
 
     private void releaseSeat(CourseGroup group) {
         group.setReservedSeats(Math.max(0, group.getReservedSeats() - 1));
-        courseGroupRepository.saveAndFlush(group);
+        courseGroupRepository.save(group);
     }
 
     private void assertIdempotencyKeyAvailable(String idempotencyKey, UUID currentId) {

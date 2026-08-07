@@ -49,7 +49,7 @@ public class AuditLogService {
         log.setTraceId(UUID.randomUUID());
         log.setIpAddress(request.ipAddress());
 
-        return toResponse(auditLogRepository.saveAndFlush(log));
+        return toResponse(auditLogRepository.save(log));
     }
 
     public AuditLogResponse update(Long id, AuditLogRequest request) {
@@ -63,7 +63,7 @@ public class AuditLogService {
         log.setAfterState(request.afterState());
         log.setIpAddress(request.ipAddress());
 
-        return toResponse(auditLogRepository.saveAndFlush(log));
+        return toResponse(auditLogRepository.save(log));
     }
 
     public AuditLogResponse patch(Long id, AuditLogRequest request) {
@@ -77,7 +77,7 @@ public class AuditLogService {
         if (request.afterState() != null) log.setAfterState(request.afterState());
         if (request.ipAddress() != null) log.setIpAddress(request.ipAddress());
 
-        return toResponse(auditLogRepository.saveAndFlush(log));
+        return toResponse(auditLogRepository.save(log));
     }
 
     public void delete(Long id) {

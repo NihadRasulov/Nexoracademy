@@ -42,7 +42,7 @@ public class SessionService {
         session.setUserAgent(request.userAgent());
         session.setExpiresAt(request.expiresAt());
 
-        return toResponse(sessionRepository.saveAndFlush(session));
+        return toResponse(sessionRepository.save(session));
     }
 
     public SessionResponse update(UUID id, SessionRequest request) {
@@ -55,7 +55,7 @@ public class SessionService {
         session.setUserAgent(request.userAgent());
         session.setExpiresAt(request.expiresAt());
 
-        return toResponse(sessionRepository.saveAndFlush(session));
+        return toResponse(sessionRepository.save(session));
     }
 
     public SessionResponse patch(UUID id, SessionRequest request) {
@@ -68,14 +68,14 @@ public class SessionService {
         if (request.userAgent() != null) session.setUserAgent(request.userAgent());
         if (request.expiresAt() != null) session.setExpiresAt(request.expiresAt());
 
-        return toResponse(sessionRepository.saveAndFlush(session));
+        return toResponse(sessionRepository.save(session));
     }
 
     /** Revokes a session (logout / token invalidation) without deleting the audit trail. */
     public SessionResponse revoke(UUID id) {
         Session session = getOrThrow(id);
         session.setRevokedAt(java.time.Instant.now());
-        return toResponse(sessionRepository.saveAndFlush(session));
+        return toResponse(sessionRepository.save(session));
     }
 
     public void delete(UUID id) {

@@ -32,8 +32,7 @@ public class InstructorService {
 
     @Transactional(readOnly = true)
     public List<PublicInstructorResponse> findPublicActive() {
-        return instructorRepository.findAll().stream()
-                .filter(instructor -> Boolean.TRUE.equals(instructor.getActive()))
+        return instructorRepository.findByActiveTrue().stream()
                 .map(instructor -> new PublicInstructorResponse(instructor.getId(), instructor.getFullName(),
                         instructor.getBio(), instructor.getPhotoUrl(), instructor.getLinkedinUrl(),
                         instructor.getAvgRating(), instructor.getCertifications())).toList();
@@ -55,7 +54,7 @@ public class InstructorService {
         instructor.setActive(request.active() != null ? request.active() : true);
         instructor.setAvgRating(BigDecimal.ZERO);
 
-        return toResponse(instructorRepository.saveAndFlush(instructor));
+        return toResponse(instructorRepository.save(instructor));
     }
 
     public InstructorResponse update(UUID id, InstructorRequest request) {
@@ -69,7 +68,7 @@ public class InstructorService {
         instructor.setCertifications(request.certifications() != null ? request.certifications() : new ArrayList<>());
         instructor.setActive(request.active() != null ? request.active() : instructor.getActive());
 
-        return toResponse(instructorRepository.saveAndFlush(instructor));
+        return toResponse(instructorRepository.save(instructor));
     }
 
     public InstructorResponse patch(UUID id, InstructorRequest request) {
@@ -83,7 +82,7 @@ public class InstructorService {
         if (request.certifications() != null) instructor.setCertifications(request.certifications());
         if (request.active() != null) instructor.setActive(request.active());
 
-        return toResponse(instructorRepository.saveAndFlush(instructor));
+        return toResponse(instructorRepository.save(instructor));
     }
 
     public void delete(UUID id) {

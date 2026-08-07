@@ -67,7 +67,7 @@ public class CourseService {
         course.setCreatedBy(actorId != null ? resolveUser(actorId) : null);
         applyCommonFields(course, request);
 
-        Course saved = courseRepository.saveAndFlush(course);
+        Course saved = courseRepository.save(course);
         eventPublisher.publishEvent(new CourseCreatedEvent(saved.getId(), saved.getTitle(), actorId));
 
         return toResponse(saved);
@@ -81,7 +81,7 @@ public class CourseService {
         course.setCategory(resolveCategory(request.categoryId()));
         applyCommonFields(course, request);
 
-        return toResponse(courseRepository.saveAndFlush(course));
+        return toResponse(courseRepository.save(course));
     }
 
     public CourseResponse patch(UUID id, CourseRequest request) {
@@ -111,7 +111,7 @@ public class CourseService {
         if (request.content() != null) course.setContent(request.content());
         if (request.relatedCourseIds() != null) course.setRelatedCourseIds(request.relatedCourseIds());
 
-        return toResponse(courseRepository.saveAndFlush(course));
+        return toResponse(courseRepository.save(course));
     }
 
     public void delete(UUID id) {

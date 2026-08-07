@@ -35,14 +35,14 @@ public class ApplicationService {
         app.setEmail(request.email());
         app.setPhone(request.phone());
         app.setLetter(request.letter());
-        return toResponse(applicationRepository.saveAndFlush(app));
+        return toResponse(applicationRepository.save(app));
     }
 
     public void updateCv(Long id, String filename, String cvPath) {
         Application app = getOrThrow(id);
         app.setCvFilename(filename);
         app.setCvPath(cvPath);
-        applicationRepository.saveAndFlush(app);
+        applicationRepository.save(app);
     }
 
     public void delete(Long id) {

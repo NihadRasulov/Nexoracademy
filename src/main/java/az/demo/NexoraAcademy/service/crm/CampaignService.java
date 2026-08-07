@@ -32,13 +32,13 @@ public class CampaignService {
     public CampaignResponse create(CampaignRequest request) {
         Campaign campaign = new Campaign();
         applyFields(campaign, request);
-        return toResponse(campaignRepository.saveAndFlush(campaign));
+        return toResponse(campaignRepository.save(campaign));
     }
 
     public CampaignResponse update(UUID id, CampaignRequest request) {
         Campaign campaign = getOrThrow(id);
         applyFields(campaign, request);
-        return toResponse(campaignRepository.saveAndFlush(campaign));
+        return toResponse(campaignRepository.save(campaign));
     }
 
     public CampaignResponse patch(UUID id, CampaignRequest request) {
@@ -54,7 +54,7 @@ public class CampaignService {
         if (request.priority() != null) campaign.setPriority(request.priority());
         if (request.courseIds() != null) campaign.setCourseIds(request.courseIds());
 
-        return toResponse(campaignRepository.saveAndFlush(campaign));
+        return toResponse(campaignRepository.save(campaign));
     }
 
     public void delete(UUID id) {
