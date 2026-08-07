@@ -238,7 +238,7 @@
   }
 
   function setMeta(meta) {
-    document.title = meta.title || "NAIC";
+    document.title = meta.title || "Nexora Academy";
     const desc = document.querySelector('meta[name="description"]');
     const keywords = document.querySelector('meta[name="keywords"]');
     if (desc) desc.content = meta.description || "";
