@@ -67,7 +67,7 @@ Nexora Academy platformasının idarəetmə panelidir. İki hissədən ibarətdi
 
 ## Texnologiya Yığını
 
-**İnterfeys — `NexoraAdminPanelUI/`**
+**İnterfeys — `frontend/admin-ui/`**
 
 | Sahə | İstifadə olunan |
 |------|-----------------|
@@ -82,7 +82,7 @@ Nexora Academy platformasının idarəetmə panelidir. İki hissədən ibarətdi
 | Bildiriş | Sonner |
 | Lint | Oxlint |
 
-**BFF — `NexoraAdminPanel/`**
+**BFF — `backend/admin-bff/NexoraAdminPanel/`**
 
 | Sahə | İstifadə olunan |
 |------|-----------------|
@@ -99,29 +99,35 @@ Nexora Academy platformasının idarəetmə panelidir. İki hissədən ibarətdi
 
 ```
 NexoraAcademy/
-├── NexoraAdminPanel/                      # BFF (backend)
-│   └── NexoraAdminPanel/
-│       ├── NexoraAdminPanel.sln
-│       └── src/NexoraAcademy.AdminBff/
-│           ├── Program.cs                  # DI, auth, CORS, HttpClient qeydiyyatları
-│           ├── Controllers/                # BFF son nöqtələri (Auth, User, Course, ...)
-│           ├── Clients/                    # Nexora backend-ə gedən tipli HTTP klientləri
-│           ├── Auth/                        # Session store, icazə handler-i, rollar
-│           ├── Contracts/                   # Backend/Bff sorğu-cavab modelləri
-│           ├── Middleware/                  # Mərkəzi xəta idarəetməsi
-│           └── appsettings*.json
+├── backend/
+│   ├── api/                          # Spring Boot (əsas API)
+│   │   └── src/main/java/...         # Kontrollerlər, servislər, migrasiya-lar
+│   ├── chatbot-api/                  # Python FastAPI (AI chatbot)
+│   └── admin-bff/                    # Admin BFF (backend)
+│       └── NexoraAdminPanel/
+│           ├── NexoraAdminPanel.sln
+│           └── src/NexoraAcademy.AdminBff/
+│               ├── Program.cs                  # DI, auth, CORS, HttpClient qeydiyyatları
+│               ├── Controllers/                # BFF son nöqtələri (Auth, User, Course, ...)
+│               ├── Clients/                    # Nexora backend-ə gedən tipli HTTP klientləri
+│               ├── Auth/                        # Session store, icazə handler-i, rollar
+│               ├── Contracts/                   # Backend/Bff sorğu-cavab modelləri
+│               ├── Middleware/                  # Mərkəzi xəta idarəetməsi
+│               └── appsettings*.json
 │
-└── NexoraAdminPanelUI/                    # İnterfeys (frontend)
-    ├── src/
-    │   ├── App.tsx                         # Route tərifləri + rol qorumaları
-    │   ├── auth/                            # Auth context, qorunan route-lar, rol qrupları
-    │   ├── layout/                          # Yan panel, üst panel, naviqasiya
-    │   ├── pages/                           # Xüsusi səhifələr (Dashboard, Users, Courses, ...)
-    │   ├── resources/                       # Konfiqurasiya ilə yaradılan ümumi CRUD infrastrukturu
-    │   ├── components/                      # Təkrar istifadə olunan UI (DataTable, dialog, və s.)
-    │   └── lib/                             # API klienti, xəta idarəetməsi, köməkçilər
-    ├── .env.development
-    └── vite.config.ts
+└── frontend/
+    ├── main-site/                    # Əsas veb səhifə (frontend)
+    └── admin-ui/                     # İnterfeys (frontend)
+        ├── src/
+        │   ├── App.tsx                         # Route tərifləri + rol qorumaları
+        │   ├── auth/                            # Auth context, qorunan route-lar, rol qrupları
+        │   ├── layout/                          # Yan panel, üst panel, naviqasiya
+        │   ├── pages/                           # Xüsusi səhifələr (Dashboard, Users, Courses, ...)
+        │   ├── resources/                       # Konfiqurasiya ilə yaradılan ümumi CRUD infrastrukturu
+        │   ├── components/                      # Təkrar istifadə olunan UI (DataTable, dialog, və s.)
+        │   └── lib/                             # API klienti, xəta idarəetməsi, köməkçilər
+        ├── .env.development
+        └── vite.config.ts
 ```
 
 > **Qeyd:** Ümumi `resources/` qatı əksər idarəetmə ekranlarını (kateqoriya, kampaniya, sessiya, audit qeydi və s.) tək bir `ResourcePage` + konfiqurasiya obyekti ilə yaradır. Yalnız xüsusi davranış tələb edən ekranlar (`courses`, `users`, `payments`, `enrollments`) ayrıca səhifə kimi yazılıb.
@@ -143,7 +149,7 @@ Panel iki servisdən ibarət olduğu üçün hər ikisini işə salmaq lazımdı
 ### 1) BFF (backend)
 
 ```bash
-cd NexoraAdminPanel/NexoraAdminPanel/src/NexoraAcademy.AdminBff
+cd backend/admin-bff/NexoraAdminPanel/NexoraAdminPanel/src/NexoraAcademy.AdminBff
 dotnet restore
 dotnet run
 ```
@@ -157,7 +163,7 @@ OpenAPI sənədi yalnız Development mühitində `/openapi` altında yayımlanı
 ### 2) İnterfeys (frontend)
 
 ```bash
-cd NexoraAdminPanelUI
+cd frontend/admin-ui
 npm install
 npm run dev
 ```
@@ -168,7 +174,7 @@ npm run dev
 
 ## Konfiqurasiya
 
-### İnterfeys — `NexoraAdminPanelUI/.env.development`
+### İnterfeys — `frontend/admin-ui/.env.development`
 
 | Dəyişən | İzah |
 |---------|------|
@@ -227,7 +233,7 @@ Panel vasitəsilə idarə olunan əsas sahələr:
 
 ## Əmr Arayışı
 
-**İnterfeys** (`NexoraAdminPanelUI/`)
+**İnterfeys** (`frontend/admin-ui/`)
 
 | Əmr | İzah |
 |-----|------|
@@ -236,7 +242,7 @@ Panel vasitəsilə idarə olunan əsas sahələr:
 | `npm run preview` | Production build-in lokal önizləməsi |
 | `npm run lint` | Oxlint ilə lint |
 
-**BFF** (`.../NexoraAcademy.AdminBff/`)
+**BFF** (`backend/admin-bff/NexoraAdminPanel/NexoraAdminPanel/src/NexoraAcademy.AdminBff/`)
 
 | Əmr | İzah |
 |-----|------|

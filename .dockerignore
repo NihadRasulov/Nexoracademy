@@ -8,10 +8,8 @@ logs
 .env
 .env.*
 !.env.example
-admin_panel
-frontv4
-frontv5
-chatbot-api
+backend/chatbot-api
+frontend/main-site
 deploy
 backups
 certs
@@ -19,3 +17,8 @@ nginx.conf
 docker-compose*.yml
 demo-page.html
 api-test.html
+**/node_modules
+**/dist
+**/bin
+**/obj
+**/__pycache__

@@ -432,8 +432,8 @@ xətanı udur və heç bir 5xx qaytarmır.
 | Health | konteyner daxilində `:9091/actuator/health[/liveness|/readiness]` |
 | Metrikalar | `app:9091/actuator/prometheus` (compose şəbəkəsindən) |
 | Backup-lar | `./backups/nexora-<tarix>.dump` |
-| Migration-lar | `src/main/resources/db/migration/V1..V13` |
-| Prod konfiqurasiya | `src/main/resources/application-prod.yml` |
+| Migration-lar | `backend/api/src/main/resources/db/migration/V1..V13` |
+| Prod konfiqurasiya | `backend/api/src/main/resources/application-prod.yml` |
 | Təhlükəsizlik qaydaları | `src/main/java/.../config/SecurityConfig.java` |
 | Mənim (sahibin) TODO siyahım | `PRODUCTION_TODO_MINE.md` |
 | Kod auditi (nə düzəldilib, niyə) | `PRODUCTION_READINESS.md` |

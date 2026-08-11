@@ -4,7 +4,7 @@ Bu sənəd `D:\NexoraAcademy\NexoraAcademy\NexoraAcademy` repo-sunun mənbə kod
 
 **Stack:** Java 21, Spring Boot 4.1.0 (parent POM), Spring Security (stateless, JWT), Spring Data JPA + Hibernate ORM 7, PostgreSQL 16 (Flyway migrasiyaları), springdoc-openapi 2.7.0, jjwt 0.12.6.
 
-**Base URL (local dev):** `http://localhost:8081` (bax `src/main/resources/application.yml:2` — `server.port: 8081`). Global path prefiksi **yoxdur** (`server.servlet.context-path` heç yerdə təyin olunmayıb) — bütün endpoint-lər birbaşa `http://localhost:8081/api/v1/...` altındadır.
+**Base URL (local dev):** `http://localhost:8081` (bax `backend/api/src/main/resources/application.yml:2` — `server.port: 8081`). Global path prefiksi **yoxdur** (`server.servlet.context-path` heç yerdə təyin olunmayıb) — bütün endpoint-lər birbaşa `http://localhost:8081/api/v1/...` altındadır.
 
 ---
 
@@ -746,6 +746,6 @@ Bir istifadəçinin **yalnız bir rolu** ola bilər (`User.role` — tək sahə,
 
 ## Əlavə: Bu sənədin əhatə etmədiyi/aydınlaşdırılmalı sahələr
 - `spring-boot-starter-data-jdbc` və `spring-boot-starter-data-jpa` **hər ikisi eyni vaxtda** `pom.xml`-dədir — build zamanı bir neçə repository interfeysi üçün "Could not safely identify store assignment" xəbərdarlığı yaranır (loglarda müşahidə edilib). API davranışına təsiri yoxdur, amma qeyd olunur.
-- Entity-lərin tam sütun/constraint siyahısı (DB səviyyəsində) bu sənədə daxil edilməyib — yalnız DTO (API) səviyyəsi təsvir olunub. DB sxeması üçün `src/main/resources/db/migration/*.sql` migrasiya fayllarına baxılmalıdır.
+- Entity-lərin tam sütun/constraint siyahısı (DB səviyyəsində) bu sənədə daxil edilməyib — yalnız DTO (API) səviyyəsi təsvir olunub. DB sxeması üçün `backend/api/src/main/resources/db/migration/*.sql` migrasiya fayllarına baxılmalıdır.
 - Event-driven yan-effektlər (`UserRegisteredEvent`, `EnrollmentConfirmedEvent`, `PaymentCompletedEvent`, `UserRoleChangedEvent`, `UserLoggedInEvent` və s.) mövcuddur (`event/` paketi) — bunlar email/notification/audit-log yaradır, amma sırf daxili proses olduğundan və API contract-a birbaşa təsir etmədiyindən bu sənədə daxil edilmədi.
 - Rate limiting / throttling konfiqurasiyası bu araşdırmada **axtarılmadı** — BFF tərəfi bunu ayrıca yoxlamalıdır.

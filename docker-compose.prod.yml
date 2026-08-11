@@ -62,14 +62,14 @@ services:
       FLYWAY_VALIDATE_ON_MIGRATE: "true"
       FLYWAY_OUT_OF_ORDER: "false"
     volumes:
-      - ./src/main/resources/db/migration:/flyway/sql:ro
+      - ./backend/api/src/main/resources/db/migration:/flyway/sql:ro
     command: migrate
     logging:
       driver: json-file
       options: { max-size: "10m", max-file: "3" }
 
   app:
-    build: .
+    build: ./backend/api
     image: nexora-academy:latest
     container_name: nexora-app
     restart: unless-stopped

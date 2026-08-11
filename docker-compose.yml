@@ -43,7 +43,7 @@ services:
       FLYWAY_VALIDATE_ON_MIGRATE: "true"
       FLYWAY_OUT_OF_ORDER: "false"
     volumes:
-      - ./src/main/resources/db/migration:/flyway/sql
+      - ./backend/api/src/main/resources/db/migration:/flyway/sql
     command: migrate
 
   mailhog:
@@ -58,7 +58,7 @@ services:
 
   chatbot-api:
     build:
-      context: ./chatbot-api
+      context: ./backend/chatbot-api
       dockerfile: Dockerfile
     container_name: nexora-chatbot
     restart: unless-stopped
@@ -140,8 +140,8 @@ services:
 
   admin-bff:
     build:
-      context: ./admin_panel
-      dockerfile: NexoraAdminPanel/NexoraAdminPanel/src/NexoraAcademy.AdminBff/Dockerfile
+      context: .
+      dockerfile: backend/admin-bff/NexoraAdminPanel/NexoraAdminPanel/src/NexoraAcademy.AdminBff/Dockerfile
     container_name: nexora-admin-bff
     restart: unless-stopped
     environment:
@@ -163,7 +163,7 @@ services:
   # --- SEPARATED MAIN FRONTEND ---
   main-ui:
     build:
-      context: ./frontv5
+      context: ./frontend/main-site
       dockerfile: Dockerfile
     container_name: nexora-main-ui
     restart: unless-stopped
@@ -171,7 +171,7 @@ services:
     networks:
       - nexora-net
     volumes:
-      - "./frontv5/nginx.conf:/etc/nginx/conf.d/default.conf:ro"
+      - "./frontend/main-site/nginx.conf:/etc/nginx/conf.d/default.conf:ro"
     deploy:
       resources:
         limits:
@@ -180,7 +180,7 @@ services:
   # --- SEPARATED ADMIN UI ---
   admin-ui:
     build:
-      context: ./admin_panel/NexoraAdminPanelUI
+      context: ./frontend/admin-ui
       dockerfile: Dockerfile
       args:
         VITE_API_BASE_URL: "https://${PUBLIC_HOST}"

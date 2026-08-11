@@ -30,6 +30,7 @@ jobs:
           cache: maven
 
       - name: Build + run all tests
+        working-directory: backend/api
         run: ./mvnw -B verify
 
       - name: Upload test reports
@@ -37,7 +38,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: surefire-reports
-          path: target/surefire-reports/
+          path: backend/api/target/surefire-reports/
           retention-days: 7
 
   docker-build:
@@ -52,6 +53,7 @@ jobs:
       # Yalnız build — push YOXDUR. Registry seçiləndən sonra DevOps burada
       # docker/login-action + push əlavə etməlidir (bax PRODUCTION_HANDOVER.md).
       - name: Build image
+        working-directory: backend/api
         run: docker build -t nexora-academy:${{ github.sha }} .
 
       # Image-dəki məlum CVE-ləri göstərir. İlk mərhələdə build-i sındırmır
