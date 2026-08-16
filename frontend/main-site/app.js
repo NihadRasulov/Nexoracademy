@@ -108,7 +108,7 @@
     SYSTEM_ADMIN: "staff.html",
   };
   let pageController = null;
-  let accessToken = "";
+  let accessToken = readStorage(sessionStorage, ACCESS_TOKEN_KEY);
   let refreshPromise = null;
   let currentUserCache = null;
   let coursesRequestId = 0;
@@ -428,7 +428,7 @@
 
   function setTokens(tokens) {
     accessToken = tokens?.accessToken || "";
-    writeStorage(sessionStorage, ACCESS_TOKEN_KEY, "");
+    writeStorage(sessionStorage, ACCESS_TOKEN_KEY, accessToken);
     if (tokens?.refreshToken)
       writeStorage(localStorage, REFRESH_TOKEN_KEY, tokens.refreshToken);
     const identity = decodeAccessToken(accessToken);
@@ -864,6 +864,11 @@
       );
 
       desktopMenus.forEach((menu) => {
+        const categoryLinks = Array.from(menu.children).filter(
+          (node) =>
+            node.tagName === "A" &&
+            node.getAttribute("href") === "categories.html",
+        );
         const links = visibleCourses.map((course) =>
           createCourseMenuLink(
             course,
@@ -877,9 +882,15 @@
           ),
         );
         menu.replaceChildren(...links);
+        categoryLinks.forEach((link) => menu.append(link));
       });
 
       mobileCourseBodies.forEach((body) => {
+        const categoryLinks = Array.from(body.children).filter(
+          (node) =>
+            node.tagName === "A" &&
+            node.getAttribute("href") === "categories.html",
+        );
         const links = visibleCourses.map((course) =>
           createCourseMenuLink(course),
         );
@@ -890,6 +901,11 @@
           );
         }
         body.replaceChildren(...links);
+        categoryLinks.forEach((link) => {
+          if (closeMobileMenu)
+            link.addEventListener("click", closeMobileMenu, { signal });
+          body.append(link);
+        });
       });
     } catch (error) {
       if (error?.name === "AbortError" || signal.aborted) return;
@@ -925,9 +941,18 @@
     );
     if (!loginLinks.length || !hasSession) return;
 
+    const setPending = (pending) => {
+      loginLinks.forEach((link) => {
+        const label = $("span", link) || link;
+        label.classList.toggle("naic-auth-pending", pending);
+      });
+    };
+
+    setPending(true);
     try {
       const user = await loadCurrentUser(signal);
       if (signal.aborted) return;
+      setPending(false);
       const displayName = headerUserDisplayName(user);
       if (!displayName) return;
       loginLinks.forEach((link) => {
@@ -938,6 +963,7 @@
       });
     } catch (error) {
       if (error?.name === "AbortError" || signal.aborted) return;
+      setPending(false);
       // Keep the static "Daxil ol" link when the session cannot be restored.
     }
   }
@@ -2202,20 +2228,9 @@
     }
   }
 
-  function homeBannerCtaUrl(value, fallback) {
-    const raw = String(value || "").trim();
-    const normalized = raw.replace(/\/+$/, "");
-    const routeMap = new Map([
-      ["/kurslar", "courses.html"],
-      ["/courses", "courses.html"],
-    ]);
-    return safeCourseDetailUrl(routeMap.get(normalized) || raw, fallback);
-  }
-
   function applyHomeBanner(root, banner) {
     const title = $(".HeroSection_content__title__Wr5gI", root);
     const titleParts = title ? $$(":scope > span", title) : [];
-    const cta = $(".HeroSection_aboutBtn__text__NV_G3", root);
     const video = $(".HeroSection_video__GVdk5", root);
     const bannerTitle = String(banner?.title || "").trim();
     const data =
@@ -2224,14 +2239,11 @@
       !Array.isArray(banner.data)
         ? banner.data
         : {};
-    const ctaText = String(data.ctaText || "").trim();
     const image = safeCourseDetailUrl(data.image, "");
 
     if (bannerTitle && titleParts.length === 2) {
       titleParts[1].textContent = bannerTitle;
     }
-    if (ctaText && cta) cta.textContent = ctaText;
-    if (cta) cta.href = homeBannerCtaUrl(data.ctaUrl, cta.getAttribute("href"));
     if (image && video) video.poster = image;
   }
 
@@ -2519,6 +2531,7 @@
     const link = $(".ProjectCard_ai-projects__item__cta__t2MnB", card);
     const image = $("img", card);
     const categoryName = categoryNames.get(String(course.categoryId)) || "";
+    const detailUrl = `course-details.html?id=${encodeURIComponent(course.id || "")}`;
     if (title) title.textContent = course.title || "Adsız kurs";
     if (description) {
       description.textContent =
@@ -2528,7 +2541,7 @@
         "Ətraflı məlumat üçün kurs səhifəsinə keçin.";
     }
     if (link) {
-      link.href = `course-details.html?id=${encodeURIComponent(course.id || "")}`;
+      link.href = detailUrl;
       link.removeAttribute("data-summary-only");
       link.removeAttribute("data-target-fragment");
       link.removeAttribute("aria-disabled");
@@ -2536,6 +2549,23 @@
       const label = $("span", link);
       if (label) label.textContent = "Kursa bax";
     }
+    card.setAttribute("role", "link");
+    card.setAttribute("tabIndex", "0");
+    card.style.cursor = "pointer";
+    card.addEventListener("click", (event) => {
+      if (event.defaultPrevented || event.target.closest("a")) return;
+      event.preventDefault();
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+        window.open(detailUrl, "_blank", "noopener");
+      } else {
+        window.location.assign(detailUrl);
+      }
+    });
+    card.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      window.location.assign(detailUrl);
+    });
     if (image) {
       const fallback = courseMockFallback({ ...course, categoryName });
       image.removeAttribute("data-image-src");
@@ -3518,6 +3548,7 @@
     if (!registerForm || !verifyForm) return;
 
     let pendingEmail = "";
+    let pendingPassword = "";
     registerForm.addEventListener(
       "submit",
       async (event) => {
@@ -3578,6 +3609,7 @@
             false,
           );
           pendingEmail = response?.email || email;
+          pendingPassword = password;
           registerForm.hidden = true;
           verifyForm.hidden = false;
           if (verifyHint)
@@ -3618,9 +3650,35 @@
           verifyForm.reset();
           setFormMessage(
             verifyForm,
-            "E-poçt təsdiqləndi. İndi hesabınıza daxil ola bilərsiniz.",
+            "E-poçt təsdiqləndi. Hesabınıza daxil edilirsiniz…",
             "success",
           );
+          const emailForLogin = pendingEmail;
+          const passwordForLogin = pendingPassword;
+          pendingPassword = "";
+          try {
+            const loginResponse = await apiFetch(
+              "/api/v1/auth/login",
+              {
+                method: "POST",
+                signal,
+                body: JSON.stringify({
+                  email: emailForLogin,
+                  password: passwordForLogin,
+                }),
+              },
+              false,
+            );
+            if (loginResponse?.accessToken) {
+              setTokens(loginResponse);
+              location.assign("index.html");
+              return;
+            }
+          } catch (error) {
+            if (error?.name === "AbortError" || signal.aborted) return;
+            showFormError(verifyForm, error);
+            return;
+          }
           const submit = $('button[type="submit"]', verifyForm);
           if (submit) {
             submit.textContent = "Daxil ol";
@@ -4465,6 +4523,7 @@
     switch (document.body.dataset.page) {
       case "home":
         void initHomeBanner(signal);
+        void initHomeFeaturedCourses(signal);
         break;
       case "courses":
         initCoursesPage(signal);

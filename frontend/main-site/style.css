@@ -46,8 +46,10 @@
 
 .Footer_footer__logo__ATYE7 img {
   display: block;
-  width: 160px;
-  height: auto
+  height: 62px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain
 }
 
 .Footer_footer__address__b8X3q {
@@ -115,6 +117,15 @@
 .Footer_footer__menu__list__Q4jxf a {
   font-size: 14px;
   line-height: 1.35
+}
+
+.Footer_footer__address__b8X3q a {
+  color: inherit;
+  transition: var(--ts-medium)
+}
+
+.Footer_footer__address__b8X3q a:hover {
+  color: var(--primary-300)
 }
 
 .Footer_footer__contact__f4V1c a:hover,
@@ -388,8 +399,10 @@
 }
 
 .HeaderMobile_header_mobile_menu__logo__V5ZUK img {
-  height: 44px;
-  width: auto
+  height: 52px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain
 }
 
 .HeaderMobile_header_mobile_menu__social-list__BLi3J {
@@ -491,8 +504,10 @@
 }
 
 .Header_header__logo__wY5vW img {
-  height: 42px;
-  width: auto
+  height: 62px;
+  width: auto;
+  max-width: 100%;
+  object-fit: contain
 }
 
 .Header_header__menu__list__fvVyw {
@@ -4779,7 +4794,6 @@ input:-webkit-autofill:hover {
   letter-spacing: 1%
 }
 
-.HeroSection_aboutBtn__0BWbj,
 .HeroSection_content__desc__CwPk3 {
   padding: 16px 24px;
   cursor: pointer;
@@ -4787,66 +4801,6 @@ input:-webkit-autofill:hover {
   color: #fff;
   font-weight: 600;
   font-size: 16px
-}
-
-.HeroSection_aboutBtn__0BWbj {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 140px;
-  height: 56px;
-  background: hsla(0, 0%, 93%, .28);
-  transition: all .3s ease;
-  overflow: hidden
-}
-
-.HeroSection_aboutBtn__0BWbj:hover {
-  width: 160px;
-  background: linear-gradient(71deg, #ffbe73 -27.82%, #9ed8ff 42.55%, #7bbcff 117.92%)
-}
-
-.HeroSection_aboutBtn__0BWbj:hover .HeroSection_aboutBtn__bg__mT8Rf {
-  width: 180px;
-  height: 70px;
-  border-radius: 20px;
-  background: linear-gradient(90deg, #d77e6b, #9ed8ff, #5f7fd0);
-  box-shadow: 0 0 30px 20px hsla(0, 0%, 100%, .2)
-}
-
-.HeroSection_aboutBtn__0BWbj:hover .HeroSection_aboutBtn__text__NV_G3 {
-  transform: translateX(-10px)
-}
-
-.HeroSection_aboutBtn__0BWbj:hover .HeroSection_aboutBtn__star__jIKT7 {
-  right: 20px;
-  opacity: 1;
-  transform: translateX(0)
-}
-
-.HeroSection_aboutBtn__bg__mT8Rf {
-  position: absolute;
-  z-index: -1;
-  width: 129px;
-  height: 56px;
-  border-radius: 16px;
-  transition: all .3s ease
-}
-
-.HeroSection_aboutBtn__text__NV_G3 {
-  transition: all .3s ease;
-  color: #fff
-}
-
-.HeroSection_aboutBtn__star__jIKT7 {
-  position: absolute;
-  right: 10px;
-  top: 20%;
-  width: 28px;
-  height: 28px;
-  opacity: 0;
-  transform: translateX(-100%);
-  transition: all .3s ease
 }
 
 @media(max-width:992px) {
@@ -5013,7 +4967,8 @@ input:-webkit-autofill:hover {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  gap: 40px
+  gap: 40px;
+  z-index: 1
 }
 
 .RoadMapSection_roadmap__timeline__item__OitQD .RoadMapSection_header_text__HZaNN {
@@ -5090,10 +5045,11 @@ input:-webkit-autofill:hover {
 
 .RoadMapSection_roadmap__timeline__item__OitQD .RoadMapSection_dot_text_2__8LOYX span {
   font-weight: 400;
-  font-size: 10px;
-  line-height: 100%;
+  font-size: 9px;
+  line-height: 1.3;
   letter-spacing: 0;
   text-align: center;
+  overflow-wrap: break-word;
   color: rgba(183, 204, 235, .52)
 }
 
@@ -5187,19 +5143,21 @@ input:-webkit-autofill:hover {
 }
 
 .RoadMapSection_roadmap__timeline__item__footer__1Hs5t .RoadMapSection_box__9QqPC span {
-  z-index: 1
+  z-index: 1;
+  max-width: 100%;
+  overflow-wrap: break-word
 }
 
 .RoadMapSection_roadmap__timeline__item__footer__1Hs5t .RoadMapSection_box_1__vOQJ8 {
-  width: 188px;
-  height: 90px;
+  width: 200px;
+  height: 118px;
   background: linear-gradient(135deg, #9ed8ff 23.66%, #5ba7ff 61.36%, #3554d1 101.74%)
 }
 
 .RoadMapSection_roadmap__timeline__item__footer__1Hs5t .RoadMapSection_box_1__vOQJ8 span:first-child {
   color: #fff;
   font-weight: 700;
-  font-size: 16px;
+  font-size: 15px;
   line-height: 100%;
   letter-spacing: 0
 }
@@ -5207,29 +5165,29 @@ input:-webkit-autofill:hover {
 .RoadMapSection_roadmap__timeline__item__footer__1Hs5t .RoadMapSection_box_1__vOQJ8 span:nth-child(2) {
   color: #cfcfcf;
   font-weight: 400;
-  font-size: 14px;
-  line-height: 100%;
+  font-size: 12px;
+  line-height: 1.3;
   letter-spacing: 0
 }
 
 .RoadMapSection_roadmap__timeline__item__footer__1Hs5t .RoadMapSection_box_1__vOQJ8 span:nth-child(3) {
   color: #64748b;
   font-weight: 400;
-  font-size: 11px;
-  line-height: 100%;
+  font-size: 10px;
+  line-height: 1.3;
   letter-spacing: 0
 }
 
 .RoadMapSection_roadmap__timeline__item__footer__1Hs5t .RoadMapSection_box_2__itf7K {
-  width: 208px;
-  height: 104px;
+  width: 224px;
+  height: 134px;
   background: linear-gradient(45deg, #9ed8ff 23.66%, #5ba7ff 61.36%, #3554d1 101.74%)
 }
 
 .RoadMapSection_roadmap__timeline__item__footer__1Hs5t .RoadMapSection_box_2__itf7K span:first-child {
   color: #fff;
   font-weight: 700;
-  font-size: 16px;
+  font-size: 15px;
   line-height: 100%;
   letter-spacing: 0
 }
@@ -5237,8 +5195,8 @@ input:-webkit-autofill:hover {
 .RoadMapSection_roadmap__timeline__item__footer__1Hs5t .RoadMapSection_box_2__itf7K span:nth-child(2) {
   color: #cfcfcf;
   font-weight: 400;
-  font-size: 14px;
-  line-height: 100%;
+  font-size: 12px;
+  line-height: 1.3;
   letter-spacing: 0
 }
 
@@ -8176,8 +8134,7 @@ body[data-page="legal"] {
   max-width: 90px;
 }
 
-.RoadMapSection_roadmap__timeline__item--dual .RoadMapSection_dot_text_1__0pnNz,
-.RoadMapSection_roadmap__timeline__item--dual .RoadMapSection_dot_text_2__8LOYX {
+.RoadMapSection_roadmap__timeline__item--dual .RoadMapSection_dot_text_1__0pnNz {
   white-space: nowrap;
 }
 
@@ -8193,6 +8150,83 @@ body[data-page="legal"] {
   height: 50px;
 }
 
+/* ================================================================
+   Roadmap mobile/tablet — single-line fallback
+   The dual-track SVG/rails and rail-anchored labels are sized for the
+   desktop composition and break on small screens (shrunk dots, text
+   sitting on the rails). Below 993px we restore the single horizontal
+   line, the dot markers and the base label anchoring so nothing overlaps.
+   ================================================================ */
+@media (max-width: 992px) {
+  .RoadMapSection_dual-track__line,
+  .RoadMapSection_dual-track__moving-light {
+    display: none;
+  }
+
+  .RoadMapSection_roadmap__timeline__wrapper__EVRm5:before,
+  .RoadMapSection_roadmap__timeline__wrapper__EVRm5:after {
+    content: "";
+  }
+
+  .RoadMapSection_dot_wrapper__dual {
+    width: 20px;
+    height: 20px;
+  }
+
+  .RoadMapSection_dot_wrapper__dual img {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .RoadMapSection_dot_wrapper__dual:before,
+  .RoadMapSection_dot_wrapper__dual:after {
+    display: none;
+  }
+
+  .RoadMapSection_roadmap__timeline__item--dual .RoadMapSection_roadmap__timeline__item__header__dot__pXb60 {
+    top: -30%;
+    max-width: 90px;
+  }
+
+  .RoadMapSection_roadmap__timeline__item--dual .RoadMapSection_roadmap__timeline__item__footer__dot__yJKVP {
+    top: auto;
+    bottom: -80%;
+    right: auto;
+    left: 50%;
+    transform: translate(-50%, 0);
+    max-width: 64px;
+  }
+
+  .RoadMapSection_roadmap__timeline__item--dual .RoadMapSection_dot_text_1__0pnNz,
+  .RoadMapSection_roadmap__timeline__item--dual .RoadMapSection_dot_text_2__8LOYX {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 768px) {
+  .RoadMapSection_dot_wrapper__dual {
+    width: 14px;
+    height: 14px;
+  }
+
+  .RoadMapSection_roadmap__timeline__item--dual .RoadMapSection_roadmap__timeline__item__footer__dot__yJKVP {
+    bottom: -150%;
+    max-width: 56px;
+  }
+}
+
+@media (max-width: 576px) {
+  .RoadMapSection_dot_wrapper__dual {
+    width: 10px;
+    height: 10px;
+  }
+
+  .RoadMapSection_roadmap__timeline__item--dual .RoadMapSection_roadmap__timeline__item__footer__dot__yJKVP {
+    bottom: -170%;
+    max-width: 52px;
+  }
+}
 
 /* ================================================================
    Roadmap target composition — desktop
@@ -8353,10 +8387,26 @@ body[data-page="legal"] {
   }
 }
 
+/* ---- Roadmap text stacking + edge-safe headings ---- */
+@media (min-width: 993px) {
+  .RoadMapSection_roadmap__timeline__wrapper__EVRm5 > .RoadMapSection_roadmap__timeline__item__OitQD {
+    z-index: 1;
+  }
+
+  .RoadMapSection_roadmap__timeline__wrapper__EVRm5 > .RoadMapSection_roadmap__timeline__item__OitQD:nth-of-type(1) .RoadMapSection_roadmap__timeline__item__header__26XTN {
+    left: 100px;
+  }
+
+  .RoadMapSection_roadmap__timeline__wrapper__EVRm5 > .RoadMapSection_roadmap__timeline__item__OitQD:nth-of-type(8) .RoadMapSection_roadmap__timeline__item__header__26XTN {
+    left: calc(100% - 100px);
+  }
+}
+
 /* ---- Roadmap min-height ---- */
 @media (min-width: 993px) {
   .RoadMapSection_roadmap__G5s89 {
-    min-height: 470px;
+    --roadmap-track-gap: 280px;
+    min-height: calc(var(--roadmap-track-gap) + 320px);
   }
 }
 
@@ -8712,3 +8762,46 @@ body > .chat-fab--active::after { content: "\00d7"; font-size: 28px; font-weight
   body > .chat-fab { bottom: 20px; right: 20px; }
 }
 
+/* Nexora logo: dogru proporsiya */
+img[src*="assets/logo.svg"] { object-fit: contain; }
+
+/* ===== Fix: section--externals (mySwiper) kart olculeri =====
+   Sebeb: inline translate3d(-94.13px) ofseti + slide inline width:288.78px/margin-right
+   konteyner enine tam bolunmur; overflow:hidden 1-ci karti kesirdi.
+   Hepsi beraber: desktop 4 / tablet 3-2 / mobil 1 kart, box-sizing border-box. */
+.section--externals .swiper-wrapper {
+  transform: translate3d(0, 0, 0) !important;
+}
+.section--externals .swiper-slide {
+  flex-shrink: 0;
+  flex-basis: auto;
+  width: 100% !important;
+  box-sizing: border-box;
+}
+.section--externals .swiper-slide:not(:last-child) {
+  margin-right: 25px !important;
+}
+.section--externals .swiper-slide:last-child {
+  margin-right: 0 !important;
+}
+.section--externals .swiper-slide .ExternalSection_ai-externals__item__MXJl3 {
+  height: 100%;
+}
+@media (min-width: 768px) and (max-width: 991px) {
+  .section--externals .swiper-slide {
+    width: calc((100% - 25px) / 2) !important;
+  }
+}
+@media (min-width: 992px) and (max-width: 1279px) {
+  .section--externals .swiper-slide {
+    width: calc((100% - 50px) / 3) !important;
+  }
+}
+@media (min-width: 1280px) {
+  .section--externals .swiper-slide {
+    width: calc((100% - 75px) / 4) !important;
+  }
+}
+
+/* Auth səssiyası yoxlanana qədər hamburger "Daxil ol" etiketi */
+.naic-auth-pending { visibility: hidden; }
