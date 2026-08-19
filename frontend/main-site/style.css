@@ -7656,7 +7656,7 @@ body > .chat-fab--active::after { content: "\00d7"; font-size: 28px; font-weight
 }
 
 /* Nexora logo: dogru proporsiya */
-img[src*="assets/logo.png"] { object-fit: contain; }
+img[src*="assets/logo.svg"] { object-fit: contain; }
 
 /* ===== Fix: section--externals (mySwiper) kart olculeri =====
    Sebeb: inline translate3d(-94.13px) ofseti + slide inline width:288.78px/margin-right
