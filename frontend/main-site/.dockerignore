@@ -4,3 +4,17 @@
 .vscode
 node_modules
 *.md
+
+# assets/ served via docker-compose volume mount — exclude from build context
+# to avoid Docker buildkit UTF-8 serialization issues with non-ASCII filenames.
+assets/
+src/
+public/
+package.json
+package-lock.json
+tsconfig.json
+tsconfig.app.json
+tsconfig.node.json
+vite.config.ts
+.oxlintrc.json
+components.json
