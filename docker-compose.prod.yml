@@ -8,7 +8,7 @@
 #
 # Servislər:
 #   nginx    → TLS terminasiyası + tək ictimai giriş nöqtəsi (80/443)
-#   app      → Spring Boot (8081 API, 9091 actuator) — host-a AÇILMIR
+#   app      → Spring Boot (8081 API + actuator) — host-a AÇILMIR
 #   postgres → verilənlər bazası — host-a AÇILMIR
 #   flyway   → migration-ları app-dan əvvəl tətbiq edir, sonra çıxır
 #   backup   → gündəlik pg_dump
@@ -81,12 +81,11 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
     # DİQQƏT: `ports:` QƏSDƏN YOXDUR. Tətbiq yalnız nginx vasitəsilə əlçatandır.
-    # 8081-i host-a açsanız, TLS-siz və rate-limit-siz birbaşa giriş yaranır və
-    # 9091 (actuator) da təsadüfən açıla bilər. Sazlama üçün müvəqqəti lazım olsa:
+    # 8081-i host-a açsanız, TLS-siz və rate-limit-siz birbaşa giriş yaranır.
+    # Sazlama üçün müvəqqəti lazım olsa:
     #   ports: ["127.0.0.1:8081:8081"]   ← mütləq 127.0.0.1 ilə məhdudlaşdırın
     expose:
       - "8081"
-      - "9091"
     volumes:
       - nexora_app_logs:/app/logs
     depends_on:

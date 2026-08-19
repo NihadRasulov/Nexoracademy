@@ -37,15 +37,10 @@ ENV SPRING_PROFILES_ACTIVE=prod
 # `docker run -m 1g` kimi limitlərdə OOM-kill riski artır.
 ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/app/logs/heapdump.hprof"
 
-# 8081 = tətbiq API-si (reverse proxy bura yönləndirir)
-# 9091 = management/actuator (health + prometheus) — bax application-prod.yml.
-#        Bu portu HEÇ VAXT internetə açmayın: actuator zənciri ayrı kontekstdədir.
-EXPOSE 8081 9091
+# 8081 = tətbiq API-si + management/actuator (health + prometheus) — bax application-prod.yml.
+EXPOSE 8081
 
-# DİQQƏT: prod profilində actuator 8081-də DEYİL, 9091-dədir. Əvvəllər bu yoxlama
-# 8081/actuator/health-ə vururdu və prod-da 404 alırdı — yəni konteyner həmişə
-# "unhealthy" görünür, `depends_on: service_healthy` şərtləri isə heç vaxt keçmirdi.
 HEALTHCHECK --interval=30s --timeout=3s --start-period=90s --retries=3 \
-    CMD wget -qO- http://localhost:9091/actuator/health/readiness | grep -q '"status":"UP"' || exit 1
+    CMD wget -qO- http://localhost:8081/actuator/health/readiness | grep -q '"status":"UP"' || exit 1
 
 ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar app.jar"]

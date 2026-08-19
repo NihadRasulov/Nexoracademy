@@ -81,16 +81,6 @@ springdoc:
 # /actuator/health/readiness alt-statuslarını aktivləşdirir. Əsas
 # /actuator/health (permitAll, bax SecurityConfig) təsirlənmir.
 management:
-  # Actuator ayrıca porta köçürülür ki, ictimai ingress (yalnız 8081-i backend
-  # kimi göstərir) heç bir actuator endpoint-inə çata bilməsin. 9091 nə Service-də,
-  # nə ingress-də xaricə verilir — yalnız klaster daxilindən (kubelet probe-ları,
-  # Prometheus scrape) əlçatandır, bax k8s/04-app-service.yaml və 06-network-policy.yaml.
-  # DİQQƏT: ayrıca management portu öz (child) kontekstində işləyir — SecurityConfig-dəki
-  # filter zənciri ORA TƏTBİQ OLUNMUR. Yəni bu portu heç vaxt LoadBalancer/NodePort
-  # ilə xaricə çıxarmayın.
-  server:
-    port: 9091
-
   endpoints:
     web:
       exposure:
