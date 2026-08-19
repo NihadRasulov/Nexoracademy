@@ -3,10 +3,19 @@ services:
     image: pgvector/pgvector:pg16
     container_name: nexora-postgres
     restart: unless-stopped
+    env_file: .env
     environment:
       POSTGRES_DB: ${DB_NAME:-nexora_academy}
       POSTGRES_USER: ${DB_USER:-nexora_app}
       POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD .env faylında təyin edilməlidir}
+    # PostgreSQL Performance Tuning Parameters
+    command: >
+      postgres
+      -c shared_buffers=256MB
+      -c effective_cache_size=768MB
+      -c work_mem=16MB
+      -c maintenance_work_mem=64MB
+      -c max_worker_processes=4
     ports:
       - "${DB_PORT:-5432}:5432"
     volumes:
@@ -21,11 +30,12 @@ services:
     deploy:
       resources:
         limits:
-          memory: 500M
+          memory: 1024M
 
   flyway:
     image: flyway/flyway:10
     container_name: nexora-flyway
+    env_file: .env
     networks:
       - nexora-net
     depends_on:
@@ -92,12 +102,13 @@ services:
     deploy:
       resources:
         limits:
-          memory: 500M
+          memory: 400M
 
   redis:
     image: redis:7-alpine
     container_name: nexora-redis
     restart: unless-stopped
+    # Lowered maxmemory to fit container limit safely (128mb -> 256mb limit)
     command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
     ports:
       - "6379:6379"
@@ -111,32 +122,31 @@ services:
     deploy:
       resources:
         limits:
-          memory: 150M
+          memory: 256M
 
-#  app:
-#    build: .
-#    container_name: nexora-app
-#    restart: unless-stopped
-#    env_file: .env
-#    environment:
-#      SPRING_PROFILES_ACTIVE: dev
-#      DB_HOST: postgres
-#      JAVA_OPTS: "-Xmx256m -Xms128m"
-#    ports:
-#      - "8081:8081"
-#    networks:
-#      - nexora-net
-#    volumes:
-#      - nexora_app_logs:/app/logs
-#    depends_on:
-#      flyway:
-#        condition: service_completed_successfully
-#    deploy:
-#      resources:
-#        limits:
-#          memory: 400M
-
-
+  app:
+    build: ./backend/api
+    container_name: nexora-app
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST: postgres
+      # Optimized JVM GC & Memory Flags for Spring Boot
+      JAVA_OPTS: "-XX:+UseG1GC -XX:MaxGCPauseMillis=100 -XX:+UseStringDeduplication -Xms256m -Xmx512m"
+    ports:
+      - "8081:8081"
+    networks:
+      - nexora-net
+    volumes:
+      - nexora_app_logs:/app/logs
+    depends_on:
+      flyway:
+        condition: service_completed_successfully
+    deploy:
+      resources:
+        limits:
+          memory: 800M
 
   admin-bff:
     build:
@@ -156,9 +166,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 250M
-
-
+          memory: 400M
 
   # --- SEPARATED MAIN FRONTEND ---
   main-ui:
@@ -172,10 +180,11 @@ services:
       - nexora-net
     volumes:
       - "./frontend/main-site/nginx.conf:/etc/nginx/conf.d/default.conf:ro"
+      - "./frontend/main-site/assets:/usr/share/nginx/html/assets:ro"
     deploy:
       resources:
         limits:
-          memory: 150M
+          memory: 512M
 
   # --- SEPARATED ADMIN UI ---
   admin-ui:
@@ -194,7 +203,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 150M
+          memory: 256M
 
   # --- REVERSE PROXY / GATEWAY ---
   web-gateway:
@@ -206,7 +215,7 @@ services:
       - "443:443"
     volumes:
       - "./nginx.conf:/etc/nginx/conf.d/default.conf:ro"
-      - "./certs:/etc/nginx/certs:ro"
+      - "/etc/letsencrypt:/etc/nginx/certs:ro"
     networks:
       - nexora-net
     depends_on:
@@ -214,7 +223,7 @@ services:
       - admin-ui
       - admin-bff
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost/health"]
+      test: ["CMD-SHELL", "wget --quiet --spider --no-check-certificate http://127.0.0.1/healthz || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 3
