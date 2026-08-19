@@ -139,6 +139,12 @@ public class SecurityConfig {
                                 "/api/v1/users/**"
                         ).hasAnyRole("ADMIN", "SYSTEM_ADMIN")
 
+                        // Main-site public access: published CMS content for anonymous visitors.
+                        // Bu qayda admin content qaydasından ƏVVƏL olmalıdır ki,
+                        // ilk uyğunluq bunu tutsun.
+                        .requestMatchers(HttpMethod.GET, "/api/v1/content/cms-content")
+                                .permitAll()
+
                         // Content Manager — courses/categories-in GET-dən sonrakı bu qayda yalnız
                         // digər HTTP metodlarına (POST/PUT/PATCH/DELETE) və digər catalog
                         // endpointlərinin (instructors, course-groups, course-instructors) HAMISINA aiddir,
