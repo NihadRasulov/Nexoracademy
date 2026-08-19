@@ -83,57 +83,13 @@
       alt: "Kibertəhlükəsizlik layihəsi üçün nümunəvi vizual",
     },
   });
-  const PAGES = readPageTemplates();
-  const DEFAULT_ROUTE = "home";
-  const IS_LEGACY_ROUTER =
-    document.body.dataset.router === "legacy" && Boolean(PAGES[DEFAULT_ROUTE]);
+  const IS_LEGACY_ROUTER = false;
   const API_BASE_URL = resolveApiBaseUrl(
     document.querySelector('meta[name="nexora-api-base"]')?.content,
   );
   const CHATBOT_API_BASE_URL = resolveChatbotApiBaseUrl(API_BASE_URL);
-  const ACCESS_TOKEN_KEY = "nexora_access_token";
-  const REFRESH_TOKEN_KEY = "nexora_refresh_token";
-  const AUTH_USER_KEY = "nexora_auth_user";
-  const STAFF_ROLES = new Set([
-    "SALES_CRM",
-    "CONTENT_MANAGER",
-    "ADMIN",
-    "SYSTEM_ADMIN",
-  ]);
-  const ROLE_DESTINATIONS = {
-    STUDENT: "student.html",
-    SALES_CRM: "staff.html",
-    CONTENT_MANAGER: "staff.html",
-    ADMIN: "staff.html",
-    SYSTEM_ADMIN: "staff.html",
-  };
   let pageController = null;
-  let accessToken = readStorage(sessionStorage, ACCESS_TOKEN_KEY);
-  let refreshPromise = null;
-  let currentUserCache = null;
   let coursesRequestId = 0;
-
-  function readPageTemplates() {
-    const manifestNode = document.getElementById("legacy-page-manifest");
-    if (!manifestNode) return {};
-    let manifest = {};
-    try {
-      manifest = JSON.parse(manifestNode.textContent || "{}");
-    } catch (_) {
-      manifest = {};
-    }
-    return Object.fromEntries(
-      Array.from(document.querySelectorAll("template[data-page-route]")).map(
-        (template) => {
-          const route = template.dataset.pageRoute;
-          return [
-            route,
-            { ...(manifest[route] || {}), html: template.innerHTML },
-          ];
-        },
-      ),
-    );
-  }
 
   function resolveApiBaseUrl(value) {
     const raw = String(value || "")
@@ -170,7 +126,7 @@
   }
 
   function applyDataImageFallbacks(root = document) {
-    $$('img[data-image-fallback]', root).forEach((image) => {
+    $$("img[data-image-fallback]", root).forEach((image) => {
       const fallback = MOCK_IMAGE_FALLBACKS[image.dataset.imageFallback];
       if (!fallback) return;
       const dataSource = safeCourseDetailUrl(image.dataset.imageSrc);
@@ -194,101 +150,6 @@
       image.src = fallback.src;
       image.alt = fallback.alt;
     });
-  }
-
-  function readStorage(storage, key) {
-    try {
-      return storage.getItem(key) || "";
-    } catch (_) {
-      return "";
-    }
-  }
-
-  function writeStorage(storage, key, value) {
-    try {
-      if (value) storage.setItem(key, value);
-      else storage.removeItem(key);
-    } catch (_) {
-      // Storage can be unavailable in strict privacy modes; the current page still works.
-    }
-  }
-
-  function parseBodyAttributes(raw) {
-    const attrs = {};
-    String(raw || "").replace(
-      /([\w:-]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+)))?/g,
-      (_, name, dq, sq, bare) => {
-        attrs[name.toLowerCase()] = dq ?? sq ?? bare ?? "";
-        return "";
-      },
-    );
-    return attrs;
-  }
-
-  function routeFromHash() {
-    const hash = location.hash || "";
-    const match = hash.match(/^#\/nav\/([^?]+)(?:\?(.*))?$/);
-    if (!match) return { route: DEFAULT_ROUTE, target: "" };
-    const route = decodeURIComponent(match[1]);
-    const params = new URLSearchParams(match[2] || "");
-    return {
-      route: PAGES[route] ? route : DEFAULT_ROUTE,
-      target: params.get("target") || "",
-    };
-  }
-
-  function setMeta(meta) {
-    document.title = meta.title || "Nexora Academy";
-    const desc = document.querySelector('meta[name="description"]');
-    const keywords = document.querySelector('meta[name="keywords"]');
-    if (desc) desc.content = meta.description || "";
-    if (keywords) keywords.content = meta.keywords || "";
-  }
-
-  const CHAT_WIDGET_HTML = '<button class="chat-fab" id="chat-fab" aria-label="Open AI chat"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></button><div class="chat-widget" id="chat-widget" hidden><div class="chat-widget__header"><div class="chat-widget__identity"><div class="chat-widget__avatar">✦</div><div><h3>Nexora AI</h3><p>Academy guidance assistant</p></div></div><button class="chat-widget__close" id="chat-close" aria-label="Close chat">&times;</button></div><div class="chat-widget__messages" id="chat-messages" role="log" aria-live="polite"></div><div class="chat-widget__composer"><form class="chat-widget__form" id="chat-form" novalidate><textarea class="chat-widget__input" id="chat-input" name="message" rows="1" maxlength="2000" placeholder="Ask Nexora AI anything..." autocomplete="off" required></textarea><button class="chat-widget__send" id="chat-send" type="submit" aria-label="Send" disabled><svg viewBox="0 0 24 24"><path d="m5 12 14-7-4.4 14-2.5-5.1L5 12Z"/><path d="m12.1 13.9 3.6-3.7"/></svg></button></form></div></div>';
-
-  function injectChatWidget() {
-    if (document.getElementById("chat-fab")) return;
-    const tmp = document.createElement("div");
-    tmp.innerHTML = CHAT_WIDGET_HTML;
-    while (tmp.firstChild) document.body.appendChild(tmp.firstChild);
-    window.__rebindChatWidget?.();
-  }
-
-  function renderRoute({ route, target = "" }, options = {}) {
-    const page = PAGES[route] || PAGES[DEFAULT_ROUTE];
-    pageController?.abort();
-    pageController = new AbortController();
-    const signal = pageController.signal;
-
-    const attrs = parseBodyAttributes(page.bodyAttrs);
-    document.body.className = attrs.class || "__variable_7fc4d2 antialiased";
-    document.body.setAttribute("style", attrs.style || "overflow:auto");
-    document.body.dataset.page = route;
-    document.body.innerHTML = page.html;
-    injectChatWidget();
-    setMeta(page.meta);
-    initPage(signal);
-
-    const finishPosition = () => {
-      if (target) {
-        const node = document.getElementById(target);
-        if (node) {
-          node.scrollIntoView({ block: "center" });
-          node.classList.remove("naic-target-flash");
-          requestAnimationFrame(() => node.classList.add("naic-target-flash"));
-          return;
-        }
-      }
-      if (!options.keepScroll) window.scrollTo(0, 0);
-    };
-    requestAnimationFrame(() => requestAnimationFrame(finishPosition));
-  }
-
-  function navigate(route, target = "") {
-    const next = `#/nav/${encodeURIComponent(route)}${target ? `?target=${encodeURIComponent(target)}` : ""}`;
-    if (location.hash === next) renderRoute({ route, target });
-    else location.hash = next;
   }
 
   function announce(form, message, state = "success") {
@@ -348,23 +209,6 @@
     );
   }
 
-  function personNameParts(value) {
-    const normalized = String(value || "")
-      .replace(/\s+/g, " ")
-      .trim();
-    const parts = normalized.split(" ").filter(Boolean);
-    if (parts.length < 2) return null;
-    const firstName = parts[0];
-    const lastName = parts.slice(1).join(" ");
-    const validPart = (part) =>
-      part.length >= 2 &&
-      part.length <= 40 &&
-      /^\p{L}[\p{L}\p{M}]*(?:[ '’\-][\p{L}\p{M}]+)*$/u.test(part);
-    return validPart(firstName) && validPart(lastName)
-      ? { firstName, lastName }
-      : null;
-  }
-
   function safeStoredValue(value) {
     if (value instanceof File) {
       return { name: value.name, size: value.size, type: value.type };
@@ -389,16 +233,6 @@
     return { ok: true, offline: true };
   }
 
-  function validPassword(value) {
-    const password = String(value || "");
-    return (
-      password.length >= 8 &&
-      password.length <= 72 &&
-      /[A-Za-z]/.test(password) &&
-      /\d/.test(password)
-    );
-  }
-
   class ApiError extends Error {
     constructor(status, message, body = null) {
       super(message);
@@ -410,66 +244,6 @@
     }
   }
 
-  function decodeAccessToken(token = accessToken) {
-    try {
-      const payload = String(token || "").split(".")[1];
-      if (!payload) return null;
-      const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-      const padded = normalized.padEnd(
-        Math.ceil(normalized.length / 4) * 4,
-        "=",
-      );
-      const bytes = Uint8Array.from(atob(padded), (char) => char.charCodeAt(0));
-      return JSON.parse(new TextDecoder().decode(bytes));
-    } catch (_) {
-      return null;
-    }
-  }
-
-  function setTokens(tokens) {
-    accessToken = tokens?.accessToken || "";
-    writeStorage(sessionStorage, ACCESS_TOKEN_KEY, accessToken);
-    if (tokens?.refreshToken)
-      writeStorage(localStorage, REFRESH_TOKEN_KEY, tokens.refreshToken);
-    const identity = decodeAccessToken(accessToken);
-    writeStorage(
-      sessionStorage,
-      AUTH_USER_KEY,
-      identity
-        ? JSON.stringify({
-            id: identity.sub || "",
-            role: identity.role || "",
-          })
-        : "",
-    );
-    currentUserCache = null;
-  }
-
-  function clearTokens() {
-    const identity = authIdentity();
-    if (identity?.id)
-      writeStorage(
-        sessionStorage,
-        `nexora_enrollment_attempt_${identity.id}`,
-        "",
-      );
-    accessToken = "";
-    currentUserCache = null;
-    writeStorage(sessionStorage, ACCESS_TOKEN_KEY, "");
-    writeStorage(sessionStorage, AUTH_USER_KEY, "");
-    writeStorage(localStorage, REFRESH_TOKEN_KEY, "");
-  }
-
-  function authIdentity() {
-    const decoded = decodeAccessToken();
-    if (decoded) return { id: decoded.sub || "", role: decoded.role || "" };
-    try {
-      return JSON.parse(readStorage(sessionStorage, AUTH_USER_KEY) || "null");
-    } catch (_) {
-      return null;
-    }
-  }
-
   function apiErrorMessage(error) {
     if (error?.status === 429)
       return "Çox sayda cəhd edildi. Bir az sonra yenidən yoxlayın.";
@@ -477,40 +251,11 @@
       return "Serverlə əlaqə yaratmaq mümkün olmadı. Server tərəfinin işlədiyini və CORS ayarlarını yoxlayın.";
     if (error?.status === 401)
       return "Sessiya etibarsızdır. Yenidən daxil olun.";
-    if (error?.status === 403)
-      return "Bu əməliyyat üçün icazəniz yoxdur.";
+    if (error?.status === 403) return "Bu əməliyyat üçün icazəniz yoxdur.";
     return error?.message || "Sorğu zamanı xəta baş verdi.";
   }
 
-  async function refreshAccessToken() {
-    const refreshToken = readStorage(localStorage, REFRESH_TOKEN_KEY);
-    if (!refreshToken) return false;
-    if (refreshPromise) return refreshPromise;
-
-    refreshPromise = (async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ refreshToken }),
-        });
-        if (!response.ok) {
-          clearTokens();
-          return false;
-        }
-        const tokens = await response.json();
-        setTokens(tokens);
-        return Boolean(accessToken);
-      } catch (_) {
-        return false;
-      } finally {
-        refreshPromise = null;
-      }
-    })();
-    return refreshPromise;
-  }
-
-  async function apiFetch(path, options = {}, canRefresh = true) {
+  async function apiFetch(path, options = {}) {
     const headers = new Headers(options.headers || {});
     if (
       options.body != null &&
@@ -519,9 +264,6 @@
     ) {
       headers.set("Content-Type", "application/json");
     }
-    if (accessToken && !headers.has("Authorization")) {
-      headers.set("Authorization", `Bearer ${accessToken}`);
-    }
 
     let response;
     try {
@@ -529,15 +271,6 @@
     } catch (error) {
       if (error?.name === "AbortError") throw error;
       throw new ApiError(0, "Server tərəfi ilə əlaqə yaradılmadı.");
-    }
-
-    if (
-      response.status === 401 &&
-      canRefresh &&
-      !path.startsWith("/api/v1/auth/")
-    ) {
-      const refreshed = await refreshAccessToken();
-      if (refreshed) return apiFetch(path, options, false);
     }
 
     let body;
@@ -590,55 +323,14 @@
     if (!response.ok) {
       throw new ApiError(
         response.status,
-        body?.message || body?.reply || response.statusText || "Sorğu uğursuz oldu.",
+        body?.message ||
+          body?.reply ||
+          response.statusText ||
+          "Sorğu uğursuz oldu.",
         body,
       );
     }
     return body;
-  }
-
-  function setFormMessage(form, message, state = "") {
-    const node = $(".Nexora_formMessage", form);
-    if (!node) return;
-    node.textContent = message;
-    if (state) node.dataset.state = state;
-    else delete node.dataset.state;
-  }
-
-  function clearFormErrors(form) {
-    $$(".Nexora_fieldInvalid", form).forEach((field) => {
-      field.classList.remove("Nexora_fieldInvalid");
-      field.removeAttribute("aria-invalid");
-    });
-    setFormMessage(form, "");
-  }
-
-  function markFormField(field) {
-    if (!field) return;
-    field.classList.add("Nexora_fieldInvalid");
-    field.setAttribute("aria-invalid", "true");
-    field.addEventListener(
-      "input",
-      () => {
-        field.classList.remove("Nexora_fieldInvalid");
-        field.removeAttribute("aria-invalid");
-      },
-      { once: true },
-    );
-  }
-
-  function showFormError(form, error) {
-    if (error?.errors) {
-      const aliases = {
-        firstName: "fullName",
-        lastName: "fullName",
-        message: "letter",
-      };
-      Object.entries(error.errors).forEach(([name]) =>
-        markFormField(form.elements.namedItem(aliases[name] || name)),
-      );
-    }
-    setFormMessage(form, apiErrorMessage(error), "error");
   }
 
   function setFormBusy(form, busy) {
@@ -733,103 +425,6 @@
     }
   }
 
-  function currentReturnTarget() {
-    const file = location.pathname.split("/").pop() || "index.html";
-    return `${file}${location.search}`;
-  }
-
-  function createIdempotencyKey() {
-    if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
-    return `${Date.now()}-${Math.random().toString(16).slice(2)}-${Math.random().toString(16).slice(2)}`;
-  }
-
-  function loginUrl(returnTarget = currentReturnTarget()) {
-    return `login.html?return=${encodeURIComponent(returnTarget)}`;
-  }
-
-  function normalizedEnum(value) {
-    return String(value || "")
-      .trim()
-      .toUpperCase();
-  }
-
-  function userRole(user) {
-    return normalizedEnum(user?.role || authIdentity()?.role);
-  }
-
-  function userAccountStatus(user) {
-    return normalizedEnum(user?.accountStatus || user?.status);
-  }
-
-  function roleDestination(role) {
-    return ROLE_DESTINATIONS[normalizedEnum(role)] || "profile.html";
-  }
-
-  function returnTargetAllowed(target, role) {
-    const file = target.pathname.split("/").pop()?.toLowerCase() || "index.html";
-    if (/^(?:login|register|password|account-status)\.html$/.test(file))
-      return false;
-    if (/^(?:student|enrollments)\.html$/.test(file))
-      return normalizedEnum(role) === "STUDENT";
-    if (file === "staff.html") return STAFF_ROLES.has(normalizedEnum(role));
-    return true;
-  }
-
-  async function redirectAfterLogin(signal) {
-    const user = await loadCurrentUser(signal);
-    const status = userAccountStatus(user);
-    if (status && status !== "ACTIVE") {
-      location.assign("account-status.html");
-      return;
-    }
-    const role = userRole(user);
-    const requested = new URLSearchParams(location.search).get("return");
-    if (requested) {
-      try {
-        const target = new URL(requested, location.href);
-        if (
-          target.origin === location.origin &&
-          returnTargetAllowed(target, role)
-        ) {
-          location.assign(target.href);
-          return;
-        }
-      } catch (_) {
-        // Fall back to the role landing page.
-      }
-    }
-    location.assign(roleDestination(role));
-  }
-
-  async function ensureAuthenticated() {
-    if (accessToken || (await refreshAccessToken())) return true;
-    location.replace(loginUrl());
-    return false;
-  }
-
-  async function loadCurrentUser(signal) {
-    if (currentUserCache) return currentUserCache;
-    currentUserCache = await apiFetch("/api/v1/users/me", { signal });
-    return currentUserCache;
-  }
-
-  async function requireUser(signal, allowedRoles = null, allowInactive = false) {
-    if (!(await ensureAuthenticated()) || signal.aborted) return null;
-    const user = await loadCurrentUser(signal);
-    if (signal.aborted) return null;
-    const status = userAccountStatus(user);
-    if (!allowInactive && status && status !== "ACTIVE") {
-      location.replace("account-status.html");
-      return null;
-    }
-    const role = userRole(user);
-    if (allowedRoles && !allowedRoles.includes(role)) {
-      location.replace(roleDestination(role));
-      return null;
-    }
-    return user;
-  }
-
   function createCourseMenuLink(course, className = "") {
     const link = document.createElement("a");
     if (className) link.className = className;
@@ -913,108 +508,65 @@
     }
   }
 
-  function headerUserDisplayName(user) {
-    return (
-      String(user?.fullName || "").trim() ||
-      [user?.firstName, user?.lastName]
-        .map((part) => String(part || "").trim())
-        .filter(Boolean)
-        .join(" ") ||
-      String(user?.email || "").trim()
-    );
-  }
-
-  async function initHeaderUser(signal, header, mobileMenu) {
-    const loginLinks = [
-      ...(header
-        ? $$('a.Header_header__menu__link__i1AD1[href="login.html"]', header)
-        : []),
-      ...(mobileMenu
-        ? $$(
-            'a.HeaderMobile_menu__accordion__item__header__title__m4g5z[href="login.html"]',
-            mobileMenu,
-          )
-        : []),
-    ];
-    const hasSession = Boolean(
-      accessToken || readStorage(localStorage, REFRESH_TOKEN_KEY),
-    );
-    if (!loginLinks.length || !hasSession) return;
-
-    const setPending = (pending) => {
-      loginLinks.forEach((link) => {
-        const label = $("span", link) || link;
-        label.classList.toggle("naic-auth-pending", pending);
-      });
-    };
-
-    setPending(true);
-    try {
-      const user = await loadCurrentUser(signal);
-      if (signal.aborted) return;
-      setPending(false);
-      const displayName = headerUserDisplayName(user);
-      if (!displayName) return;
-      loginLinks.forEach((link) => {
-        link.setAttribute("href", "profile.html");
-        const label = $("span", link) || link;
-        label.textContent = displayName;
-        link.setAttribute("aria-label", `${displayName} profilinə keç`);
-      });
-    } catch (error) {
-      if (error?.name === "AbortError" || signal.aborted) return;
-      setPending(false);
-      // Keep the static "Daxil ol" link when the session cannot be restored.
-    }
-  }
-
   function initHeader(signal) {
-    const header = $('.Header_header__8yaFd');
+    const header = $(".Header_header__8yaFd");
     if (header) {
-      const update = () => header.classList.toggle('Header_fixed__CRpV_', window.scrollY > 12);
+      const update = () =>
+        header.classList.toggle("Header_fixed__CRpV_", window.scrollY > 12);
       update();
-      window.addEventListener('scroll', update, { passive: true, signal });
+      window.addEventListener("scroll", update, { passive: true, signal });
     }
-    const mobileMenu = $('.HeaderMobile_header_mobile_menu__b38W_');
-    const menuButtons = $$('.header__menu__btn');
+    const mobileMenu = $(".HeaderMobile_header_mobile_menu__b38W_");
+    const menuButtons = $$(".header__menu__btn");
     let closeMobileMenu = null;
     if (mobileMenu && menuButtons.length) {
       const open = () => {
-        mobileMenu.classList.add('HeaderMobile_show__tPAoO');
-        document.documentElement.classList.add('naic-menu-open');
-        document.body.classList.add('naic-menu-open');
-        menuButtons[0]?.setAttribute('aria-expanded', 'true');
+        mobileMenu.classList.add("HeaderMobile_show__tPAoO");
+        document.documentElement.classList.add("naic-menu-open");
+        document.body.classList.add("naic-menu-open");
+        menuButtons[0]?.setAttribute("aria-expanded", "true");
       };
       const close = () => {
-        mobileMenu.classList.remove('HeaderMobile_show__tPAoO');
-        document.documentElement.classList.remove('naic-menu-open');
-        document.body.classList.remove('naic-menu-open');
-        menuButtons[0]?.setAttribute('aria-expanded', 'false');
+        mobileMenu.classList.remove("HeaderMobile_show__tPAoO");
+        document.documentElement.classList.remove("naic-menu-open");
+        document.body.classList.remove("naic-menu-open");
+        menuButtons[0]?.setAttribute("aria-expanded", "false");
       };
       closeMobileMenu = close;
-      menuButtons[0]?.setAttribute('aria-label', 'Open menu');
-      menuButtons[0]?.setAttribute('aria-expanded', 'false');
-      menuButtons[0]?.addEventListener('click', open, { signal });
-      menuButtons[1]?.setAttribute('aria-label', 'Close menu');
-      menuButtons[1]?.addEventListener('click', close, { signal });
-      $$('a', mobileMenu).forEach((a) => a.addEventListener('click', close, { signal }));
-      document.addEventListener('keydown', (event) => { if (event.key === 'Escape')
-        close(); }, { signal });
+      menuButtons[0]?.setAttribute("aria-label", "Open menu");
+      menuButtons[0]?.setAttribute("aria-expanded", "false");
+      menuButtons[0]?.addEventListener("click", open, { signal });
+      menuButtons[1]?.setAttribute("aria-label", "Close menu");
+      menuButtons[1]?.addEventListener("click", close, { signal });
+      $$("a", mobileMenu).forEach((a) =>
+        a.addEventListener("click", close, { signal }),
+      );
+      document.addEventListener(
+        "keydown",
+        (event) => {
+          if (event.key === "Escape") close();
+        },
+        { signal },
+      );
     }
-    $$('.HeaderMobile_menu__accordion__item__lNOEz[type="button"]').forEach((button) => {
-      const body = $('[class*="menu__accordion__item__body"]', button);
-      if (!body)
-        return;
-      button.setAttribute('aria-expanded', 'false');
-      body.hidden = true;
-      button.addEventListener('click', () => {
-        const expanded = button.getAttribute('aria-expanded') === 'true';
-        button.setAttribute('aria-expanded', String(!expanded));
-        button.classList.toggle('HeaderMobile_active__Y_T4I', !expanded);
-        body.hidden = expanded;
-      }, { signal });
-    });
-    void initHeaderUser(signal, header, mobileMenu);
+    $$('.HeaderMobile_menu__accordion__item__lNOEz[type="button"]').forEach(
+      (button) => {
+        const body = $('[class*="menu__accordion__item__body"]', button);
+        if (!body) return;
+        button.setAttribute("aria-expanded", "false");
+        body.hidden = true;
+        button.addEventListener(
+          "click",
+          () => {
+            const expanded = button.getAttribute("aria-expanded") === "true";
+            button.setAttribute("aria-expanded", String(!expanded));
+            button.classList.toggle("HeaderMobile_active__Y_T4I", !expanded);
+            body.hidden = expanded;
+          },
+          { signal },
+        );
+      },
+    );
     void initCourseMenus(signal, closeMobileMenu);
   }
 
@@ -1133,35 +685,8 @@
         signal.addEventListener("abort", cancel, { once: true });
       });
 
-    const waitForBanner = () =>
-      new Promise((resolve) => {
-        if (document.body.dataset.page !== "home") {
-          resolve(true);
-          return;
-        }
-        if (signal.aborted) {
-          resolve(false);
-          return;
-        }
-
-        let settled = false;
-        const finish = (completed) => {
-          if (settled) return;
-          settled = true;
-          document.removeEventListener("nexora:home-banner-ready", ready);
-          signal.removeEventListener("abort", cancel);
-          resolve(completed);
-        };
-        const ready = () => finish(true);
-        const cancel = () => finish(false);
-        document.addEventListener("nexora:home-banner-ready", ready, {
-          once: true,
-        });
-        signal.addEventListener("abort", cancel, { once: true });
-      });
-
     const run = async () => {
-      if (!(await waitForBanner())) return;
+      if (signal.aborted) return;
 
       const originalParts = parts.map((part) =>
         part.textContent.replace(/\s+/g, " ").trim(),
@@ -1327,8 +852,7 @@
           showStep(0);
           announce(form, "Müraciətiniz uğurla göndərildi.", "success");
         } catch (error) {
-          if (error?.name !== "AbortError")
-            showLegacyFormError(form, error);
+          if (error?.name !== "AbortError") showLegacyFormError(form, error);
         } finally {
           setFormBusy(form, false);
         }
@@ -1377,11 +901,7 @@
             submit?.setAttribute("disabled", "disabled");
             try {
               saveOffline(kind, form);
-              announce(
-                form,
-                "E-poçt bu cihazda saxlanıldı.",
-                "success",
-              );
+              announce(form, "E-poçt bu cihazda saxlanıldı.", "success");
               form.reset();
             } catch (_) {
               announce(
@@ -1438,6 +958,7 @@
     if (!input) return;
     const tabs = $$(".Vacancies_ai-tabs__item__l5MN4");
     const activeClass = "Vacancies_ai-tabs__item--active__dqm_Y";
+    const cards = $$(".Vacancies_ai-vacancies__item__MWNY2");
     const locale = "az";
     const filter = () => {
       const query = input.value.trim().toLocaleLowerCase(locale);
@@ -1445,7 +966,6 @@
       const availableOnly = /mövcud|available/i.test(
         activeTab?.textContent || "",
       );
-      const cards = $$(".Vacancies_ai-vacancies__item__MWNY2");
       cards.forEach((card) => {
         const matchesQuery = card.textContent
           .toLocaleLowerCase(locale)
@@ -1509,14 +1029,12 @@
       const containerWidth = container.clientWidth || window.innerWidth;
       const activeSlide = slides[active];
       const slideWidth = activeSlide?.getBoundingClientRect().width || 315;
-      const margin =
-        parseFloat(getComputedStyle(activeSlide).marginRight) || 0;
+      const margin = parseFloat(getComputedStyle(activeSlide).marginRight) || 0;
       const offset = centerFromLayout
         ? containerWidth / 2 -
-          ((activeSlide?.offsetLeft || 0) + (activeSlide?.offsetWidth || slideWidth) / 2)
-        : containerWidth / 2 -
-          slideWidth / 2 -
-          active * (slideWidth + margin);
+          ((activeSlide?.offsetLeft || 0) +
+            (activeSlide?.offsetWidth || slideWidth) / 2)
+        : containerWidth / 2 - slideWidth / 2 - active * (slideWidth + margin);
       currentOffset = offset;
       wrapper.style.transition = animate ? "transform 480ms ease" : "none";
       wrapper.style.transform = `translate3d(${offset}px, 0, 0)`;
@@ -1660,11 +1178,9 @@
       },
       { signal },
     );
-    container.addEventListener(
-      "dragstart",
-      (event) => event.preventDefault(),
-      { signal },
-    );
+    container.addEventListener("dragstart", (event) => event.preventDefault(), {
+      signal,
+    });
     container.addEventListener(
       "touchstart",
       (event) => {
@@ -1782,7 +1298,9 @@
         return label.includes("Növbəti") || label.includes("Next");
       });
       let active = clamp(
-        pageButtons.findIndex((button) => button.classList.contains(activeClass)),
+        pageButtons.findIndex((button) =>
+          button.classList.contains(activeClass),
+        ),
         0,
         totalPages - 1,
       );
@@ -1795,8 +1313,7 @@
         });
         cards.forEach((card, i) => {
           card.hidden =
-            i < active * FAQ_PAGE_SIZE ||
-            i >= (active + 1) * FAQ_PAGE_SIZE;
+            i < active * FAQ_PAGE_SIZE || i >= (active + 1) * FAQ_PAGE_SIZE;
         });
         if (prev) prev.disabled = active === 0;
         if (next) next.disabled = active === totalPages - 1;
@@ -2000,8 +1517,7 @@
   function applyAcademyContent(root, page) {
     const title = String(page?.title || "").trim();
     const body = String(page?.body || "").trim();
-    const data =
-      page?.data && typeof page.data === "object" ? page.data : {};
+    const data = page?.data && typeof page.data === "object" ? page.data : {};
     const stats =
       data.stats && typeof data.stats === "object" ? data.stats : {};
     const breadcrumb = $(".NavigateSection_current__x72AF", root);
@@ -2084,8 +1600,8 @@
   function scholarshipAvailable(item, now = Date.now()) {
     return Boolean(
       item?.active === true &&
-        publicDateAllows(item.validFrom, "from", now) &&
-        publicDateAllows(item.validUntil, "until", now),
+      publicDateAllows(item.validFrom, "from", now) &&
+      publicDateAllows(item.validUntil, "until", now),
     );
   }
 
@@ -2102,10 +1618,7 @@
   function scholarshipCard(template, item, fallback, index) {
     const card = template.cloneNode(true);
     const title = $(".Vacancies_ai-vacancies__item__title__n3bnL", card);
-    const description = $(
-      ".Vacancies_ai-vacancies__item__desc__A0Adm",
-      card,
-    );
+    const description = $(".Vacancies_ai-vacancies__item__desc__A0Adm", card);
     const fallbackTitle = $(
       ".Vacancies_ai-vacancies__item__title__n3bnL",
       fallback,
@@ -2147,10 +1660,7 @@
   function scholarshipStateCard(template) {
     const card = template.cloneNode(true);
     const title = $(".Vacancies_ai-vacancies__item__title__n3bnL", card);
-    const description = $(
-      ".Vacancies_ai-vacancies__item__desc__A0Adm",
-      card,
-    );
+    const description = $(".Vacancies_ai-vacancies__item__desc__A0Adm", card);
     const button = $("button", card);
     card.hidden = false;
     card.removeAttribute("id");
@@ -2229,10 +1739,7 @@
   }
 
   function applyHomeBanner(root, banner) {
-    const title = $(".HeroSection_content__title__Wr5gI", root);
-    const titleParts = title ? $$(":scope > span", title) : [];
     const video = $(".HeroSection_video__GVdk5", root);
-    const bannerTitle = String(banner?.title || "").trim();
     const data =
       banner?.data &&
       typeof banner.data === "object" &&
@@ -2241,22 +1748,12 @@
         : {};
     const image = safeCourseDetailUrl(data.image, "");
 
-    if (bannerTitle && titleParts.length === 2) {
-      titleParts[1].textContent = bannerTitle;
-    }
     if (image && video) video.poster = image;
   }
 
   async function initHomeBanner(signal) {
     const root = $(".HeroSection_heroSection__FTiId");
-    const announceReady = () => {
-      if (!signal.aborted)
-        document.dispatchEvent(new Event("nexora:home-banner-ready"));
-    };
-    if (!root) {
-      announceReady();
-      return;
-    }
+    if (!root) return;
 
     root.setAttribute("aria-busy", "true");
     root.dataset.bannerSource = "loading";
@@ -2283,10 +1780,7 @@
       if (error?.name === "AbortError" || signal.aborted) return;
       root.dataset.bannerSource = "fallback";
     } finally {
-      if (!signal.aborted) {
-        root.removeAttribute("aria-busy");
-        announceReady();
-      }
+      if (!signal.aborted) root.removeAttribute("aria-busy");
     }
   }
 
@@ -2422,12 +1916,12 @@
   function isPublicCourse(course, visibleCategoryIds, now = Date.now()) {
     return Boolean(
       course &&
-        course.published === true &&
-        course.active === true &&
-        course.archived === false &&
-        visibleCategoryIds.has(String(course.categoryId)) &&
-        publicDateAllows(course.validFrom, "from", now) &&
-        publicDateAllows(course.validUntil, "until", now),
+      course.published === true &&
+      course.active === true &&
+      course.archived === false &&
+      visibleCategoryIds.has(String(course.categoryId)) &&
+      publicDateAllows(course.validFrom, "from", now) &&
+      publicDateAllows(course.validUntil, "until", now),
     );
   }
 
@@ -2483,7 +1977,7 @@
   function projectCourseStateCard(template, title, description, action = null) {
     const card = template.cloneNode(true);
     card.removeAttribute("id");
-    $$('[id]', card).forEach((node) => node.removeAttribute("id"));
+    $$("[id]", card).forEach((node) => node.removeAttribute("id"));
     const titleNode = $(".ProjectCard_ai-projects__item__title__mSuta", card);
     const descriptionNode = $(
       ".ProjectCard_ai-projects__item__desc__DQd6_",
@@ -2521,13 +2015,10 @@
   function projectCourseCard(template, course, categoryNames) {
     course = courseViewModel(course);
     const card = template.cloneNode(true);
-    $$('[id]', card).forEach((node) => node.removeAttribute("id"));
+    $$("[id]", card).forEach((node) => node.removeAttribute("id"));
     card.id = String(course.slug || course.id || "");
     const title = $(".ProjectCard_ai-projects__item__title__mSuta", card);
-    const description = $(
-      ".ProjectCard_ai-projects__item__desc__DQd6_",
-      card,
-    );
+    const description = $(".ProjectCard_ai-projects__item__desc__DQd6_", card);
     const link = $(".ProjectCard_ai-projects__item__cta__t2MnB", card);
     const image = $("img", card);
     const categoryName = categoryNames.get(String(course.categoryId)) || "";
@@ -2555,7 +2046,13 @@
     card.addEventListener("click", (event) => {
       if (event.defaultPrevented || event.target.closest("a")) return;
       event.preventDefault();
-      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+      if (
+        event.metaKey ||
+        event.ctrlKey ||
+        event.shiftKey ||
+        event.altKey ||
+        event.button !== 0
+      ) {
         window.open(detailUrl, "_blank", "noopener");
       } else {
         window.location.assign(detailUrl);
@@ -2611,9 +2108,7 @@
     );
     const courses = [firstPage, ...remainingPages]
       .flatMap((page) => (Array.isArray(page?.content) ? page.content : []))
-      .filter((course) =>
-        isPublicCourse(course, categoryState.visibleIds),
-      );
+      .filter((course) => isPublicCourse(course, categoryState.visibleIds));
     return { courses, categoryNames };
   }
 
@@ -2872,11 +2367,9 @@
       },
       { signal },
     );
-    form.addEventListener(
-      "reset",
-      () => setTimeout(() => loadCourses(0), 0),
-      { signal },
-    );
+    form.addEventListener("reset", () => setTimeout(() => loadCourses(0), 0), {
+      signal,
+    });
     pagination.addEventListener(
       "click",
       (event) => {
@@ -3040,8 +2533,7 @@
   function safeCourseDetailUrl(value, fallback = "") {
     const raw = String(value || "").trim();
     if (!raw) return fallback;
-    if (!/^[a-z][a-z0-9+.-]*:/i.test(raw) && !raw.startsWith("//"))
-      return raw;
+    if (!/^[a-z][a-z0-9+.-]*:/i.test(raw) && !raw.startsWith("//")) return raw;
     try {
       const parsed = new URL(raw, location.href);
       return ["http:", "https:"].includes(parsed.protocol) ? raw : fallback;
@@ -3108,9 +2600,10 @@
   }
 
   function courseMockFallback(course) {
-    const context = `${course.title || ""} ${course.categoryName || ""}`.toLocaleLowerCase(
-      "az",
-    );
+    const context =
+      `${course.title || ""} ${course.categoryName || ""}`.toLocaleLowerCase(
+        "az",
+      );
     if (/cloud|bulud|devops/.test(context))
       return MOCK_IMAGE_FALLBACKS["course-cloud-devops"];
     if (/cyber|kiber|security|təhlükəsizlik/.test(context))
@@ -3124,13 +2617,10 @@
     if (!name) return "";
     const title = String(instructor.title || "").trim();
     const fallbackIndex = (name.codePointAt(0) || 0) % 3;
-    const fallback =
-      MOCK_IMAGE_FALLBACKS[`instructor-${fallbackIndex + 1}`];
+    const fallback = MOCK_IMAGE_FALLBACKS[`instructor-${fallbackIndex + 1}`];
     const realImageUrl = safeCourseDetailUrl(instructor.imageUrl);
     const imageUrl = realImageUrl || fallback.src;
-    const imageAlt = realImageUrl
-      ? instructor.imageAlt || name
-      : fallback.alt;
+    const imageAlt = realImageUrl ? instructor.imageAlt || name : fallback.alt;
     return `<section class="Nexora_courseDetailV2__contentSection">
       <div class="Nexora_courseDetailV2__sectionHeading">
         <p class="Nexora_eyebrow">Təlimçi</p>
@@ -3155,7 +2645,10 @@
       course.shortDescription ||
       "Bu kurs haqqında ətraflı məlumat hazırlanır.";
     const shortDescription =
-      course.shortDescription || course.description || course.fullDescription || "";
+      course.shortDescription ||
+      course.description ||
+      course.fullDescription ||
+      "";
     const deliveryFormat = enumLabel(course.deliveryFormat);
     const duration = course.durationWeeks
       ? `${course.durationWeeks} həftə`
@@ -3171,28 +2664,10 @@
     const metaItems = [difficulty, deliveryFormat, duration].filter(Boolean);
     const courseId = String(course.id || "").trim();
     const explicitRegistrationUrl = safeCourseDetailUrl(course.registrationUrl);
-    const role = userRole();
-    const enrollmentTarget = courseId
-      ? `enrollments.html?courseId=${encodeURIComponent(courseId)}`
-      : "";
-    const accountLink = explicitRegistrationUrl
-      ? explicitRegistrationUrl
-      : courseId
-        ? accessToken
-          ? role === "STUDENT"
-            ? enrollmentTarget
-            : roleDestination(role)
-          : loginUrl(enrollmentTarget)
-        : "contact.html";
+    const accountLink = explicitRegistrationUrl || "contact.html";
     const accountLabel = explicitRegistrationUrl
       ? "Qeydiyyatdan keç"
-      : courseId
-        ? accessToken
-          ? role === "STUDENT"
-            ? "Qeydiyyatlarım"
-            : "Panelə keç"
-          : "Daxil ol və qeydiyyatdan keç"
-        : "Qeydiyyat barədə məlumat al";
+      : "Qeydiyyat barədə məlumat al";
     const requirements = renderCourseRequirements(course.requirements);
     const modules = renderCourseModules(course.modules);
     const instructor = renderCourseInstructor(course.instructor);
@@ -3308,7 +2783,6 @@
     const reviewsStatus = $("#reviewsStatus");
     const reviewForm = $("#reviewForm");
     const reviewAccess = $("#reviewAccess");
-    const loginLink = $("#reviewLoginLink");
     let relatedContainer = null;
     let relatedStatus = null;
 
@@ -3320,10 +2794,8 @@
       return;
     }
 
-    if (loginLink) loginLink.href = loginUrl(currentReturnTarget());
     if (reviewForm) reviewForm.hidden = true;
     if (reviewAccess) reviewAccess.hidden = false;
-    if (loginLink) loginLink.hidden = true;
     const accessMessage = reviewAccess ? $("p", reviewAccess) : null;
     if (accessMessage)
       accessMessage.textContent =
@@ -3350,8 +2822,9 @@
               })}`,
               { signal },
             ).then((page) => {
-              const course = (Array.isArray(page?.content) ? page.content : [])
-                .find((item) => String(item?.slug || "") === courseSlug);
+              const course = (
+                Array.isArray(page?.content) ? page.content : []
+              ).find((item) => String(item?.slug || "") === courseSlug);
               if (!course) throw new ApiError(404, "Kurs tapılmadı.");
               return course;
             });
@@ -3365,8 +2838,7 @@
           throw new ApiError(404, "Kurs hazırda əlçatan deyil.");
         const category = categoryState.byId.get(String(course.categoryId));
         container.innerHTML = renderCourseDetails(course || {}, {
-          categoryName:
-            category?.name || category?.slug || "Nexora Academy",
+          categoryName: category?.name || category?.slug || "Nexora Academy",
         });
         relatedContainer = $("#relatedCourses", container);
         relatedStatus = $("#relatedCoursesStatus", container);
@@ -3422,1103 +2894,6 @@
     void loadCourse();
   }
 
-  function initLoginPage(signal) {
-    const loginForm = $("#loginForm");
-    const otpForm = $("#loginOtpForm");
-    const otpHint = $("#loginOtpHint");
-    const otpBack = $("#loginOtpBack");
-    if (!loginForm || !otpForm) return;
-
-    let pendingEmail = "";
-    const showLogin = () => {
-      loginForm.hidden = false;
-      otpForm.hidden = true;
-      setFormMessage(otpForm, "");
-    };
-    const showOtp = (email, expiresInSeconds) => {
-      pendingEmail = email;
-      loginForm.hidden = true;
-      otpForm.hidden = false;
-      if (otpHint) {
-        const minutes = Math.max(
-          1,
-          Math.ceil((Number(expiresInSeconds) || 600) / 60),
-        );
-        otpHint.textContent = `${email} ünvanına göndərilən 6 rəqəmli kodu daxil edin. Kod təxminən ${minutes} dəqiqə etibarlıdır.`;
-      }
-      $("#loginOtp")?.focus();
-    };
-
-    loginForm.addEventListener(
-      "submit",
-      async (event) => {
-        event.preventDefault();
-        clearFormErrors(loginForm);
-        const email = loginForm.elements.email.value.trim();
-        const password = loginForm.elements.password.value;
-        if (!validEmail(email)) markFormField(loginForm.elements.email);
-        if (!password) markFormField(loginForm.elements.password);
-        if (!validEmail(email) || !password) {
-          setFormMessage(
-            loginForm,
-            "E-poçt və şifrəni düzgün daxil edin.",
-            "error",
-          );
-          return;
-        }
-
-        setFormBusy(loginForm, true);
-        try {
-          const response = await apiFetch(
-            "/api/v1/auth/login",
-            {
-              method: "POST",
-              signal,
-              body: JSON.stringify({ email, password }),
-            },
-            false,
-          );
-          if (response?.accessToken) {
-            setTokens(response);
-            setFormMessage(
-              loginForm,
-              "Giriş uğurludur. Yönləndirilirsiniz…",
-              "success",
-            );
-            await redirectAfterLogin(signal);
-            return;
-          }
-          showOtp(response?.email || email, response?.expiresInSeconds);
-        } catch (error) {
-          if (error?.name !== "AbortError") showFormError(loginForm, error);
-        } finally {
-          setFormBusy(loginForm, false);
-        }
-      },
-      { signal },
-    );
-
-    otpForm.addEventListener(
-      "submit",
-      async (event) => {
-        event.preventDefault();
-        clearFormErrors(otpForm);
-        const otp = otpForm.elements.otp.value.trim();
-        if (!/^\d{6}$/.test(otp)) {
-          markFormField(otpForm.elements.otp);
-          setFormMessage(otpForm, "6 rəqəmli kodu daxil edin.", "error");
-          return;
-        }
-
-        setFormBusy(otpForm, true);
-        try {
-          const response = await apiFetch(
-            "/api/v1/auth/login/verify-otp",
-            {
-              method: "POST",
-              signal,
-              body: JSON.stringify({ email: pendingEmail, otp }),
-            },
-            false,
-          );
-          setTokens(response);
-          setFormMessage(
-            otpForm,
-            "Kod təsdiqləndi. Yönləndirilirsiniz…",
-            "success",
-          );
-          await redirectAfterLogin(signal);
-        } catch (error) {
-          if (error?.name !== "AbortError") showFormError(otpForm, error);
-        } finally {
-          setFormBusy(otpForm, false);
-        }
-      },
-      { signal },
-    );
-
-    otpBack?.addEventListener("click", showLogin, { signal });
-  }
-
-  function initRegisterPage(signal) {
-    const registerForm = $("#registerForm");
-    const verifyForm = $("#verifyEmailForm");
-    const verifyHint = $("#verifyEmailHint");
-    const resendButton = $("#resendVerificationButton");
-    if (!registerForm || !verifyForm) return;
-
-    let pendingEmail = "";
-    let pendingPassword = "";
-    registerForm.addEventListener(
-      "submit",
-      async (event) => {
-        event.preventDefault();
-        clearFormErrors(registerForm);
-        const fullName = registerForm.elements.fullName.value.trim();
-        const nameParts = personNameParts(fullName);
-        const email = registerForm.elements.email.value.trim();
-        const phone = registerForm.elements.phone.value.trim();
-        const phoneValid = validPhone(phone);
-        const password = registerForm.elements.password.value;
-        const passwordConfirm = registerForm.elements.passwordConfirm.value;
-        const termsAccepted = registerForm.elements.termsAccepted.checked;
-        const privacyAccepted = registerForm.elements.privacyAccepted.checked;
-        if (!nameParts)
-          markFormField(registerForm.elements.fullName);
-        if (!validEmail(email)) markFormField(registerForm.elements.email);
-        if (!phoneValid) markFormField(registerForm.elements.phone);
-        if (!validPassword(password))
-          markFormField(registerForm.elements.password);
-        if (passwordConfirm !== password)
-          markFormField(registerForm.elements.passwordConfirm);
-        if (!termsAccepted) markFormField(registerForm.elements.termsAccepted);
-        if (!privacyAccepted)
-          markFormField(registerForm.elements.privacyAccepted);
-        if (
-          !nameParts ||
-          !validEmail(email) ||
-          !phoneValid ||
-          !validPassword(password) ||
-          passwordConfirm !== password ||
-          !termsAccepted ||
-          !privacyAccepted
-        ) {
-          setFormMessage(
-            registerForm,
-            "Ad və soyadı ayrı sözlərlə, telefon və e-poçtu düzgün formatda daxil edin; şifrələri eyniləşdirin və şərtləri qəbul edin.",
-            "error",
-          );
-          return;
-        }
-
-        setFormBusy(registerForm, true);
-        try {
-          const response = await apiFetch(
-            "/api/v1/auth/register",
-            {
-              method: "POST",
-              signal,
-              body: JSON.stringify({
-                email,
-                firstName: nameParts.firstName,
-                lastName: nameParts.lastName,
-                ...(phone ? { phone } : {}),
-                password,
-              }),
-            },
-            false,
-          );
-          pendingEmail = response?.email || email;
-          pendingPassword = password;
-          registerForm.hidden = true;
-          verifyForm.hidden = false;
-          if (verifyHint)
-            verifyHint.textContent = `${pendingEmail} ünvanına göndərilən 6 rəqəmli kodu daxil edin.`;
-          $("#verifyEmailOtp")?.focus();
-        } catch (error) {
-          if (error?.name !== "AbortError") showFormError(registerForm, error);
-        } finally {
-          setFormBusy(registerForm, false);
-        }
-      },
-      { signal },
-    );
-
-    verifyForm.addEventListener(
-      "submit",
-      async (event) => {
-        event.preventDefault();
-        clearFormErrors(verifyForm);
-        const otp = verifyForm.elements.otp.value.trim();
-        if (!/^\d{6}$/.test(otp)) {
-          markFormField(verifyForm.elements.otp);
-          setFormMessage(verifyForm, "6 rəqəmli kodu daxil edin.", "error");
-          return;
-        }
-
-        setFormBusy(verifyForm, true);
-        try {
-          await apiFetch(
-            "/api/v1/auth/verify-email",
-            {
-              method: "POST",
-              signal,
-              body: JSON.stringify({ email: pendingEmail, otp }),
-            },
-            false,
-          );
-          verifyForm.reset();
-          setFormMessage(
-            verifyForm,
-            "E-poçt təsdiqləndi. Hesabınıza daxil edilirsiniz…",
-            "success",
-          );
-          const emailForLogin = pendingEmail;
-          const passwordForLogin = pendingPassword;
-          pendingPassword = "";
-          try {
-            const loginResponse = await apiFetch(
-              "/api/v1/auth/login",
-              {
-                method: "POST",
-                signal,
-                body: JSON.stringify({
-                  email: emailForLogin,
-                  password: passwordForLogin,
-                }),
-              },
-              false,
-            );
-            if (loginResponse?.accessToken) {
-              setTokens(loginResponse);
-              location.assign("index.html");
-              return;
-            }
-          } catch (error) {
-            if (error?.name === "AbortError" || signal.aborted) return;
-            showFormError(verifyForm, error);
-            return;
-          }
-          const submit = $('button[type="submit"]', verifyForm);
-          if (submit) {
-            submit.textContent = "Daxil ol";
-            submit.type = "button";
-            submit.addEventListener(
-              "click",
-              () => location.assign("login.html"),
-              { once: true, signal },
-            );
-          }
-        } catch (error) {
-          if (error?.name !== "AbortError") showFormError(verifyForm, error);
-        } finally {
-          setFormBusy(verifyForm, false);
-        }
-      },
-      { signal },
-    );
-
-    resendButton?.addEventListener(
-      "click",
-      async () => {
-        if (!validEmail(pendingEmail)) {
-          setFormMessage(
-            verifyForm,
-            "Əvvəlcə qeydiyyat e-poçtunu təsdiqləyin.",
-            "error",
-          );
-          return;
-        }
-        resendButton.disabled = true;
-        try {
-          await apiFetch(
-            "/api/v1/auth/resend-verification",
-            {
-              method: "POST",
-              signal,
-              body: JSON.stringify({ email: pendingEmail }),
-            },
-            false,
-          );
-          setFormMessage(
-            verifyForm,
-            "Yeni təsdiq kodu göndərildi.",
-            "success",
-          );
-        } catch (error) {
-          if (error?.name !== "AbortError") showFormError(verifyForm, error);
-        } finally {
-          resendButton.disabled = false;
-        }
-      },
-      { signal },
-    );
-  }
-
-  function initPasswordPage(signal) {
-    const forgotForm = $("#forgotPasswordForm");
-    const resetForm = $("#resetPasswordForm");
-    const title = $("#passwordPageTitle");
-    const lead = $("#passwordPageLead");
-    if (!forgotForm || !resetForm) return;
-
-    const token =
-      new URLSearchParams(location.search).get("token")?.trim() || "";
-    if (token) {
-      forgotForm.hidden = true;
-      resetForm.hidden = false;
-      if (title) title.textContent = "Yeni şifrə yarat";
-      if (lead)
-        lead.textContent =
-          "E-poçtdakı keçid təsdiqləndi. Yeni şifrənizi daxil edin.";
-    }
-
-    forgotForm.addEventListener(
-      "submit",
-      async (event) => {
-        event.preventDefault();
-        clearFormErrors(forgotForm);
-        const email = forgotForm.elements.email.value.trim();
-        if (!validEmail(email)) {
-          markFormField(forgotForm.elements.email);
-          setFormMessage(
-            forgotForm,
-            "Etibarlı e-poçt ünvanı daxil edin.",
-            "error",
-          );
-          return;
-        }
-        setFormBusy(forgotForm, true);
-        try {
-          await apiFetch(
-            "/api/v1/auth/forgot-password",
-            {
-              method: "POST",
-              signal,
-              body: JSON.stringify({ email }),
-            },
-            false,
-          );
-          setFormMessage(
-            forgotForm,
-            "Hesab mövcuddursa, bərpa keçidi e-poçtunuza göndərildi.",
-            "success",
-          );
-          forgotForm.reset();
-        } catch (error) {
-          if (error?.name !== "AbortError") showFormError(forgotForm, error);
-        } finally {
-          setFormBusy(forgotForm, false);
-        }
-      },
-      { signal },
-    );
-
-    resetForm.addEventListener(
-      "submit",
-      async (event) => {
-        event.preventDefault();
-        clearFormErrors(resetForm);
-        const newPassword = resetForm.elements.newPassword.value;
-        const newPasswordConfirm =
-          resetForm.elements.newPasswordConfirm.value;
-        if (!validPassword(newPassword)) {
-          markFormField(resetForm.elements.newPassword);
-        }
-        if (newPasswordConfirm !== newPassword) {
-          markFormField(resetForm.elements.newPasswordConfirm);
-        }
-        if (
-          !validPassword(newPassword) ||
-          newPasswordConfirm !== newPassword
-        ) {
-          setFormMessage(
-            resetForm,
-            "Şifrə 8–72 simvol, ən azı bir hərf və bir rəqəmdən ibarət olmalı və təsdiqlə eyni olmalıdır.",
-            "error",
-          );
-          return;
-        }
-        setFormBusy(resetForm, true);
-        try {
-          await apiFetch(
-            "/api/v1/auth/reset-password",
-            {
-              method: "POST",
-              signal,
-              body: JSON.stringify({ token, newPassword }),
-            },
-            false,
-          );
-          resetForm.reset();
-          setFormMessage(
-            resetForm,
-            "Şifrə yeniləndi. İndi daxil ola bilərsiniz.",
-            "success",
-          );
-        } catch (error) {
-          if (error?.name !== "AbortError") showFormError(resetForm, error);
-        } finally {
-          setFormBusy(resetForm, false);
-        }
-      },
-      { signal },
-    );
-  }
-
-  async function initProfilePage(signal) {
-    const profileForm = $("#profileForm");
-    const passwordForm = $("#changePasswordForm");
-    const summary = $("#profileSummary");
-    const logoutButton = $("#logoutButton");
-    if (!profileForm || !passwordForm) return;
-    const user = await requireUser(signal);
-    if (!user || signal.aborted) return;
-    let originalFullName =
-      String(user.fullName || "").trim() ||
-      [user.firstName, user.lastName].filter(Boolean).join(" ");
-
-    profileForm.elements.email.readOnly = true;
-    profileForm.elements.email.title =
-      "E-poçt dəyişikliyi yenidən təsdiqləmə xidməti yaradılanadək bağlıdır.";
-    const rawProfileField = profileForm.elements.profile;
-    if (rawProfileField) {
-      rawProfileField.disabled = true;
-      const rawProfileContainer = rawProfileField.closest("label");
-      if (rawProfileContainer) rawProfileContainer.hidden = true;
-    }
-
-    try {
-      profileForm.elements.fullName.value = originalFullName;
-      profileForm.elements.email.value = user.email || "";
-      profileForm.elements.phone.value = user.phone || "";
-      profileForm.elements.locale.value = user.locale || "az";
-      if (summary)
-        summary.textContent = `${user.fullName || user.email} · ${enumLabel(user.role)} · ${enumLabel(userAccountStatus(user))}`;
-    } catch (error) {
-      if (error?.name !== "AbortError") {
-        if (summary) {
-          summary.textContent = apiErrorMessage(error);
-          summary.dataset.state = "error";
-        }
-      }
-    }
-
-    profileForm.addEventListener(
-      "submit",
-      async (event) => {
-        event.preventDefault();
-        clearFormErrors(profileForm);
-        const fullName = profileForm.elements.fullName.value.trim();
-        const nameParts = personNameParts(fullName);
-        const nameChanged = fullName !== originalFullName;
-        const phone = profileForm.elements.phone.value.trim();
-        const locale = profileForm.elements.locale.value.trim() || "az";
-        const phoneValid = validPhone(phone);
-        const localeValid = /^[a-z]{2}(?:-[A-Z]{2})?$/.test(locale);
-        if (!nameParts)
-          markFormField(profileForm.elements.fullName);
-        if (!phoneValid) markFormField(profileForm.elements.phone);
-        if (!localeValid) markFormField(profileForm.elements.locale);
-        if (!nameParts || !phoneValid || !localeValid) {
-          setFormMessage(
-            profileForm,
-            "Ad, telefon və dil məlumatlarını düzgün formatda daxil edin.",
-            "error",
-          );
-          return;
-        }
-
-        setFormBusy(profileForm, true);
-        try {
-          const updated = await apiFetch("/api/v1/users/me", {
-            method: "PATCH",
-            signal,
-            body: JSON.stringify({
-              ...(nameChanged ? nameParts : {}),
-              phone,
-              locale,
-            }),
-          });
-          currentUserCache = updated || currentUserCache;
-          if (updated) {
-            originalFullName =
-              String(updated.fullName || "").trim() ||
-              [updated.firstName, updated.lastName]
-                .filter(Boolean)
-                .join(" ");
-            profileForm.elements.fullName.value = originalFullName;
-            if (summary)
-              summary.textContent = `${originalFullName || updated.email} · ${enumLabel(updated.role)} · ${enumLabel(userAccountStatus(updated))}`;
-          }
-          setFormMessage(
-            profileForm,
-            "Profil məlumatları yeniləndi.",
-            "success",
-          );
-        } catch (error) {
-          if (error?.name !== "AbortError") showFormError(profileForm, error);
-        } finally {
-          setFormBusy(profileForm, false);
-        }
-      },
-      { signal },
-    );
-
-    passwordForm.addEventListener(
-      "submit",
-      async (event) => {
-        event.preventDefault();
-        clearFormErrors(passwordForm);
-        const currentPassword = passwordForm.elements.currentPassword.value;
-        const newPassword = passwordForm.elements.newPassword.value;
-        const newPasswordConfirm =
-          passwordForm.elements.newPasswordConfirm.value;
-        if (!currentPassword)
-          markFormField(passwordForm.elements.currentPassword);
-        if (!validPassword(newPassword))
-          markFormField(passwordForm.elements.newPassword);
-        if (newPasswordConfirm !== newPassword)
-          markFormField(passwordForm.elements.newPasswordConfirm);
-        if (
-          !currentPassword ||
-          !validPassword(newPassword) ||
-          newPasswordConfirm !== newPassword
-        ) {
-          setFormMessage(
-            passwordForm,
-            "Cari şifrəni, tələblərə uyğun yeni şifrəni və eyni təsdiqi daxil edin.",
-            "error",
-          );
-          return;
-        }
-
-        setFormBusy(passwordForm, true);
-        try {
-          await apiFetch("/api/v1/users/me/password", {
-            method: "POST",
-            signal,
-            body: JSON.stringify({ currentPassword, newPassword }),
-          });
-          passwordForm.reset();
-          setFormMessage(passwordForm, "Şifrə uğurla yeniləndi.", "success");
-        } catch (error) {
-          if (error?.name !== "AbortError") showFormError(passwordForm, error);
-        } finally {
-          setFormBusy(passwordForm, false);
-        }
-      },
-      { signal },
-    );
-
-    logoutButton?.addEventListener(
-      "click",
-      async () => {
-        logoutButton.disabled = true;
-        await logoutCurrentSession(signal);
-        location.assign("login.html");
-      },
-      { signal },
-    );
-  }
-
-  function enrollmentStorageKey(userId) {
-    return `nexora_enrollment_ids_${userId}`;
-  }
-
-  function readEnrollmentIds(userId) {
-    try {
-      const value = JSON.parse(
-        readStorage(localStorage, enrollmentStorageKey(userId)) || "[]",
-      );
-      return Array.isArray(value)
-        ? [...new Set(value.filter(Boolean).map(String))]
-        : [];
-    } catch (_) {
-      return [];
-    }
-  }
-
-  function saveEnrollmentId(userId, enrollmentId) {
-    const ids = readEnrollmentIds(userId);
-    if (!ids.includes(String(enrollmentId))) ids.unshift(String(enrollmentId));
-    writeStorage(
-      localStorage,
-      enrollmentStorageKey(userId),
-      JSON.stringify(ids.slice(0, 50)),
-    );
-  }
-
-  function enrollmentAttemptStorageKey(userId) {
-    return `nexora_enrollment_attempt_${userId}`;
-  }
-
-  function enrollmentAttempt(userId, fingerprint) {
-    const key = enrollmentAttemptStorageKey(userId);
-    try {
-      const saved = JSON.parse(readStorage(sessionStorage, key) || "null");
-      if (
-        saved?.fingerprint === fingerprint &&
-        typeof saved.idempotencyKey === "string" &&
-        saved.idempotencyKey &&
-        typeof saved.consentGivenAt === "string" &&
-        saved.consentGivenAt
-      )
-        return saved;
-    } catch (_) {
-      // A malformed attempt is replaced with a new safe key.
-    }
-    const idempotencyKey = createIdempotencyKey();
-    const attempt = {
-      fingerprint,
-      idempotencyKey,
-      consentGivenAt: new Date().toISOString(),
-    };
-    writeStorage(sessionStorage, key, JSON.stringify(attempt));
-    return attempt;
-  }
-
-  function clearEnrollmentAttempt(userId) {
-    writeStorage(sessionStorage, enrollmentAttemptStorageKey(userId), "");
-  }
-
-  function renderEnrollmentCard(enrollment, showActions = true) {
-    const status = enrollment.status || "PENDING_PAYMENT";
-    const canCancel = [
-      "WAITLISTED",
-      "HELD",
-      "PENDING_PAYMENT",
-      "CONFIRMED",
-    ].includes(normalizedEnum(status));
-    return `<article class="Nexora_enrollmentCard">
-      <div class="Nexora_enrollmentCardTop">
-        <span class="Nexora_badge">${escapeHtml(enumLabel(status))}</span>
-        <time datetime="${escapeHtml(enrollment.enrolledAt || "")}">${escapeHtml(formatDate(enrollment.enrolledAt))}</time>
-      </div>
-      <h3>Qeydiyyat ${escapeHtml(enrollment.id)}</h3>
-      <dl class="Nexora_detailList">
-        <div><dt>Qrup ID-si</dt><dd>${escapeHtml(enrollment.groupId || "—")}</dd></div>
-        ${enrollment.holdExpiresAt ? `<div><dt>Rezerv bitir</dt><dd>${escapeHtml(formatDate(enrollment.holdExpiresAt))}</dd></div>` : ""}
-        ${enrollment.cancelReason ? `<div><dt>Ləğv səbəbi</dt><dd>${escapeHtml(enrollment.cancelReason)}</dd></div>` : ""}
-      </dl>
-      ${showActions && canCancel ? `<button class="ai-btn ai-btn--text" type="button" data-cancel-enrollment="${escapeHtml(enrollment.id)}">Qeydiyyatı ləğv et</button>` : ""}
-    </article>`;
-  }
-
-  async function initEnrollmentsPage(signal) {
-    const createForm = $("#createEnrollmentForm");
-    const lookupForm = $("#lookupEnrollmentForm");
-    const cancelForm = $("#cancelEnrollmentForm");
-    const list = $("#enrollmentsList");
-    const status = $("#enrollmentsStatus");
-    const cancelHint = $("#cancelEnrollmentHint");
-    const cancelClose = $("#cancelEnrollmentClose");
-    if (!createForm || !lookupForm || !cancelForm || !list || !status) return;
-
-    let user;
-    try {
-      user = await requireUser(signal, ["STUDENT"]);
-    } catch (error) {
-      if (error?.name !== "AbortError") {
-        status.textContent = apiErrorMessage(error);
-        status.dataset.state = "error";
-      }
-      return;
-    }
-    if (!user?.id || signal.aborted) return;
-    const consentVersion =
-      document.querySelector(
-        'meta[name="nexora-enrollment-consent-version"]',
-      )?.content || "";
-
-    const loadSaved = async () => {
-      const ids = readEnrollmentIds(user.id);
-      if (!ids.length) {
-        list.innerHTML =
-          '<div class="Nexora_emptyState"><h3>Yadda saxlanmış qeydiyyat yoxdur</h3><p>Yeni qeydiyyat yaradın və ya mövcud qeydiyyat ID-sini daxil edin.</p></div>';
-        status.textContent = "";
-        return;
-      }
-      status.textContent = "Qeydiyyatlar yüklənir…";
-      const results = await Promise.all(
-        ids.map(async (id) => {
-          try {
-            return {
-              enrollment: await apiFetch(
-                `/api/v1/enrollments/${encodeURIComponent(id)}`,
-                { signal },
-              ),
-            };
-          } catch (error) {
-            return { id, error };
-          }
-        }),
-      );
-      if (signal.aborted) return;
-      list.innerHTML = results
-        .map((result) => {
-          if (result.enrollment) return renderEnrollmentCard(result.enrollment);
-          return `<article class="Nexora_enrollmentCard Nexora_enrollmentCard--error">
-          <h3>${escapeHtml(result.id)}</h3>
-          <p>${escapeHtml(apiErrorMessage(result.error))}</p>
-        </article>`;
-        })
-        .join("");
-      status.textContent = `${results.filter((result) => result.enrollment).length} qeyd göstərilir`;
-    };
-
-    createForm.addEventListener(
-      "submit",
-      async (event) => {
-        event.preventDefault();
-        clearFormErrors(createForm);
-        const groupId = createForm.elements.groupId.value.trim();
-        if (!groupId) markFormField(createForm.elements.groupId);
-        if (!createForm.elements.consent.checked)
-          markFormField(createForm.elements.consent);
-        if (!groupId || !createForm.elements.consent.checked || !consentVersion) {
-          setFormMessage(
-            createForm,
-            consentVersion
-              ? "Qrup ID-sini daxil edin və şərtləri qəbul edin."
-              : "Aktiv razılıq versiyası müəyyən edilməyib. Qeydiyyat göndərilmədi.",
-            "error",
-          );
-          return;
-        }
-
-        const fingerprint = JSON.stringify({ groupId, consentVersion });
-        const attempt = enrollmentAttempt(user.id, fingerprint);
-        setFormBusy(createForm, true);
-        try {
-          const enrollment = await apiFetch("/api/v1/enrollments", {
-            method: "POST",
-            signal,
-            body: JSON.stringify({
-              userId: user.id,
-              groupId,
-              idempotencyKey: attempt.idempotencyKey,
-              consentVersion,
-              consentGivenAt: attempt.consentGivenAt,
-            }),
-          });
-          if (enrollment?.id) saveEnrollmentId(user.id, enrollment.id);
-          clearEnrollmentAttempt(user.id);
-          createForm.reset();
-          setFormMessage(
-            createForm,
-            "Qeydiyyat yaradıldı və siyahıya əlavə edildi.",
-            "success",
-          );
-          await loadSaved();
-        } catch (error) {
-          if (error?.name !== "AbortError") showFormError(createForm, error);
-        } finally {
-          setFormBusy(createForm, false);
-        }
-      },
-      { signal },
-    );
-
-    lookupForm.addEventListener(
-      "submit",
-      async (event) => {
-        event.preventDefault();
-        clearFormErrors(lookupForm);
-        const enrollmentId = lookupForm.elements.enrollmentId.value.trim();
-        if (!enrollmentId) {
-          markFormField(lookupForm.elements.enrollmentId);
-          setFormMessage(lookupForm, "Qeydiyyat ID-sini daxil edin.", "error");
-          return;
-        }
-        setFormBusy(lookupForm, true);
-        try {
-          const enrollment = await apiFetch(
-            `/api/v1/enrollments/${encodeURIComponent(enrollmentId)}`,
-            { signal },
-          );
-          if (enrollment?.id) saveEnrollmentId(user.id, enrollment.id);
-          lookupForm.reset();
-          setFormMessage(
-            lookupForm,
-            "Qeydiyyat tapıldı və siyahıya əlavə edildi.",
-            "success",
-          );
-          await loadSaved();
-        } catch (error) {
-          if (error?.name !== "AbortError") showFormError(lookupForm, error);
-        } finally {
-          setFormBusy(lookupForm, false);
-        }
-      },
-      { signal },
-    );
-
-    list.addEventListener(
-      "click",
-      (event) => {
-        const button = event.target.closest("button[data-cancel-enrollment]");
-        if (!button) return;
-        const enrollmentId = button.dataset.cancelEnrollment;
-        cancelForm.elements.enrollmentId.value = enrollmentId;
-        if (cancelHint)
-          cancelHint.textContent = `${enrollmentId} nömrəli qeydiyyat ləğv ediləcək.`;
-        cancelForm.hidden = false;
-        cancelForm.scrollIntoView({ behavior: "smooth", block: "center" });
-      },
-      { signal },
-    );
-
-    cancelClose?.addEventListener(
-      "click",
-      () => {
-        cancelForm.reset();
-        cancelForm.hidden = true;
-      },
-      { signal },
-    );
-
-    cancelForm.addEventListener(
-      "submit",
-      async (event) => {
-        event.preventDefault();
-        clearFormErrors(cancelForm);
-        const enrollmentId = cancelForm.elements.enrollmentId.value;
-        const reason = cancelForm.elements.reason.value.trim();
-        setFormBusy(cancelForm, true);
-        try {
-          await apiFetch(
-            `/api/v1/enrollments/${encodeURIComponent(enrollmentId)}/cancel`,
-            {
-              method: "POST",
-              signal,
-              body: JSON.stringify(reason ? { reason } : {}),
-            },
-          );
-          cancelForm.reset();
-          cancelForm.hidden = true;
-          await loadSaved();
-        } catch (error) {
-          if (error?.name !== "AbortError") showFormError(cancelForm, error);
-        } finally {
-          setFormBusy(cancelForm, false);
-        }
-      },
-      { signal },
-    );
-
-    await loadSaved();
-  }
-
-  async function initStudentPage(signal) {
-    const title = $("#studentOverviewTitle");
-    const summary = $("#studentOverviewSummary");
-    const list = $("#studentKnownEnrollments");
-    const status = $("#studentKnownEnrollmentStatus");
-    if (!title || !summary || !list || !status) return;
-    const user = await requireUser(signal, ["STUDENT"]);
-    if (!user || signal.aborted) return;
-    title.textContent = `Salam, ${user.fullName || user.email || "tələbə"}`;
-    summary.textContent =
-      "Kabinet kurs, profil və məlum qeydiyyat axınlarını birləşdirir. Ödəniş, bildiriş və təqaüd modulları server xidmətləri yarananadək aktiv deyil.";
-    const ids = readEnrollmentIds(user.id);
-    if (!ids.length) {
-      list.innerHTML =
-        '<div class="Nexora_emptyState"><h3>Yadda saxlanmış qeydiyyat yoxdur</h3><p>Server tərəfində “mənim qeydiyyatlarım” xidməti hələ mövcud deyil.</p></div>';
-      status.textContent = "";
-      return;
-    }
-    status.textContent = "Məlum qeydiyyatlar yüklənir…";
-    const results = await Promise.all(
-      ids.slice(0, 6).map(async (id) => {
-        try {
-          return await apiFetch(
-            `/api/v1/enrollments/${encodeURIComponent(id)}`,
-            { signal },
-          );
-        } catch (_) {
-          return null;
-        }
-      }),
-    );
-    if (signal.aborted) return;
-    const enrollments = results.filter(Boolean);
-    list.innerHTML = enrollments.length
-      ? enrollments
-          .map((enrollment) => renderEnrollmentCard(enrollment, false))
-          .join("")
-      : '<div class="Nexora_emptyState"><h3>Qeydiyyat məlumatı tapılmadı</h3><p>Yadda saxlanmış ID-lər üzrə əlçatan qeyd yoxdur.</p></div>';
-    status.textContent = `${enrollments.length} yadda saxlanmış qeyd göstərilir`;
-  }
-
-  function staffModuleCard(module) {
-    return `<article class="Nexora_courseCard">
-      <div class="Nexora_courseCardBody">
-        <h3>${escapeHtml(module.title)}</h3>
-        <p>${escapeHtml(module.description)}</p>
-      </div>
-      <span class="Nexora_badge">${escapeHtml(module.status)}</span>
-    </article>`;
-  }
-
-  async function initStaffPage(signal) {
-    const title = $("#staffOverviewTitle");
-    const summary = $("#staffOverviewSummary");
-    const modulesContainer = $("#staffModules");
-    const status = $("#staffModulesStatus");
-    if (!title || !summary || !modulesContainer || !status) return;
-    const user = await requireUser(signal, [...STAFF_ROLES]);
-    if (!user || signal.aborted) return;
-    const role = userRole(user);
-    const contentModules = [
-      {
-        title: "Kateqoriya və kurs əməliyyatları",
-        description:
-          "Dəstəklənən CRUD axınları; təfərrüat ekranları əlaqəli xidmətlərin brauzer tərəfində birləşdirilməsini tələb edir.",
-        status: "Dəstəklənir / Kombinə edilmiş",
-      },
-      {
-        title: "Müəllimlər, tədris təyinatları və qruplar",
-        description:
-          "Məzmun əməliyyatları dəstəklənir; əlaqələndirilmiş istifadəçi seçimi üçün təhlükəsiz axtarış çatışmır.",
-        status: "Dəstəklənir / Qismən",
-      },
-      {
-        title: "CMS, bilik bazası və məzun nəticələri",
-        description:
-          "Əməkdaş CRUD-u dəstəklənir; açıq önbaxış/CMS müqaviləsi və təhlükəsiz istifadəçi axtarışı ayrıca tələb olunur.",
-        status: "Dəstəklənir / Qismən",
-      },
-      {
-        title: "Rəy idarəetməsi",
-        description:
-          "CRUD mövcuddur, lakin dərc etmə/dərci dayandırma nəzarətçi xidməti yoxdur.",
-        status: "Qismən / Əməliyyat bloklanıb",
-      },
-    ];
-    const crmModules = [
-      {
-        title: "Potensial müştəri, əlaqə və çat əməliyyatları",
-        description:
-          "Siyahı/təfərrüat axınları dəstəklənir; potensial müştəri statusu və çatı bitirmə əməliyyatları nəzarətçidə yoxdur.",
-        status: "Dəstəklənir / Qismən",
-      },
-      {
-        title: "Kampaniyalar",
-        description:
-          "Əməkdaş CRUD-u dəstəklənir; açıq kampaniya sorğusu və çevrilmə prosesi yoxdur.",
-        status: "Dəstəklənir / Qismən",
-      },
-      {
-        title: "Qlobal qeydiyyatlar",
-        description:
-          "Yalnız Satış CRM-i, Administrator və Sistem administratoru üçündür. Satış CRM-i istifadəçi və kurs qrupu axtarışı olmadan təhlükəsiz yaratma forması qura bilmir.",
-        status: "Dəstəklənir / Qismən",
-      },
-    ];
-    const adminModules = [
-      {
-        title: "İstifadəçi idarəetməsi",
-        description:
-          "CRUD dəstəklənir; öz rolunu aşağı salma və yüksək rol dəyişiklikləri üçün əlavə təhlükəsizlik qoruması tələb olunur.",
-        status: "Supported",
-      },
-      {
-        title: "Ödəniş və təqaüd əməliyyatları",
-        description:
-          "Administrator əməliyyatları mövcuddur; geriödəniş nəzarətçisi və tələbə ödənişinin həyat dövrü yoxdur.",
-        status: "Dəstəklənir / Əməliyyat bloklanıb",
-      },
-      {
-        title: "Bildiriş və sessiya qeydləri",
-        description:
-          "Qeyd CRUD-u mövcuddur; oxunub/göndərilib işarələmə və ayrıca ləğv xidmətləri yoxdur.",
-        status: "Qismən / Əməliyyat bloklanıb",
-      },
-      {
-        title: "Yoxlama və sistem sağlamlığı",
-        description:
-          "Yoxlamanın siyahı/təfərrüat və sağlamlıq funksiyaları dəstəklənir. Əl ilə yoxlama dəyişikliyi və daxili sınaq əməliyyatları istifadəçi interfeysində göstərilmir.",
-        status: "Dəstəklənir / Daxili",
-      },
-    ];
-    let modules = [];
-    if (role === "CONTENT_MANAGER") {
-      title.textContent = "Məzmun əməliyyatlarına ümumi baxış";
-      modules = contentModules;
-    } else if (role === "SALES_CRM") {
-      title.textContent = "Satış CRM-inə ümumi baxış";
-      modules = crmModules;
-    } else {
-      title.textContent =
-        role === "SYSTEM_ADMIN"
-          ? "Sistem idarəçiliyinə ümumi baxış"
-          : "İdarəetməyə ümumi baxış";
-      modules = [...contentModules, ...crmModules, ...adminModules];
-    }
-    summary.textContent = `${user.fullName || user.email} · ${enumLabel(role)}. Modul siyahısı faktiki rol icazələrinə görə məhdudlaşdırılıb.`;
-    modulesContainer.innerHTML = modules.map(staffModuleCard).join("");
-    status.textContent = `${modules.length} icazəli əməliyyat sahəsi`;
-  }
-
-  async function logoutCurrentSession(signal) {
-    const refreshToken = readStorage(localStorage, REFRESH_TOKEN_KEY);
-    try {
-      if (refreshToken) {
-        await apiFetch(
-          "/api/v1/auth/logout",
-          {
-            method: "POST",
-            signal,
-            body: JSON.stringify({ refreshToken }),
-          },
-          false,
-        );
-      }
-    } catch (_) {
-      // Local session is still cleared when the backend is unavailable.
-    } finally {
-      clearTokens();
-    }
-  }
-
-  async function initAccountStatusPage(signal) {
-    const title = $("#accountStatusTitle");
-    const message = $("#accountStatusMessage");
-    const logoutButton = $("#accountStatusLogout");
-    const hint = $("#accountStatusHint");
-    if (!title || !message || !logoutButton) return;
-    let user;
-    try {
-      user = await requireUser(signal, null, true);
-    } catch (error) {
-      if (error?.name !== "AbortError" && hint) {
-        hint.textContent = apiErrorMessage(error);
-        hint.dataset.state = "error";
-      }
-      return;
-    }
-    if (!user || signal.aborted) return;
-    const accountStatus = userAccountStatus(user);
-    if (!accountStatus || accountStatus === "ACTIVE") {
-      location.replace(roleDestination(userRole(user)));
-      return;
-    }
-    const states = {
-      PENDING_VERIFICATION: [
-        "E-poçt təsdiqi gözlənilir",
-        "Hesabdan istifadə etmək üçün e-poçt təsdiqini tamamlayın.",
-      ],
-      SUSPENDED: [
-        "Hesab müvəqqəti dayandırılıb",
-        "Hesabınıza giriş müvəqqəti məhdudlaşdırılıb. Dəstək komandası ilə əlaqə saxlayın.",
-      ],
-      DEACTIVATED: [
-        "Hesab deaktiv edilib",
-        "Bu hesab hazırda aktiv deyil. Dəstək komandası ilə əlaqə saxlayın.",
-      ],
-      BANNED: [
-        "Hesaba giriş bloklanıb",
-        "Bu hesab üçün kabinetə giriş bağlıdır. Dəstək komandası ilə əlaqə saxlayın.",
-      ],
-    };
-    const state = states[accountStatus] || [
-      "Hesab əlçatan deyil",
-      "Hesab vəziyyəti kabinetə girişə icazə vermir.",
-    ];
-    title.textContent = state[0];
-    message.textContent = state[1];
-    logoutButton.addEventListener(
-      "click",
-      async () => {
-        logoutButton.disabled = true;
-        await logoutCurrentSession(signal);
-        location.assign("login.html");
-      },
-      { signal },
-    );
-  }
-
   function initApiPage(signal) {
     switch (document.body.dataset.page) {
       case "home":
@@ -4548,50 +2923,6 @@
         break;
       case "scholarships":
         void initScholarshipsPage(signal);
-        break;
-      case "login":
-        initLoginPage(signal);
-        break;
-      case "register":
-        initRegisterPage(signal);
-        break;
-      case "password":
-        initPasswordPage(signal);
-        break;
-      case "profile":
-        void initProfilePage(signal).catch((error) => {
-          if (error?.name !== "AbortError") {
-            const summary = $("#profileSummary");
-            if (summary) summary.textContent = apiErrorMessage(error);
-          }
-        });
-        break;
-      case "enrollments":
-        void initEnrollmentsPage(signal).catch((error) => {
-          if (error?.name !== "AbortError") {
-            const status = $("#enrollmentsStatus");
-            if (status) status.textContent = apiErrorMessage(error);
-          }
-        });
-        break;
-      case "student":
-        void initStudentPage(signal).catch((error) => {
-          if (error?.name !== "AbortError") {
-            const status = $("#studentKnownEnrollmentStatus");
-            if (status) status.textContent = apiErrorMessage(error);
-          }
-        });
-        break;
-      case "staff":
-        void initStaffPage(signal).catch((error) => {
-          if (error?.name !== "AbortError") {
-            const status = $("#staffModulesStatus");
-            if (status) status.textContent = apiErrorMessage(error);
-          }
-        });
-        break;
-      case "account-status":
-        void initAccountStatusPage(signal);
         break;
       default:
         break;
@@ -4628,40 +2959,7 @@
     initApiPage(signal);
   }
 
-  document.addEventListener("click", (event) => {
-    if (!IS_LEGACY_ROUTER) return;
-    const link = event.target.closest('a[href^="#/nav/"]');
-    if (
-      !link ||
-      event.defaultPrevented ||
-      event.button !== 0 ||
-      event.metaKey ||
-      event.ctrlKey ||
-      event.shiftKey ||
-      event.altKey
-    )
-      return;
-    event.preventDefault();
-    const href = link.getAttribute("href");
-    if (location.hash === href) renderRoute(routeFromHash());
-    else location.hash = href.slice(1);
-  });
-
-  if (IS_LEGACY_ROUTER) {
-    window.addEventListener("hashchange", () => renderRoute(routeFromHash()));
-  }
   const boot = () => {
-    if (IS_LEGACY_ROUTER) {
-      if (!location.hash.match(/^#\/nav\//)) {
-        history.replaceState(
-          null,
-          "",
-          `${location.pathname}${location.search}#/nav/home`,
-        );
-      }
-      renderRoute(routeFromHash());
-      return;
-    }
     pageController?.abort();
     pageController = new AbortController();
     initPage(pageController.signal);
@@ -4705,7 +3003,9 @@
     }
   }
 
-  function $(sel, root) { return (root || document).querySelector(sel); }
+  function $(sel, root) {
+    return (root || document).querySelector(sel);
+  }
 
   const elements = {
     fab: $("#chat-fab"),
@@ -4717,7 +3017,15 @@
     send: $("#chat-send"),
   };
 
-  let { fab, widget, close: closeBtn, messages: messagesEl, form: chatForm, input: chatInput, send: chatSend } = elements;
+  let {
+    fab,
+    widget,
+    close: closeBtn,
+    messages: messagesEl,
+    form: chatForm,
+    input: chatInput,
+    send: chatSend,
+  } = elements;
 
   if (!fab || !widget) return;
 
@@ -4738,7 +3046,9 @@
     return d.innerHTML;
   }
 
-  function normalizeText(v, fb) { return typeof v === "string" ? v : (fb || ""); }
+  function normalizeText(v, fb) {
+    return typeof v === "string" ? v : fb || "";
+  }
 
   /* ── Rebind after SPA route change ── */
   function rebindChatWidget() {
@@ -4752,14 +3062,26 @@
     if (!newFab || !newWidget) return;
 
     Object.assign(elements, {
-      fab: newFab, widget: newWidget, close: newClose,
-      form: newForm, input: newInput, send: newSend, messages: newMessages
+      fab: newFab,
+      widget: newWidget,
+      close: newClose,
+      form: newForm,
+      input: newInput,
+      send: newSend,
+      messages: newMessages,
     });
-    fab = elements.fab; widget = elements.widget; closeBtn = elements.close;
-    chatForm = elements.form; chatInput = elements.input; chatSend = elements.send;
+    fab = elements.fab;
+    widget = elements.widget;
+    closeBtn = elements.close;
+    chatForm = elements.form;
+    chatInput = elements.input;
+    chatSend = elements.send;
     messagesEl = elements.messages;
 
-    newFab.onclick = () => { if (isOpen) closeWidget(); else openWidget(); };
+    newFab.onclick = () => {
+      if (isOpen) closeWidget();
+      else openWidget();
+    };
     newClose.onclick = closeWidget;
     newForm.onsubmit = (e) => {
       e.preventDefault();
@@ -4770,9 +3092,15 @@
       newSend.disabled = true;
       sendMessage(v);
     };
-    newInput.oninput = () => { resizeInput(); newSend.disabled = pending || !newInput.value.trim(); };
+    newInput.oninput = () => {
+      resizeInput();
+      newSend.disabled = pending || !newInput.value.trim();
+    };
     newInput.onkeydown = (e) => {
-      if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); newForm.requestSubmit(); }
+      if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
+        e.preventDefault();
+        newForm.requestSubmit();
+      }
     };
   }
 
@@ -4780,7 +3108,10 @@
   let isOpen = false;
 
   function openWidget() {
-    if (isOpen) { closeWidget(); return; }
+    if (isOpen) {
+      closeWidget();
+      return;
+    }
     widget.hidden = false;
     isOpen = true;
     requestAnimationFrame(() => {
@@ -4798,7 +3129,9 @@
     isOpen = false;
     widget.classList.remove("open");
     fab.classList.remove("chat-fab--active");
-    setTimeout(() => { widget.hidden = true; }, 300);
+    setTimeout(() => {
+      widget.hidden = true;
+    }, 300);
   }
 
   fab.addEventListener("click", openWidget);
@@ -4856,12 +3189,22 @@
             '<div class="chat-course__name"></div>' +
             '<div class="chat-course__meta"></div>' +
             '<div class="chat-course__tools"></div>';
-          card.querySelector(".chat-course__category").textContent = normalizeText(c?.category, "Course");
-          card.querySelector(".chat-course__name").textContent = normalizeText(c?.name, "Nexora course");
-          card.querySelector(".chat-course__price").textContent = Number.isFinite(c?.price) ? c.price + " AZN" : "";
+          card.querySelector(".chat-course__category").textContent =
+            normalizeText(c?.category, "Course");
+          card.querySelector(".chat-course__name").textContent = normalizeText(
+            c?.name,
+            "Nexora course",
+          );
+          card.querySelector(".chat-course__price").textContent =
+            Number.isFinite(c?.price) ? c.price + " AZN" : "";
           const meta = card.querySelector(".chat-course__meta");
-          [c?.level, c?.instructor, [c?.schedule?.days, c?.schedule?.time].filter(Boolean).join(" · ")]
-            .filter(Boolean).forEach((m) => {
+          [
+            c?.level,
+            c?.instructor,
+            [c?.schedule?.days, c?.schedule?.time].filter(Boolean).join(" · "),
+          ]
+            .filter(Boolean)
+            .forEach((m) => {
               const s = document.createElement("span");
               s.textContent = m;
               meta.appendChild(s);
@@ -4894,7 +3237,8 @@
     banner.querySelector("span").textContent = text;
     banner.querySelector("button").addEventListener("click", () => {
       banner.remove();
-      if (lastRequest) sendMessage(lastRequest.value, lastRequest.display, { silent: true });
+      if (lastRequest)
+        sendMessage(lastRequest.value, lastRequest.display, { silent: true });
     });
     messagesEl.appendChild(banner);
     scrollToBottom();
@@ -4904,7 +3248,8 @@
     const el = document.createElement("div");
     el.className = "chat-typing";
     el.id = "chat-active-typing";
-    el.innerHTML = '<div class="chat-msg__avatar">✦</div><div class="chat-typing__dots"><span></span><span></span><span></span></div>';
+    el.innerHTML =
+      '<div class="chat-msg__avatar">✦</div><div class="chat-typing__dots"><span></span><span></span><span></span></div>';
     messagesEl.appendChild(el);
     scrollToBottom();
   }
@@ -4931,13 +3276,17 @@
     try {
       const res = await fetch(API_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
         body: JSON.stringify({ message, sessionId, conversationId: sessionId }),
         signal: requestController.signal,
       });
       if (!res.ok) throw new Error("Server " + res.status);
       const data = await res.json();
-      if (!data || typeof data.reply !== "string") throw new Error("Invalid response");
+      if (!data || typeof data.reply !== "string")
+        throw new Error("Invalid response");
       return data;
     } finally {
       clearTimeout(tid);
@@ -4963,7 +3312,9 @@
     } catch (err) {
       hideTyping();
       const aborted = err?.name === "AbortError";
-      addError(aborted ? "Timeout. Try again." : "Could not reach the AI. Retry.");
+      addError(
+        aborted ? "Timeout. Try again." : "Could not reach the AI. Retry.",
+      );
     } finally {
       setPending(false);
       chatInput.focus();
@@ -4992,7 +3343,9 @@
   function resetChat() {
     requestController?.abort();
     sessionId = createId();
-    try { localStorage.setItem(STORAGE_KEY, sessionId); } catch (_) {}
+    try {
+      localStorage.setItem(STORAGE_KEY, sessionId);
+    } catch (_) {}
     history = [];
     lastRequest = null;
     messagesEl.innerHTML = "";
