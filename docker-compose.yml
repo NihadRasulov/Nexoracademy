@@ -53,7 +53,7 @@ services:
       FLYWAY_VALIDATE_ON_MIGRATE: "true"
       FLYWAY_OUT_OF_ORDER: "false"
     volumes:
-      - ./src/main/resources/db/migration:/flyway/sql
+      - ./backend/api/src/main/resources/db/migration:/flyway/sql
     command: migrate
 
   mailhog:
@@ -68,7 +68,7 @@ services:
 
   chatbot-api:
     build:
-      context: ./chatbot-api
+      context: ./backend/chatbot-api
       dockerfile: Dockerfile
     container_name: nexora-chatbot
     restart: unless-stopped

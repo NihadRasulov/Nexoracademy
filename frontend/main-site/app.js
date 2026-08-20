@@ -2341,7 +2341,7 @@
       } catch (error) {
         if (error?.name === "AbortError" || requestId !== coursesRequestId)
           return;
-        grid.innerHTML = `<div class="Nexora_emptyState"><h3>Kursları göstərmək mümkün olmadı</h3><p>${escapeHtml(apiErrorMessage(error))}</p></div>`;
+        grid.innerHTML = sanitizeHtml(`<div class="Nexora_emptyState"><h3>Kursları göstərmək mümkün olmadı</h3><p>${escapeHtml(apiErrorMessage(error))}</p></div>`);
         status.textContent = "Kurs kataloqu əlçatan deyil";
         status.dataset.state = "error";
         pagination.innerHTML = "";
@@ -2393,7 +2393,7 @@
       .then(() => loadCourses(currentPage))
       .catch((error) => {
         if (error?.name === "AbortError") return;
-        grid.innerHTML = `<div class="Nexora_emptyState"><h3>Kursları göstərmək mümkün olmadı</h3><p>${escapeHtml(apiErrorMessage(error))}</p></div>`;
+        grid.innerHTML = sanitizeHtml(`<div class="Nexora_emptyState"><h3>Kursları göstərmək mümkün olmadı</h3><p>${escapeHtml(apiErrorMessage(error))}</p></div>`);
         status.textContent = "Kurs kataloqu əlçatan deyil";
         status.dataset.state = "error";
         pagination.innerHTML = "";
@@ -3140,8 +3140,11 @@
     return d.innerHTML;
   }
 
-  function normalizeText(v, fb) {
-    return typeof v === "string" ? v : fb || "";
+  function sanitizeHtml(dirty) {
+    if (typeof DOMPurify !== "undefined") {
+      return DOMPurify.sanitize(dirty, { USE_PROFILES: { html: true } });
+    }
+    return dirty;
   }
 
   /* ── Rebind after SPA route change ── */
@@ -3172,12 +3175,12 @@
     chatSend = elements.send;
     messagesEl = elements.messages;
 
-    newFab.onclick = () => {
+    newFab.addEventListener("click", () => {
       if (isOpen) closeWidget();
       else openWidget();
-    };
-    newClose.onclick = closeWidget;
-    newForm.onsubmit = (e) => {
+    });
+    newClose.addEventListener("click", closeWidget);
+    newForm.addEventListener("submit", (e) => {
       e.preventDefault();
       const v = newInput.value.trim();
       if (!v || pending) return;
@@ -3185,17 +3188,17 @@
       resizeInput();
       newSend.disabled = true;
       sendMessage(v);
-    };
-    newInput.oninput = () => {
+    });
+    newInput.addEventListener("input", () => {
       resizeInput();
       newSend.disabled = pending || !newInput.value.trim();
-    };
-    newInput.onkeydown = (e) => {
+    });
+    newInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
         e.preventDefault();
         newForm.requestSubmit();
       }
-    };
+    });
   }
 
   /* ── Open / Close ── */
@@ -3244,6 +3247,7 @@
     avatar.textContent = "✦";
 
     const body = document.createElement("div");
+    body.className = 'chat-msg__body';
 
     const bubble = document.createElement("div");
     bubble.className = "chat-msg__bubble";
@@ -3318,6 +3322,10 @@
 
     wrap.appendChild(avatar);
     wrap.appendChild(body);
+    const timeEl = document.createElement('span');
+    timeEl.className = 'chat-msg__time';
+    timeEl.textContent = new Date().toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' });
+    body.appendChild(timeEl);
     messagesEl.appendChild(wrap);
     history.push({ role, text: normalizeText(text), response });
     if (history.length > MAX_HISTORY) history = history.slice(-MAX_HISTORY);
