@@ -26,8 +26,12 @@
     <script defer src="app.js"></script>
   
     
-  </head>
-<body class="__variable_7fc4d2 antialiased" style="overflow:auto" data-page="categories">
+  
+.skip-link{position:absolute;top:-40px;left:0;background:#6c3ce0;color:#fff;padding:8px 16px;z-index:10000;transition:top .2s}.skip-link:focus{top:0}
+</head>
+<a class="skip-link" href="#main-content">Əsas məzmuna keç</a>
+  <body class="__variable_7fc4d2 antialiased" style="overflow:auto" data-page="categories">
+  id="main-content"
   <noscript>Bu saytın işləməsi üçün JavaScript aktiv olmalıdır.</noscript>
 
 <div>
@@ -365,7 +369,7 @@
   <div class="chat-widget__messages" id="chat-messages" role="log" aria-live="polite"></div>
   <div class="chat-widget__composer">
     <form class="chat-widget__form" id="chat-form" novalidate>
-      <textarea class="chat-widget__input" id="chat-input" name="message" rows="1" maxlength="2000" placeholder="Ask Nexora AI anything..." autocomplete="off" required></textarea>
+      <textarea class="chat-widget__input" id="chat-input" aria-label="Mesajınızı yazın" name="message" rows="1" maxlength="2000" placeholder="Ask Nexora AI anything..." autocomplete="off" required></textarea>
       <button class="chat-widget__send" id="chat-send" type="submit" aria-label="Send" disabled>
         <svg viewBox="0 0 24 24"><path d="m5 12 14-7-4.4 14-2.5-5.1L5 12Z"/><path d="m12.1 13.9 3.6-3.7"/></svg>
       </button>

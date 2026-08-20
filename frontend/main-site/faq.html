@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="az">
   <head>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -36,12 +36,16 @@
       
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js" defer></script>
     <script defer src="app.js"></script>
-  </head>
+  
+.skip-link{position:absolute;top:-40px;left:0;background:#6c3ce0;color:#fff;padding:8px 16px;z-index:10000;transition:top .2s}.skip-link:focus{top:0}
+</head>
+  <a class="skip-link" href="#main-content">Əsas məzmuna keç</a>
   <body
     class="__variable_7fc4d2 antialiased"
     style="overflow: auto"
     data-page="faq"
   >
+  id="main-content"
     <noscript>Bu saytın işləməsi üçün JavaScript aktiv olmalıdır.</noscript>
 
     <div>
@@ -956,7 +960,7 @@
         <form class="chat-widget__form" id="chat-form" novalidate>
           <textarea
             class="chat-widget__input"
-            id="chat-input"
+            id="chat-input" aria-label="Mesajınızı yazın"
             name="message"
             rows="1"
             maxlength="2000"

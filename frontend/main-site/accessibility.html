@@ -24,10 +24,12 @@
   <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js" defer></script>
     <script defer src="app.js"></script>
-  
-    
-  </head>
-<body class="__variable_7fc4d2 antialiased" style="overflow:auto" data-page="legal">
+
+.skip-link{position:absolute;top:-40px;left:0;background:#6c3ce0;color:#fff;padding:8px 16px;z-index:10000;transition:top .2s}.skip-link:focus{top:0}
+</head>
+<a class="skip-link" href="#main-content">Əsas məzmuna keç</a>
+  <body class="__variable_7fc4d2 antialiased" style="overflow:auto" data-page="legal">
+  id="main-content"
   <noscript>Bu saytın işləməsi üçün JavaScript aktiv olmalıdır.</noscript>
 
 <div>
@@ -145,8 +147,6 @@
          </a>
 </div>
 </div>
-<div class="HeaderMobile_divider__RUyAL">
-</div>
 <button class="HeaderMobile_menu__accordion__item__lNOEz" type="button">
 <div class="HeaderMobile_menu__accordion__item__header__tKY8U">
 <p class="HeaderMobile_menu__accordion__item__header__title__m4g5z">
@@ -166,16 +166,12 @@
 <a href="categories.html">Kurs kateqoriyaları</a>
 </div>
 </button>
-<div class="HeaderMobile_divider__RUyAL">
-</div>
 <div class="HeaderMobile_menu__accordion__item__lNOEz">
 <div class="HeaderMobile_menu__accordion__item__header__tKY8U">
 <a class="HeaderMobile_menu__accordion__item__header__title__m4g5z" href="academy.html">
           Akademiya
          </a>
 </div>
-</div>
-<div class="HeaderMobile_divider__RUyAL">
 </div>
 <div class="HeaderMobile_menu__accordion__item__lNOEz">
 <div class="HeaderMobile_menu__accordion__item__header__tKY8U">
@@ -184,16 +180,12 @@
          </a>
 </div>
 </div>
-<div class="HeaderMobile_divider__RUyAL">
-</div>
 <div class="HeaderMobile_menu__accordion__item__lNOEz">
 <div class="HeaderMobile_menu__accordion__item__header__tKY8U">
 <a class="HeaderMobile_menu__accordion__item__header__title__m4g5z" href="faq.html">
           FAQ
          </a>
 </div>
-</div>
-<div class="HeaderMobile_divider__RUyAL">
 </div>
 <div class="HeaderMobile_menu__accordion__item__lNOEz">
 <div class="HeaderMobile_menu__accordion__item__header__tKY8U">
@@ -202,14 +194,10 @@
          </a>
 </div>
 </div>
-<div class="HeaderMobile_divider__RUyAL">
-</div>
-
 </div>
 </div>
 <div class="HeaderMobile_header_mobile_menu__footer___wEiC">
 <ul class="SocialMediaList_socialList__BZJJ2">
-
 
 <li>
 <a href="privacy.html" rel="noopener noreferrer">
@@ -271,11 +259,10 @@
     </nav>
     <header class="Nexora_legalHeader">
       <h1 class="Nexora_legalTitle">Əlçatanlıq</h1>
-      <p class="Nexora_legalMeta">Son yenilənmə: tarix əlavə ediləcək</p>
+      <p class="Nexora_legalMeta">Son yenilənmə: 20 Avqust 2026</p>
     </header>
     <div class="Nexora_legalNotice" role="note">
-      <strong>Məzmun tezliklə yenilənəcək.</strong>
-      <p>Bu səhifədəki bölmələr əlçatanlıq məzmunu üçün hazırlanmış placeholder strukturudur.</p>
+      <p></p>
     </div>
     <div class="Nexora_legalSections">
       <!-- LEGAL_CONTENT_START -->
@@ -312,8 +299,6 @@
   </section>
 
   <section>
-    <h2>5. Məlum məhdudiyyətlər</h2>
-  </section>
 
   <section>
     <h2>5.1. Klaviatura fokusunun görünməsi</h2>
@@ -392,12 +377,8 @@
   </section>
 
   <section>
-    <h2>11. Uyğunluq bəyanatının forması</h2>
-  </section>
 
   <section>
-    <h2>Prioritetləşdirilmiş düzəliş planı</h2>
-  </section>
 
   <section>
     <h2>Mənbə-kod auditinin xülasəsi</h2>
@@ -511,7 +492,7 @@
   <div class="chat-widget__messages" id="chat-messages" role="log" aria-live="polite"></div>
   <div class="chat-widget__composer">
     <form class="chat-widget__form" id="chat-form" novalidate>
-      <textarea class="chat-widget__input" id="chat-input" name="message" rows="1" maxlength="2000" placeholder="Ask Nexora AI anything..." autocomplete="off" required></textarea>
+      <textarea class="chat-widget__input" id="chat-input" aria-label="Mesajınızı yazın" name="message" rows="1" maxlength="2000" placeholder="Ask Nexora AI anything..." autocomplete="off" required></textarea>
       <button class="chat-widget__send" id="chat-send" type="submit" aria-label="Send" disabled>
         <svg viewBox="0 0 24 24"><path d="m5 12 14-7-4.4 14-2.5-5.1L5 12Z"/><path d="m12.1 13.9 3.6-3.7"/></svg>
       </button>

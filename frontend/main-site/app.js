@@ -900,15 +900,18 @@
             const submit = $('button[type="submit"]', form);
             submit?.setAttribute("disabled", "disabled");
             try {
-              saveOffline(kind, form);
-              announce(form, "E-poçt bu cihazda saxlanıldı.", "success");
+              const emailVal = $('input[name="email"]', form)?.value?.trim();
+              const resp = await fetch("/api/v1/public/newsletter/subscriptions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json", Accept: "application/json" },
+                body: JSON.stringify({ email: emailVal, consentVersion: "v1" }),
+                signal,
+              });
+              if (!resp.ok) throw new Error("Server " + resp.status);
+              announce(form, "E-poçt ünvanı uğurla qeydiyyatdan keçdi!", "success");
               form.reset();
             } catch (_) {
-              announce(
-                form,
-                "Məlumatı brauzer yaddaşında saxlamaq mümkün olmadı.",
-                "error",
-              );
+              announce(form, "Qeydiyyat zamanı xəta baş verdi. Yenidən cəhd edin.", "error");
             } finally {
               submit?.removeAttribute("disabled");
             }

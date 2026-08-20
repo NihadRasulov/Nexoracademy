@@ -27,8 +27,12 @@
     <script defer src="app.js"></script>
   
     
-  </head>
-<body class="__variable_7fc4d2 antialiased" style="overflow:auto" data-page="elaqe">
+  
+.skip-link{position:absolute;top:-40px;left:0;background:#6c3ce0;color:#fff;padding:8px 16px;z-index:10000;transition:top .2s}.skip-link:focus{top:0}
+</head>
+<a class="skip-link" href="#main-content">Əsas məzmuna keç</a>
+  <body class="__variable_7fc4d2 antialiased" style="overflow:auto" data-page="elaqe">
+  id="main-content"
   <noscript>Bu saytın işləməsi üçün JavaScript aktiv olmalıdır.</noscript>
 
       <div>
@@ -263,6 +267,7 @@
         </div>
         </div>
         <!--$-->
+      <h1 class="Nexora_pageTitle">Əlaqə</h1>
       <section class="section section--contact">
         <div class="section__content">
           <div class="container">
@@ -418,7 +423,7 @@
                                     <input
                                       class="FormSection_ai-form__control__input__NOQcq"
                                       data-rules="required|min:5|max:50"
-                                      id="full_name"
+                                      id="full_name" aria-label="Ad Soyad"
                                       name="full_name"
                                       placeholder="Ad Soyad"
                                       required="required"
@@ -474,7 +479,7 @@
                                       <input
                                         class="FormSection_ai-form__control__input__NOQcq"
                                         data-rules="required|email"
-                                        id="email"
+                                        id="email" aria-label="E-poçt ünvanı"
                                         name="email"
                                         placeholder="E-poçt"
                                         required="required"
@@ -528,7 +533,7 @@
                                     >
                                       <input
                                         class="FormSection_ai-form__control__input__NOQcq"
-                                        name="phone"
+                                        name="phone" aria-label="Telefon nömrəsi"
                                         placeholder="Telefon nömrəsi"
                                         required="required"
                                         value=""
@@ -585,7 +590,7 @@
                                     <textarea
                                       class="FormSection_ai-form__control__input__NOQcq"
                                       data-rules="required|min:10|max:1000"
-                                      id="letter"
+                                      id="letter" aria-label="Məktub"
                                       maxlength="3000"
                                       minlength="10"
                                       name="letter"
@@ -720,7 +725,7 @@
   <div class="chat-widget__messages" id="chat-messages" role="log" aria-live="polite"></div>
   <div class="chat-widget__composer">
     <form class="chat-widget__form" id="chat-form" novalidate>
-      <textarea class="chat-widget__input" id="chat-input" name="message" rows="1" maxlength="2000" placeholder="Ask Nexora AI anything..." autocomplete="off" required></textarea>
+      <textarea class="chat-widget__input" id="chat-input" aria-label="Mesajınızı yazın" name="message" rows="1" maxlength="2000" placeholder="Ask Nexora AI anything..." autocomplete="off" required></textarea>
       <button class="chat-widget__send" id="chat-send" type="submit" aria-label="Send" disabled>
         <svg viewBox="0 0 24 24"><path d="m5 12 14-7-4.4 14-2.5-5.1L5 12Z"/><path d="m12.1 13.9 3.6-3.7"/></svg>
       </button>

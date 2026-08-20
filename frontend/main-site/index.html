@@ -56,13 +56,17 @@
     </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js" defer></script>
     <script defer src="app.js"></script>
-  </head>
+  
+.skip-link{position:absolute;top:-40px;left:0;background:#6c3ce0;color:#fff;padding:8px 16px;z-index:10000;transition:top .2s}.skip-link:focus{top:0}
+</head>
 
+  <a class="skip-link" href="#main-content">Əsas məzmuna keç</a>
   <body
     class="__variable_7fc4d2 antialiased"
     style="overflow: auto"
     data-page="home"
   >
+  id="main-content"
     <noscript>Bu saytın işləməsi üçün JavaScript aktiv olmalıdır.</noscript>
     <div>
       <header class="Header_header__8yaFd">
@@ -453,7 +457,7 @@
                   playsinline=""
                   preload="metadata"
                 >
-                  <source src="assets/heroVideo.mp4" type="video/mp4" />
+                  <source src="assets/heroVideo_optimized.mp4" type="video/mp4" />
                 </video>
                 <div class="HeroSection_overlay__BP4PJ"></div>
                 <div class="HeroSection_controls__baKtU">
@@ -2057,7 +2061,7 @@
                               >
                                 <input
                                   class="SendApplicationSection_ai-form__control__input__Qc_pc"
-                                  id="fullname"
+                                  id="fullname" aria-label="Ad Soyad"
                                   name="fullname"
                                   placeholder="Ad, Soyad"
                                   required="required"
@@ -2108,7 +2112,7 @@
                               >
                                 <input
                                   class="SendApplicationSection_ai-form__control__input__Qc_pc"
-                                  id="email"
+                                  id="email" aria-label="E-poçt ünvanı"
                                   name="email"
                                   placeholder="E-poçt"
                                   required="required"
@@ -2160,7 +2164,7 @@
                               >
                                 <input
                                   class="SendApplicationSection_ai-form__control__input__Qc_pc"
-                                  name="phone"
+                                  name="phone" aria-label="Telefon nömrəsi"
                                   placeholder="Telefon nömrəsi"
                                   required="required"
                                   value=""
@@ -3046,7 +3050,7 @@
         <form class="chat-widget__form" id="chat-form" novalidate>
           <textarea
             class="chat-widget__input"
-            id="chat-input"
+            id="chat-input" aria-label="Mesajınızı yazın"
             name="message"
             rows="1"
             maxlength="2000"
