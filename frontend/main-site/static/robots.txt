@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /chat
+
+Sitemap: https://nexoracademy.az/sitemap.xml

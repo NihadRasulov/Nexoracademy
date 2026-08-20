@@ -164,7 +164,7 @@ services:
     networks:
       - nexora-net
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:8080/sys-control-9912/api/health || exit 1"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/sys-control-9912/api/health/backend || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -231,6 +231,7 @@ services:
     volumes:
       - "./nginx.conf:/etc/nginx/conf.d/default.conf:ro"
       - "/etc/letsencrypt:/etc/nginx/certs:ro"
+      - "./frontend/main-site/static:/etc/nginx/static:ro"
     networks:
       - nexora-net
     depends_on:
@@ -238,7 +239,7 @@ services:
       - admin-ui
       - admin-bff
     healthcheck:
-      test: ["CMD-SHELL", "wget --quiet --spider --no-check-certificate http://127.0.0.1/healthz || exit 1"]
+      test: ["CMD-SHELL", "wget --quiet --spider --no-check-certificate http://127.0.0.1/health || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 3
