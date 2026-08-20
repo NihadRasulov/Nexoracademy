@@ -150,8 +150,8 @@ services:
 
   admin-bff:
     build:
-      context: ./admin_panel
-      dockerfile: NexoraAdminPanel/NexoraAdminPanel/src/NexoraAcademy.AdminBff/Dockerfile
+      context: .
+      dockerfile: backend/admin-bff/NexoraAdminPanel/NexoraAdminPanel/src/NexoraAcademy.AdminBff/Dockerfile
     container_name: nexora-admin-bff
     restart: unless-stopped
     environment:
@@ -189,7 +189,7 @@ services:
   # --- SEPARATED ADMIN UI ---
   admin-ui:
     build:
-      context: ./admin_panel/NexoraAdminPanelUI
+      context: ./frontend/admin-ui
       dockerfile: Dockerfile
       args:
         VITE_API_BASE_URL: "https://${PUBLIC_HOST}"
