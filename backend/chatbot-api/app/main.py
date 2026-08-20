@@ -202,7 +202,8 @@ async def health():
         except Exception:
             pass
 
-    all_ok = redis_ok and db_health().get("healthy", True)
+    db_ok = db_health() if isinstance(db_health(), bool) else db_health().get("healthy", True)
+    all_ok = redis_ok and db_ok
     status_code = 200 if all_ok else 503
     from fastapi.responses import JSONResponse as _JSONResponse
     return _JSONResponse(
