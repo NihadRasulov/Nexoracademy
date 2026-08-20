@@ -169,7 +169,7 @@ services:
           memory: 400M
 
   # --- SEPARATED MAIN FRONTEND ---
- main-ui:
+  main-ui:
     build:
       context: ./frontend/main-site
       dockerfile: Dockerfile
