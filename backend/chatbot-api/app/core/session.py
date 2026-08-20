@@ -145,7 +145,7 @@ def set_manager(manager: SessionManager):
     _manager = manager
 
 
-def get_or_create(session_id: str) -> dict:
+def get_or_create(session_id: str, user_id: str | None = None) -> dict:
     return _manager.get_or_create(session_id)
 
 
