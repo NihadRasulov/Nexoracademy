@@ -1,6 +1,9 @@
 ﻿<!doctype html>
 <html lang="az">
 <head>
+    <link rel="preload" href="assets/heroVideo_optimized.mp4" as="video" type="video/mp4">
+    <link rel="preload" href="assets/logo.png" as="image">
+    <link rel="modulepreload" href="app.js">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
@@ -12,7 +15,11 @@
   <title>Hesab vəziyyəti | Nexora Academy</title>
   <link rel="stylesheet" href="style.css">
   <script defer src="app.js"></script>
-</head>
+
+    <style>
+      section { content-visibility: auto; contain-intrinsic-size: auto 500px; }
+    </style>
+  </head>
 <body class="__variable_7fc4d2 antialiased" style="overflow:auto" data-page="account-status">
   <noscript>Bu saytın işləməsi üçün JavaScript aktiv olmalıdır.</noscript>
 
@@ -387,5 +394,6 @@
   </div>
 </div>
 
-</body>
+  <script src="assets/webp-fallback.js" defer></script>
+  </body>
 </html>

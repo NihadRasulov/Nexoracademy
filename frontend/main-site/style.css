@@ -871,14 +871,14 @@ input:-webkit-autofill:hover {
   --gradient-1: linear-gradient(251deg, #9ed8ff 23.66%, #5ba7ff 61.36%, #3554d1 101.74%);
   --gradient-2: linear-gradient(180deg, transparent, rgba(0, 0, 0, .71)), rgba(0, 0, 0, .44);
   --fs-h1: 96px;
-  --fs-h2: 60px;
-  --fs-h3: 48px;
+  --fs-h2: 48px;
+  --fs-h3: 40px;
   --fs-h4: 34px;
   --fs-h5: 24px;
   --fs-h6: 20px;
   --lh-h1: 100px;
-  --lh-h2: 64px;
-  --lh-h3: 56px;
+  --lh-h2: 52px;
+  --lh-h3: 48px;
   --lh-h4: 40px;
   --lh-h5: 32px;
   --lh-h6: 24px;
@@ -1053,7 +1053,7 @@ input:-webkit-autofill:hover {
   line-height: var(--lh-h3);
   font-weight: var(--fw-bold);
   color: var(--neutral-1);
-  overflow-wrap: anywhere
+  overflow-wrap: break-word;
 }
 
 .section__header__desc {
@@ -1267,8 +1267,8 @@ input:-webkit-autofill:hover {
 
 .section--roadmap .section__header__content p:first-child {
   font-weight: 600;
-  font-size: 54px;
-  line-height: 64px;
+  font-size: 40px;
+  line-height: 48px;
   letter-spacing: -1.5px;
   text-align: center;
   background: linear-gradient(190deg, #9ed8ff, #5ba7ff, #3554d1);
@@ -1330,8 +1330,8 @@ input:-webkit-autofill:hover {
 
 .section--management .section__header__content__title {
   font-weight: 600;
-  font-size: 44px;
-  line-height: 64px;
+  font-size: 36px;
+  line-height: 52px;
   letter-spacing: -1.5px;
   text-align: center
 }
@@ -1809,7 +1809,7 @@ input:-webkit-autofill:hover {
   }
 
   .section--success--stories .section__header__title {
-    font-size: 54px;
+    font-size: 40px;
     font-weight: var(--fw-bold);
     line-height: var(--lh-h3)
   }
@@ -1819,7 +1819,7 @@ input:-webkit-autofill:hover {
   }
 
   .section--view--naic .section__header__title {
-    font-size: 48px;
+    font-size: 40px;
     font-weight: var(--fw-bold)
   }
 
@@ -1890,8 +1890,13 @@ input:-webkit-autofill:hover {
   }
 
   .section--hero .section__header__title {
-    font-size: 40px;
+    font-size: 32px;
     font-weight: var(--fw-bold)
+  }
+
+  .HeroSection_content__title__Wr5gI {
+    font-size: 32px;
+    line-height: 38px
   }
 
   .section--view--naic .section__header__title {
@@ -1900,7 +1905,7 @@ input:-webkit-autofill:hover {
   }
 
   .section--work .section__header__title {
-    font-size: 40px;
+    font-size: 32px;
     font-weight: var(--fw-bold)
   }
 
@@ -1910,7 +1915,7 @@ input:-webkit-autofill:hover {
 
   .section--blogs .section__header__title,
   .section--projects .section__header__title {
-    font-size: 40px;
+    font-size: 32px;
     font-weight: var(--fw-bold)
   }
 
@@ -1920,7 +1925,7 @@ input:-webkit-autofill:hover {
   }
 
   .section--application .section__header__title {
-    font-size: 40px;
+    font-size: 32px;
     font-weight: var(--fw-bold)
   }
 
@@ -1949,7 +1954,7 @@ input:-webkit-autofill:hover {
   }
 
   .section--roadmap .section__header__content p:first-child {
-    font-size: 40px
+    font-size: 32px
   }
 
   .section--roadmap .section__header__content p:last-child {
@@ -4395,8 +4400,8 @@ input:-webkit-autofill:hover {
 
 .RoadMapSection_roadmap__timeline__item__OitQD .RoadMapSection_text_1__7GmGx p:first-child {
   font-weight: 600;
-  font-size: 54px;
-  line-height: 64px;
+  font-size: 40px;
+  line-height: 48px;
   letter-spacing: -1.5px;
   text-align: center;
   padding-bottom: 5px
@@ -5459,8 +5464,8 @@ input:-webkit-autofill:hover {
 
 .Career_container__K6ViS .Career_section__content__X9M6V .Career_section__content--row__FsVzs .Career_section__header__sVU1_ .Career_section__header__content__4khLL .Career_section__header__title__S_fZm {
   font-weight: 600;
-  font-size: 36px;
-  line-height: 50px;
+  font-size: 32px;
+  line-height: 44px;
   letter-spacing: -1.5px
 }
 
@@ -5559,8 +5564,8 @@ input:-webkit-autofill:hover {
 
 .CareerHero_ai-hero__title__Qwqez {
   font-weight: 600;
-  font-size: 44px;
-  line-height: 56px;
+  font-size: 36px;
+  line-height: 48px;
   letter-spacing: -1.5px;
   color: #fff
 }
@@ -6417,8 +6422,8 @@ form[novalidate] textarea {
 
 @media(max-width:768px) {
   .Nexora_pageTitle {
-    font-size: 42px;
-    line-height: 50px;
+    font-size: 36px;
+    line-height: 44px;
   }
 
   .Nexora_sectionTitle {
@@ -6882,7 +6887,7 @@ body[data-page="legal"] {
 .Nexora_legalTitle {
   max-width: 920px;
   margin: 0 0 18px;
-  font-size: clamp(44px, 5.1vw, 72px);
+  font-size: clamp(36px, 4vw, 56px);
   line-height: 1.05;
   letter-spacing: -0.035em;
   color: #fff;
@@ -6916,7 +6921,7 @@ body[data-page="legal"] {
 
 .Nexora_legalSections h2 {
   margin: 0;
-  font-size: clamp(26px, 3vw, 34px);
+  font-size: clamp(24px, 2.8vw, 30px);
   line-height: 1.2;
   color: #fff;
 }
@@ -7656,7 +7661,7 @@ body > .chat-fab--active::after { content: "\00d7"; font-size: 28px; font-weight
 }
 
 /* Nexora logo: dogru proporsiya */
-img[src*="assets/logo.svg"] { object-fit: contain; }
+img[src*="assets/logo.png"] { object-fit: contain; }
 
 /* ===== Fix: section--externals (mySwiper) kart olculeri =====
    Sebeb: inline translate3d(-94.13px) ofseti + slide inline width:288.78px/margin-right
@@ -7697,4 +7702,82 @@ img[src*="assets/logo.svg"] { object-fit: contain; }
 }
 
 /* Auth səssiyası yoxlanana qədər hamburger "Daxil ol" etiketi */
+
+/* ===== FAQ akkordion ===== */
+.faq-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%
+}
+
+.faq-item {
+  border-radius: 24px;
+  background: var(--neutral-12);
+  border: 1px solid transparent;
+  overflow: hidden;
+  transition: var(--ts-medium)
+}
+
+.faq-item.is-open {
+  border-color: var(--neutral-10)
+}
+
+.faq-question {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  padding: 20px 24px;
+  border: 0;
+  background: transparent;
+  color: var(--neutral-1);
+  font-family: var(--primary-font-family);
+  font-size: var(--fs-h6);
+  line-height: var(--lh-h6);
+  font-weight: var(--fw-semi-bold);
+  text-align: left;
+  cursor: pointer;
+  transition: var(--ts-medium)
+}
+
+.faq-question:hover {
+  color: var(--neutral-1)
+}
+
+.faq-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--neutral-1);
+  line-height: 0;
+  transition: transform 0.3s ease
+}
+
+.faq-indicator svg {
+  display: block
+}
+
+.faq-item.is-open .faq-indicator {
+  transform: rotate(180deg)
+}
+
+.faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease
+}
+
+.faq-answer__inner {
+  padding: 0 24px 24px
+}
+
+.faq-answer__inner p {
+  margin: 0;
+  color: var(--neutral-5);
+  font-size: var(--fs-b1);
+  line-height: 1.6
+}
 

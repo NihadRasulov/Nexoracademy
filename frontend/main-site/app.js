@@ -2944,6 +2944,98 @@
     );
   }
 
+  const STAT_COUNT_UP_DURATION_MS = 1800;
+
+  function initStatCounters(signal) {
+    if (signal?.aborted) return;
+    const root = $(".StatisticSection_ai-stats__vVDkK");
+    if (!root) return;
+    const counters = $$(".StatisticSection_ai-stats__item__count__lVNUN", root);
+    if (!counters.length) return;
+
+    const targets = counters.map((counter) => {
+      const match = String(counter.textContent || "").match(/^\s*(\d+)\s*(\+)?\s*$/);
+      return {
+        counter,
+        value: match ? parseInt(match[1], 10) : 0,
+        suffix: match && match[2] ? "+" : "",
+      };
+    });
+
+    const run = () => {
+      if (
+        window.matchMedia &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ) {
+        targets.forEach(({ counter, value, suffix }) => {
+          counter.textContent = `${value}${suffix}`;
+        });
+        return;
+      }
+      const start = performance.now();
+      targets.forEach(({ counter, value, suffix }) => {
+        counter.textContent = `0${suffix}`;
+      });
+      const tick = (now) => {
+        const progress = Math.min((now - start) / STAT_COUNT_UP_DURATION_MS, 1);
+        const eased = progress >= 1 ? 1 : 1 - Math.pow(1 - progress, 3);
+        targets.forEach(({ counter, value, suffix }) => {
+          counter.textContent = `${Math.round(eased * value)}${suffix}`;
+        });
+        if (progress < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    };
+
+    if (!("IntersectionObserver" in window)) {
+      run();
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          observer.unobserve(entry.target);
+          run();
+        });
+      },
+      { threshold: 0.3 },
+    );
+    observer.observe(root);
+  }
+
+  function initFaqAccordion(signal) {
+    const root = $(".faq-accordion");
+    if (!root) return;
+    const items = $$(".faq-item", root);
+    if (!items.length) return;
+    items.forEach((item) => {
+      const question = $(".faq-question", item);
+      const answer = $(".faq-answer", item);
+      if (!question || !answer) return;
+      question.addEventListener(
+        "click",
+        () => {
+          const isOpen = item.classList.contains("is-open");
+          items.forEach((other) => {
+            const otherQuestion = $(".faq-question", other);
+            const otherAnswer = $(".faq-answer", other);
+            other.classList.remove("is-open");
+            if (otherQuestion)
+              otherQuestion.setAttribute("aria-expanded", "false");
+            if (otherAnswer) otherAnswer.style.maxHeight = "0px";
+          });
+          if (!isOpen) {
+            item.classList.add("is-open");
+            question.setAttribute("aria-expanded", "true");
+            answer.style.maxHeight = `${answer.scrollHeight}px`;
+          }
+        },
+        { signal },
+      );
+    });
+  }
+
   function initPage(signal) {
     applyDataImageFallbacks();
     initStandaloneTarget();
@@ -2956,6 +3048,8 @@
     initSliders(signal);
     initPagination(signal);
     initPhoneInputs(signal);
+    initStatCounters(signal);
+    initFaqAccordion(signal);
     initApiPage(signal);
   }
 
