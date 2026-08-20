@@ -38,7 +38,7 @@ public static class AdminSecurityServiceCollectionExtensions
                 options.Cookie.Name = BffAuthConstants.CookieName;
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
-                options.Cookie.Path = settings.BasePath;
+                options.Cookie.Path = "/";
                 options.Cookie.SameSite = SameSiteMode.Strict;
                 options.Cookie.SecurePolicy = environment.IsDevelopment()
                     ? CookieSecurePolicy.SameAsRequest
