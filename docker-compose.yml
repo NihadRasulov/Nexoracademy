@@ -80,7 +80,7 @@ services:
       - DB_NAME=${DB_NAME:-nexora_academy}
       - DB_USER=${DB_USER:-nexora_app}
       - DB_PASSWORD=${DB_PASSWORD}
-      - REDIS_URL=redis://nexora-redis:6379/0
+      - REDIS_URL=redis://:nexora-redis-pass@nexora-redis:6379/0
       - REDIS_ENABLED=true
       - ENVIRONMENT=development
       - DATABASE_URL=postgresql://${DB_USER:-nexora_app}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-nexora_academy}
