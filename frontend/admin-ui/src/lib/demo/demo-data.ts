@@ -445,6 +445,42 @@ export const demoGraduateOutcomes = [
   },
 ];
 
+export const demoApplications = [
+  {
+    id: 1,
+    applicationType: 1,
+    fullname: "Tural Məmmədov",
+    email: "tural.mammadov@gmail.com",
+    phone: "+994502223344",
+    letter: "Full-Stack Veb İnkişafı kursuna qoşulmaq istəyirəm. Hal-hazırda junior developer olaraq çalışıram və biliklərimi artırmaq istəyirəm. React və Node.js təcrübəm var.",
+    cvFilename: "tural_cv.pdf",
+    status: "PENDING",
+    createdAt: daysAgo(3),
+  },
+  {
+    id: 2,
+    applicationType: 1,
+    fullname: "Aysel Həsənova",
+    email: "aysel.hasanova@outlook.com",
+    phone: "+994553334455",
+    letter: "Python ilə Data Analitikası kursuna yazılmaq istəyirəm. Statistika təhsilim var və data sahəsində karyera qurmaq niyyətindəyəm. Bu kurs mənə lazım olan praktiki bacarıqları verəcək.",
+    cvFilename: null,
+    status: "REVIEWED",
+    createdAt: daysAgo(7),
+  },
+  {
+    id: 3,
+    applicationType: 3,
+    fullname: "Elçin Əliyev",
+    email: "elchin.aliyev@yahoo.com",
+    phone: "+994704445566",
+    letter: "Nexora Academy-də UI/UX Dizayn müəllimi vəzifəsinə müraciət edirəm. 8 il dizayn təcrübəm var, Figma və Adobe XD ilə peşəkar səviyyədə işləyirəm. Dərs vermək təcrübəm də mövcuddur.",
+    cvFilename: "elchin_cv.docx",
+    status: "APPROVED",
+    createdAt: daysAgo(14),
+  },
+];
+
 export const demoAuditLogs = [
   {
     id: 1,

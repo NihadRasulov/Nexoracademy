@@ -43,6 +43,7 @@ export function App() {
               <Route element={<RequireRole group="adminOnly" />}>
                 <Route path="/users" element={<UsersPage />} />
                 <Route path="/payments" element={<PaymentsPage />} />
+                <Route path="/applications" element={<ResourceRoutePage resource="application" />} />
                 <Route path="/scholarships" element={<ResourceRoutePage resource="scholarship" />} />
                 <Route path="/oauth-accounts" element={<ResourceRoutePage resource="oauthAccount" />} />
                 <Route path="/sessions" element={<ResourceRoutePage resource="session" />} />

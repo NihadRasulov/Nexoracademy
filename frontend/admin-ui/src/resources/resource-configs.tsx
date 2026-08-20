@@ -592,6 +592,71 @@ export const auditLogConfig: ResourceConfig<AuditLogRow> = {
   ],
 };
 
+export interface ApplicationRow extends Record<string, unknown> {
+  id: number;
+  applicationType: number;
+  fullname: string;
+  email: string;
+  phone: string;
+  letter: string;
+  cvFilename?: string | null;
+  status: string;
+  createdAt: string;
+}
+
+export const applicationConfig: ResourceConfig<ApplicationRow> = {
+  key: "applications",
+  title: "Başvurular",
+  description: "Platformaya edilən iş/ kurs başvurularının idarə edilməsi.",
+  apiPath: "/api/v1/applications",
+  idField: "id",
+  roleGroup: "adminOnly",
+  searchKeys: ["fullname", "email"],
+  columns: [
+    { key: "fullname", label: "Ad Soyad" },
+    { key: "email", label: "E-poçt" },
+    { key: "phone", label: "Telefon" },
+    {
+      key: "applicationType",
+      label: "Növ",
+      render: (r) => (
+        <StatusBadge
+          value={
+            r.applicationType === 1
+              ? "Kurs"
+              : r.applicationType === 2
+                ? "Təqaüd"
+                : r.applicationType === 3
+                  ? "İş"
+                  : `Tip ${r.applicationType}`
+          }
+        />
+      ),
+    },
+    { key: "status", label: "Status", render: (r) => <StatusBadge value={r.status} /> },
+    { key: "createdAt", label: "Tarix", render: (r) => formatDateTime(r.createdAt) },
+  ],
+  fields: [
+    { name: "applicationType", label: "Başvuru növü", type: "number", required: true },
+    { name: "fullname", label: "Ad Soyad", type: "text", required: true },
+    { name: "email", label: "E-poçt", type: "text", required: true },
+    { name: "phone", label: "Telefon", type: "text", required: true },
+    { name: "letter", label: "Məktub", type: "textarea", required: true },
+    { name: "cvFilename", label: "CV faylı", type: "text", advanced: true },
+    {
+      name: "status",
+      label: "Status",
+      type: "select",
+      options: [
+        { value: "PENDING", label: "Gözləmədə" },
+        { value: "REVIEWED", label: "İncələnib" },
+        { value: "APPROVED", label: "Təsdiqlənib" },
+        { value: "REJECTED", label: "Rədd edilib" },
+      ],
+    },
+  ],
+};
+
 export const allResourceConfigs = [
   categoryConfig,
   instructorConfig,
@@ -609,4 +674,5 @@ export const allResourceConfigs = [
   courseReviewConfig,
   graduateOutcomeConfig,
   auditLogConfig,
+  applicationConfig,
 ];

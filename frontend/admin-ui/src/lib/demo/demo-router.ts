@@ -31,6 +31,7 @@ const stores: Record<string, Store> = {
   "/api/v1/users": { rows: clone(seed.demoUsers) },
   "/api/v1/enrollments": { rows: clone(seed.demoEnrollments) },
   "/api/v1/payments": { rows: clone(seed.demoPayments) },
+  "/api/v1/applications": { rows: clone(seed.demoApplications) },
 };
 
 let meState: Record<string, unknown> = clone(seed.DEMO_ME);
@@ -166,7 +167,7 @@ export async function demoRequest<T>(
       }
       if (method === "POST") {
         const created: Record<string, unknown> = { id: genId(), ...(body as Record<string, unknown>) };
-        if (basePath === "/api/v1/categories" || basePath === "/api/v1/scholarships") {
+        if (basePath === "/api/v1/categories" || basePath === "/api/v1/scholarships" || basePath === "/api/v1/applications") {
           created.id = Math.max(0, ...store.rows.map((r) => Number(r.id) || 0)) + 1;
         }
         if (

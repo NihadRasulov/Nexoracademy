@@ -54,6 +54,7 @@ public static class NexoraApiServiceCollectionExtensions
         AddAuthenticatedClient<ICourseReviewApiClient, CourseReviewApiClient>(services, ConfigureClient);
         AddAuthenticatedClient<IGraduateOutcomeApiClient, GraduateOutcomeApiClient>(services, ConfigureClient);
         AddAuthenticatedClient<IAuditLogApiClient, AuditLogApiClient>(services, ConfigureClient);
+        AddAuthenticatedClient<IApplicationApiClient, ApplicationApiClient>(services, ConfigureClient);
 
         return services;
 

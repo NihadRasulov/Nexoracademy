@@ -1,5 +1,6 @@
 import { ResourcePage } from "@/resources/resource-page";
 import {
+  applicationConfig,
   auditLogConfig,
   campaignConfig,
   categoryConfig,
@@ -19,6 +20,7 @@ import {
 } from "@/resources/resource-configs";
 
 export type ResourceRouteKey =
+  | "application"
   | "auditLog"
   | "campaign"
   | "category"
@@ -38,6 +40,7 @@ export type ResourceRouteKey =
 
 export function ResourceRoutePage({ resource }: { resource: ResourceRouteKey }) {
   switch (resource) {
+    case "application": return <ResourcePage config={applicationConfig} />;
     case "auditLog": return <ResourcePage config={auditLogConfig} />;
     case "campaign": return <ResourcePage config={campaignConfig} />;
     case "category": return <ResourcePage config={categoryConfig} />;

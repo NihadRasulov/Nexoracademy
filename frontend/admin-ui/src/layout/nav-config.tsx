@@ -9,6 +9,7 @@ import {
   FileText,
   Gauge,
   GraduationCap,
+  Inbox,
   KeyRound,
   LayoutGrid,
   Link2,
@@ -60,6 +61,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Qeydiyyat & Ödəniş",
     items: [
+      { label: "Başvurular", to: "/applications", icon: Inbox, roleGroup: "adminOnly" },
       { label: "Qeydiyyatlar", to: "/enrollments", icon: ClipboardList, roleGroup: "salesCrm" },
       { label: "Ödənişlər", to: "/payments", icon: Receipt, roleGroup: "adminOnly" },
       { label: "Təqaüdlər", to: "/scholarships", icon: BadgePercent, roleGroup: "adminOnly" },
