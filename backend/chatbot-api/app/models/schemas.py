@@ -3,10 +3,9 @@ from typing import Optional, Literal
 
 
 class ChatRequest(BaseModel):
-    message: str
-    sessionId: str = ""
-    conversationId: str | None = None
-    userId: str | None = None
+    message: str = Field(..., max_length=4000)
+    conversationId: str | None = Field(default=None, max_length=128)
+    sessionId: str | None = Field(default=None, max_length=128)
 
 
 class ActionButton(BaseModel):
@@ -36,14 +35,14 @@ class ChatResponse(BaseModel):
 
 
 class LeadRequest(BaseModel):
-    name: str
-    phone: str
-    email: Optional[str] = ""
-    interest: Optional[str] = ""
-    level: Optional[str] = ""
-    note: Optional[str] = ""
-    source: Optional[str] = "chatbot"
-    sessionId: Optional[str] = None
+    name: str = Field(..., max_length=200)
+    phone: str = Field(..., max_length=30)
+    email: Optional[str] = Field(default="", max_length=254)
+    interest: Optional[str] = Field(default="", max_length=200)
+    level: Optional[str] = Field(default="", max_length=50)
+    note: Optional[str] = Field(default="", max_length=1000)
+    source: Optional[str] = Field(default="chatbot", max_length=50)
+    sessionId: Optional[str] = Field(default=None, max_length=128)
 
 
 class LeadResponse(BaseModel):

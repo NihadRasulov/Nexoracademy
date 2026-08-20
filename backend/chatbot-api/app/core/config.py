@@ -70,14 +70,25 @@ class Config:
         return bool(self.openrouter_api_key)
 
     def validate(self) -> list[str]:
-        """Return a list of warnings about missing/risky configuration."""
+        """Return a list of warnings; in production, critical issues become errors."""
         warnings = []
+        errors = []
         if not self.openrouter_api_key:
             warnings.append("OPENROUTER_API_KEY not set – LLM will be unavailable")
         if not self.redis_enabled:
-            warnings.append("Redis disabled – sessions will be in-memory only (not suitable for production)")
+            msg = "Redis disabled – sessions will be in-memory only"
+            if self.is_production:
+                errors.append(msg + " (FATAL in production)")
+            else:
+                warnings.append(msg)
         if "sqlite" in self.database_url and self.is_production:
-            warnings.append("SQLite detected in production – use PostgreSQL")
+            errors.append("SQLite detected in production – use PostgreSQL (FATAL)")
+        if self.is_production and errors:
+            import logging
+            log = logging.getLogger("nexora.config")
+            for e in errors:
+                log.critical("config_error msg=%s", e)
+            sys.exit(1)
         return warnings
 
 

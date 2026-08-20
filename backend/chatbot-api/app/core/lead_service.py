@@ -1,23 +1,26 @@
 """
 Lead service – persists leads to the database with in-memory fallback.
+No PII is logged in plaintext.
 """
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+import secrets
+import time
 
 logger = logging.getLogger("nexora.lead_service")
 
 _fallback_leads: list[dict] = []
 
 
-def _make_ref(data: dict) -> str:
-    ts = datetime.now().timestamp()
-    return f"lead-{ts:.0f}-{id(data):x}"
+def _make_ref() -> str:
+    ts = int(time.time())
+    rand = secrets.token_hex(4)
+    return f"lead-{ts}-{rand}"
 
 
 def add_lead(data: dict) -> dict:
-    lead_ref = _make_ref(data)
+    lead_ref = _make_ref()
     entry = {
         "id": lead_ref,
         "name": data.get("name", ""),
@@ -28,8 +31,7 @@ def add_lead(data: dict) -> dict:
         "note": data.get("note", ""),
         "source": data.get("source", "chatbot"),
         "sessionId": data.get("sessionId", ""),
-        "userId": data.get("userId", ""),
-        "createdAt": datetime.now().isoformat(),
+        "createdAt": __import__("datetime").datetime.now().isoformat(),
     }
 
     try:
@@ -47,13 +49,9 @@ def add_lead(data: dict) -> dict:
                 note=entry["note"] or None,
                 source=entry["source"],
                 session_id=entry["sessionId"] or None,
-                user_id=entry["userId"] or None,
             )
             db.add(lead_row)
-        logger.info(
-            "lead_saved ref=%s name=%s phone=%s interest=%s",
-            lead_ref, entry["name"], entry["phone"], entry["interest"],
-        )
+        logger.info("lead_saved ref=%s source=%s", lead_ref, entry["source"])
         return entry
     except Exception as exc:
         logger.error("lead_db_error ref=%s error=%s – buffering in memory", lead_ref, exc)
@@ -61,20 +59,30 @@ def add_lead(data: dict) -> dict:
         return entry
 
 
-def get_all_leads() -> list[dict]:
-    results: list[dict] = list(_fallback_leads)
+def get_leads_page(limit: int = 20, offset: int = 0) -> list[dict]:
+    results: list[dict] = []
 
     try:
         from db.database import get_db
         from db.models import Lead
 
         with get_db() as db:
-            rows = db.query(Lead).order_by(Lead.created_at.desc()).all()
-            results = [r.to_dict() for r in rows] + _fallback_leads
+            rows = (
+                db.query(Lead)
+                .order_by(Lead.created_at.desc())
+                .offset(offset)
+                .limit(limit)
+                .all()
+            )
+            results = [r.to_dict() for r in rows]
     except Exception as exc:
-        logger.warning("lead_list_db_error error=%s – returning memory buffer", exc)
+        logger.warning("lead_list_db_error error=%s", exc)
 
     return results
+
+
+def get_all_leads() -> list[dict]:
+    return get_leads_page(limit=500, offset=0)
 
 
 def count_leads() -> int:

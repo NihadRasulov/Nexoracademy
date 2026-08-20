@@ -1,5 +1,6 @@
 """
 Chat route – production-grade rewrite.
+Server-issues session IDs; caller-supplied userId is not trusted.
 """
 from __future__ import annotations
 
@@ -17,6 +18,7 @@ from fastapi.responses import StreamingResponse
 from models.schemas import ChatRequest
 from core.orchestrator import Orchestrator
 from core.rate_limiter import is_rate_limited
+from core import session as session_mod
 
 logger = logging.getLogger("nexora.route.chat")
 
@@ -33,20 +35,11 @@ def init(orchestrator: Orchestrator):
 async def chat(req: ChatRequest, request: Request):
     client_ip = request.client.host if request.client else "unknown"
 
-    if req.conversationId and req.conversationId.strip():
-        session_id = req.conversationId.strip()
-    elif req.sessionId and req.sessionId.strip():
-        session_id = req.sessionId.strip()
-    else:
-        session_id = client_ip
-        logger.warning(
-            "session_id_fallback_to_ip ip=%s – client should supply conversationId",
-            client_ip,
-        )
+    raw_session = req.conversationId or req.sessionId or ""
+    sess = session_mod.get_or_create(raw_session)
+    session_id = sess["sessionId"]
 
-    user_id = req.userId or None
-
-    if is_rate_limited(client_ip, session_id=session_id, user_id=user_id):
+    if is_rate_limited(client_ip):
         logger.info("rate_limited session=%s ip=%s", session_id, client_ip)
         return {
             "reply": (
@@ -57,16 +50,14 @@ async def chat(req: ChatRequest, request: Request):
             "actions": [],
             "courses": [],
             "capture": "none",
+            "sessionId": session_id,
         }
 
     message = (req.message or "").strip()
     if len(message) > 2000:
         message = message[:2000]
 
-    logger.info(
-        "chat_request session=%s user=%s ip=%s msg_len=%d",
-        session_id, user_id, client_ip, len(message),
-    )
+    logger.info("chat_request session=%s ip=%s msg_len=%d", session_id, client_ip, len(message))
 
     if _orchestrator is None:
         logger.error("orchestrator_not_initialised")
@@ -76,25 +67,27 @@ async def chat(req: ChatRequest, request: Request):
             "actions": [],
             "courses": [],
             "capture": "none",
+            "sessionId": session_id,
         }
 
-    result = _orchestrator.process(message, session_id, user_id=user_id)
+    result = _orchestrator.process(message, session_id)
 
-    logger.info(
-        "chat_response session=%s state=%s actions=%d",
-        session_id, result.state, len(result.actions),
-    )
+    logger.info("chat_response session=%s state=%s actions=%d", session_id, result.state, len(result.actions))
+
+    response = result.model_dump()
+    response["sessionId"] = session_id
 
     accept = request.headers.get("accept", "")
     if "text/event-stream" in accept:
-        return _stream_response(result.reply)
+        return _stream_response(result.reply, session_id)
 
-    return result.model_dump()
+    return response
 
 
-def _stream_response(text: str) -> StreamingResponse:
+def _stream_response(text: str, session_id: str) -> StreamingResponse:
     async def generate():
         import asyncio
+        yield f"data: {__import__('json').dumps({'sessionId': session_id})}\n\n"
         words = text.split(" ")
         for word in words:
             yield f"data: {word}\n\n"

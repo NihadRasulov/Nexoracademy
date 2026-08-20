@@ -1,17 +1,19 @@
 """
 Sliding-window rate limiter with Redis backend and in-memory fallback.
+Key is always IP-based to prevent caller-controlled partitioning.
 """
 from __future__ import annotations
 
 import logging
 import time
-from typing import Optional
 
 from core.config import settings
 
 logger = logging.getLogger("nexora.rate_limiter")
 
 _ip_timestamps: dict[str, list[float]] = {}
+
+MAX_IN_MEMORY_KEYS = 10000
 
 
 def _mem_is_rate_limited(key: str) -> bool:
@@ -24,6 +26,12 @@ def _mem_is_rate_limited(key: str) -> bool:
         return True
 
     timestamps.append(now)
+
+    if len(_ip_timestamps) > MAX_IN_MEMORY_KEYS:
+        oldest_keys = sorted(_ip_timestamps.keys(), key=lambda k: min(_ip_timestamps[k]))[:MAX_IN_MEMORY_KEYS // 2]
+        for k in oldest_keys:
+            del _ip_timestamps[k]
+
     return False
 
 
@@ -58,12 +66,8 @@ def set_redis(client) -> None:
     _redis_client = client
 
 
-def is_rate_limited(
-    ip: str,
-    session_id: str | None = None,
-    user_id: str | None = None,
-) -> bool:
-    key = user_id or session_id or ip
+def is_rate_limited(ip: str) -> bool:
+    key = f"ip:{ip}"
 
     if _redis_client:
         return _redis_is_rate_limited(_redis_client, key)
