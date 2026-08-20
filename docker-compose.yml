@@ -169,9 +169,9 @@ services:
           memory: 400M
 
   # --- SEPARATED MAIN FRONTEND ---
-  main-ui:
+ main-ui:
     build:
-      context: ./frontv5
+      context: ./frontend/main-site
       dockerfile: Dockerfile
     container_name: nexora-main-ui
     restart: unless-stopped
@@ -179,7 +179,7 @@ services:
     networks:
       - nexora-net
     volumes:
-      - "./frontv5/nginx.conf:/etc/nginx/conf.d/default.conf:ro"
+      - "./frontend/main-site/nginx.conf:/etc/nginx/conf.d/default.conf:ro"
       - "./frontend/main-site/assets:/usr/share/nginx/html/assets:ro"
     deploy:
       resources:
