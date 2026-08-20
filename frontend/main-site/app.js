@@ -3140,6 +3140,10 @@
     return d.innerHTML;
   }
 
+  function normalizeText(v, fb) {
+    return typeof v === "string" ? v : fb || "";
+  }
+
   function sanitizeHtml(dirty) {
     if (typeof DOMPurify !== "undefined") {
       return DOMPurify.sanitize(dirty, { USE_PROFILES: { html: true } });
