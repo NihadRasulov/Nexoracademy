@@ -17,7 +17,7 @@ services:
       -c maintenance_work_mem=64MB
       -c max_worker_processes=4
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
     volumes:
       - nexora_pg_data:/var/lib/postgresql/data
     networks:
@@ -61,8 +61,8 @@ services:
     container_name: nexora-mailhog
     restart: unless-stopped
     ports:
-      - "${MAIL_PORT:-1025}:1025"
-      - "8025:8025"
+      - "127.0.0.1:${MAIL_PORT:-1025}:1025"
+      - "127.0.0.1:8025:8025"
     networks:
       - nexora-net
 
@@ -109,9 +109,9 @@ services:
     container_name: nexora-redis
     restart: unless-stopped
     # Lowered maxmemory to fit container limit safely (128mb -> 256mb limit)
-    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    command: redis-server --requirepass ${REDIS_PASSWORD:-nexora-redis-pass} --maxmemory 128mb --maxmemory-policy allkeys-lru
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     networks:
       - nexora-net
     healthcheck:
@@ -163,6 +163,11 @@ services:
       - "${ADMIN_BFF_PORT:-8090}:8080"
     networks:
       - nexora-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/sys-control-9912/api/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
     deploy:
       resources:
         limits:
@@ -181,6 +186,11 @@ services:
     volumes:
       - "./frontend/main-site/nginx.conf:/etc/nginx/conf.d/default.conf:ro"
       - "./frontend/main-site/assets:/usr/share/nginx/html/assets:ro"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --spider http://127.0.0.1/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
     deploy:
       resources:
         limits:
@@ -200,6 +210,11 @@ services:
       - nexora-net
     depends_on:
       - admin-bff
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --spider http://127.0.0.1/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
     deploy:
       resources:
         limits:
