@@ -63,7 +63,7 @@ class PaymentServiceTest {
         payment.setRefundAmount(BigDecimal.ZERO);
         payment.setIdempotencyKey("pay-idem-1");
 
-        lenient().when(paymentRepository.saveAndFlush(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        lenient().when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test

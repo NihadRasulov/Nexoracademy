@@ -71,7 +71,7 @@ class EnrollmentServiceTest {
         lenient().when(courseGroupRepository.findById(group.getId())).thenReturn(Optional.of(group));
         lenient().when(enrollmentRepository.findByIdempotencyKey(any())).thenReturn(Optional.empty());
         lenient().when(enrollmentRepository.findByUser_IdAndGroup_Id(any(), any())).thenReturn(Optional.empty());
-        lenient().when(enrollmentRepository.saveAndFlush(any(Enrollment.class))).thenAnswer(invocation -> {
+        lenient().when(enrollmentRepository.save(any(Enrollment.class))).thenAnswer(invocation -> {
             Enrollment e = invocation.getArgument(0);
             if (e.getId() == null) e.setId(UUID.randomUUID());
             return e;
@@ -100,7 +100,7 @@ class EnrollmentServiceTest {
         enrollmentService.create(request);
 
         assertThat(group.getReservedSeats()).isEqualTo(1);
-        verify(courseGroupRepository).saveAndFlush(group);
+        verify(courseGroupRepository).save(group);
     }
 
     @Test
@@ -114,7 +114,7 @@ class EnrollmentServiceTest {
                 .isInstanceOf(InvalidStateException.class)
                 .hasMessageContaining("full");
 
-        verify(enrollmentRepository, org.mockito.Mockito.never()).saveAndFlush(any());
+        verify(enrollmentRepository, org.mockito.Mockito.never()).save(any());
     }
 
     @Test

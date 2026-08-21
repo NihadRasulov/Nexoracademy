@@ -66,7 +66,7 @@ class UserServiceTest {
         assertThatThrownBy(() -> userService.create(request))
                 .isInstanceOf(DuplicateResourceException.class);
 
-        verify(userRepository, never()).saveAndFlush(any());
+        verify(userRepository, never()).save(any());
     }
 
     @Test
@@ -75,7 +75,7 @@ class UserServiceTest {
                 null, null, null, null);
         when(userRepository.existsByEmail("new@example.com")).thenReturn(false);
         when(passwordEncoder.encode("pass1234")).thenReturn("hashed");
-        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         UserResponse response = userService.create(request);
 
@@ -95,7 +95,7 @@ class UserServiceTest {
     @Test
     void patchOnlyAppliesNonNullFields() {
         when(userRepository.findById(existingUser.getId())).thenReturn(Optional.of(existingUser));
-        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         UserRequest patch = new UserRequest(null, null, "Updated", null, null, null, null, null, null);
         UserResponse response = userService.patch(existingUser.getId(), patch);
@@ -117,7 +117,7 @@ class UserServiceTest {
         assertThatThrownBy(() -> userService.changePassword(existingUser.getId(), request))
                 .isInstanceOf(InvalidCredentialsException.class);
 
-        verify(userRepository, never()).saveAndFlush(any());
+        verify(userRepository, never()).save(any());
     }
 
     @Test
@@ -130,7 +130,7 @@ class UserServiceTest {
         userService.changePassword(existingUser.getId(), request);
 
         assertThat(existingUser.getPasswordHash()).isEqualTo("hashed-new-password");
-        verify(userRepository).saveAndFlush(existingUser);
+        verify(userRepository).save(existingUser);
     }
 
     @Test
