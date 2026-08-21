@@ -82,3 +82,4 @@ backups/
 certs/selfsigned.key
 *.pre-p0
 *.bak
+backend/admin-bff/NexoraAdminPanelUI
