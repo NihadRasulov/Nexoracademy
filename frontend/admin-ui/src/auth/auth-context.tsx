@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
-import { api, getAccessToken, setAccessToken, setRefreshToken, clearTokens, getRefreshToken } from "@/lib/api";
+import { api } from "@/lib/api";
 import { ApiError } from "@/lib/api-error";
 import type { MeResponse } from "@/types/common";
 
@@ -41,31 +41,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     void (async () => {
-      if (getAccessToken()) {
-        await refreshMe();
-      }
+      await refreshMe();
       setLoading(false);
     })();
   }, [refreshMe]);
 
   const login = useCallback(async (email: string, password: string) => {
-    const tokenRes = await api.post<{ accessToken: string; refreshToken: string; tokenType: string; expiresInSeconds: number }>(
-      "/api/v1/auth/login",
-      { email, password },
-    );
-    setAccessToken(tokenRes.accessToken);
-    setRefreshToken(tokenRes.refreshToken);
-    await refreshMe();
-  }, [refreshMe]);
+    const me = await api.post<MeResponse>("/api/v1/auth/login", { email, password });
+    setUser(me);
+    setInitializationError(null);
+  }, []);
 
   const logout = useCallback(async () => {
     try {
-      const rt = getRefreshToken();
-      if (rt) {
-        await api.post("/api/v1/auth/logout", { refreshToken: rt });
-      }
+      await api.post("/api/v1/auth/logout");
     } finally {
-      clearTokens();
       setUser(null);
       setInitializationError(null);
     }

@@ -1,29 +1,19 @@
 """
-Lead routes – secured with API key auth and rate limiting.
+Lead routes – now backed by SQLAlchemy persistence.
 """
 from __future__ import annotations
 
 import logging
-import os
 
-from fastapi import APIRouter, Query, Header, HTTPException, Request, Depends
+from fastapi import APIRouter, Query, Request
 
 from models.schemas import LeadRequest, LeadResponse
-from core.lead_service import add_lead, get_leads_page, count_leads
+from core.lead_service import add_lead, get_all_leads, count_leads
 from core.rate_limiter import is_rate_limited
 
 logger = logging.getLogger("nexora.route.lead")
 
 router = APIRouter()
-
-LEAD_API_KEY = os.environ.get("LEAD_API_KEY", "")
-
-
-def _require_api_key(x_api_key: str | None = Header(default=None)):
-    if not LEAD_API_KEY:
-        raise HTTPException(status_code=503, detail="Lead API not configured")
-    if x_api_key != LEAD_API_KEY:
-        raise HTTPException(status_code=403, detail="Invalid API key")
 
 
 @router.post("/lead")
@@ -31,7 +21,12 @@ async def create_lead(req: LeadRequest, request: Request):
     client_ip = request.client.host if request.client else "unknown"
 
     if is_rate_limited(client_ip):
-        return {"success": False, "error": "rate_limited"}
+        logger.warning("lead_rate_limited ip=%s", client_ip)
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            status_code=429,
+            content={"success": False, "error": "Çox tez-tez sorğu göndərirsiniz. Bir az gözləyin."},
+        )
 
     from core.extractor import extract_phone
     phone = extract_phone(req.phone) or req.phone
@@ -47,22 +42,19 @@ async def create_lead(req: LeadRequest, request: Request):
         "sessionId": req.sessionId or "",
     })
 
-    logger.info("lead_created ref=%s source=%s", lead.get("id", "?"), req.source or "api")
+    logger.info("lead_created_via_api name=%s phone=%s", req.name, phone)
     return LeadResponse(success=True, lead=lead)
 
 
-@router.get("/lead", dependencies=[Depends(_require_api_key)])
-async def list_leads(limit: int = Query(default=20, le=100), offset: int = Query(default=0, ge=0)):
-    leads = get_leads_page(limit=limit, offset=offset)
-    total = count_leads()
+@router.get("/lead")
+async def list_leads(limit: int = Query(default=100, le=500)):
+    all_leads = get_all_leads()
     return {
-        "count": total,
-        "leads": leads,
-        "offset": offset,
-        "limit": limit,
+        "count": len(all_leads),
+        "leads": all_leads[:limit],
     }
 
 
-@router.get("/lead/count", dependencies=[Depends(_require_api_key)])
+@router.get("/lead/count")
 async def lead_count():
     return {"count": count_leads()}

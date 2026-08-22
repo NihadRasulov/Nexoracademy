@@ -111,8 +111,15 @@ class Orchestrator:
 
         if is_blocked(text):
             add_history(session, "user", text)
-            result = self._answer_with_llm(session, text)
-            self._finalize(session, text, result, state_before, llm_called=True)
+            from models.schemas import ChatResponse as _CR
+            result = _CR(
+                reply="Bu mövzu haqqında kömək edə bilmirəm. Nexora Academy kursları haqqında sual verə bilərsən.",
+                state="blocked",
+                actions=[],
+                courses=[],
+                capture="none",
+            )
+            self._finalize(session, text, result, state_before, llm_called=False)
             return result
 
         if not text or text in ("/start", ""):

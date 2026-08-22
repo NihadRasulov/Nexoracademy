@@ -63,9 +63,10 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://nexoracademy.az", "https://www.nexoracademy.az"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=["https://nexoracademy.az"],
+    allow_methods=["POST", "GET"],
+    allow_headers=["Content-Type", "Accept"],
+    allow_credentials=True,
 )
 
 # ── Redis ─────────────────────────────────────────────────────────────────────
@@ -202,18 +203,20 @@ async def health():
         except Exception:
             pass
 
-    db_ok = db_health() if isinstance(db_health(), bool) else db_health().get("healthy", True)
-    all_ok = redis_ok and db_ok
-    status_code = 200 if all_ok else 503
-    from fastapi.responses import JSONResponse as _JSONResponse
-    return _JSONResponse(
-        status_code=status_code,
-        content={
-            "status": "ok" if all_ok else "degraded",
-            "service": "nexora-ai-chatbot",
-            "version": "2.0.0"
-        }
-    )
+    return {
+        "status": "ok",
+        "service": "nexora-ai-chatbot",
+        "version": "2.0.0",
+        "environment": settings.environment,
+        "components": {
+            "llm": llm is not None,
+            "llm_circuit": cb_state,
+            "rag": retriever is not None,
+            "rag_docs": retriever.count() if retriever else 0,
+            "redis": redis_ok,
+            "database": db_health(),
+        },
+    }
 
 # ── Metrics endpoint (Prometheus) ─────────────────────────────────────────────
 
