@@ -6309,6 +6309,10 @@ body[data-page="legal"] {
     display: none;
   }
 
+  .roadmap__icon-wrapper--stage-duplicate {
+    display: none;
+  }
+
   .roadmap__item--dual .roadmap__item-header-dot {
     top: -30%;
     max-width: 90px;
@@ -6325,6 +6329,58 @@ body[data-page="legal"] {
 
   .roadmap__item--dual .roadmap__dot-text-1,
   .roadmap__item--dual .roadmap__dot-text-2 {
+    white-space: normal;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 992px) {
+  .section--roadmap .section__body .roadmap:before {
+    left: 0;
+    right: auto;
+    width: 100%;
+  }
+
+  .roadmap__timeline {
+    width: 100%;
+    padding-inline: clamp(34px, 5vw, 44px);
+    box-sizing: border-box;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 820px) {
+  .roadmap__item-header {
+    width: 88px;
+    max-width: 88px;
+  }
+
+  .roadmap__item-header .roadmap__header-text,
+  .roadmap__item-header .roadmap__text-2 span:first-child,
+  .roadmap__item-header .roadmap__text-2 span:last-child {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .roadmap__item-header .roadmap__text-2 span:first-child {
+    font-size: 11px;
+    line-height: 1.35;
+    white-space: normal;
+  }
+
+  .roadmap__item-header .roadmap__text-2 span:last-child {
+    font-size: 8px;
+    line-height: 1.4;
+  }
+
+  .roadmap__item--dual .roadmap__item-footer-dot,
+  .roadmap__item--dual .roadmap__dot-text-2 {
+    width: 52px;
+    max-width: 52px;
+    text-align: center;
+  }
+
+  .roadmap__item--dual .roadmap__dot-text-2 span {
+    display: block;
+    font-size: 7px;
     white-space: normal;
   }
 }
@@ -6472,9 +6528,19 @@ body[data-page="legal"] {
 
 @media (min-width: 993px) {
 
-  .roadmap__item--dual .roadmap__dot-text-1 span,
-  .roadmap__item--dual .roadmap__dot-text-2 span {
+  .roadmap__item--dual .roadmap__dot-text-1 span {
     white-space: nowrap;
+  }
+
+  .roadmap__item--dual .roadmap__dot-text-2 {
+    width: 90px;
+    text-align: center;
+  }
+
+  .roadmap__item--dual .roadmap__dot-text-2 span {
+    display: block;
+    white-space: normal;
+    text-wrap: balance;
   }
 
   /* In the reference, the last lower milestone sits slightly left so it stays clear of the project card. */
@@ -6490,12 +6556,32 @@ body[data-page="legal"] {
 /* ---- Roadmap stage icon composition ---- */
 @media (min-width: 993px) {
 
-  /* Keep Sİ təməl clearly outside the frame on the left. */
-  .roadmap__timeline-wrapper>.roadmap__item:nth-of-type(1) {
-    left: 1.6%;
+  /* Keep both edge illustrations fully inside the outlined frame. */
+  .roadmap__timeline-wrapper {
+    --roadmap-edge-anchor: clamp(75px, 7%, 86px);
   }
 
-  /* Keep only the icon images duplicated on both rails without changing the line geometry or roadmap structure. */
+  .roadmap__timeline-wrapper>.roadmap__item:nth-of-type(1) {
+    left: var(--roadmap-edge-anchor);
+  }
+
+  .roadmap__timeline-wrapper>.roadmap__item:nth-of-type(8) {
+    left: calc(100% - var(--roadmap-edge-anchor));
+  }
+
+  .roadmap__timeline-wrapper>.roadmap__item:nth-of-type(1) .roadmap__icon-wrapper,
+  .roadmap__timeline-wrapper>.roadmap__item:nth-of-type(8) .roadmap__icon-wrapper {
+    width: clamp(82px, 7.4vw, 100px);
+    height: clamp(82px, 7.4vw, 100px);
+  }
+
+  .roadmap__timeline-wrapper>.roadmap__item:nth-of-type(1) .roadmap__icon-wrapper img,
+  .roadmap__timeline-wrapper>.roadmap__item:nth-of-type(8) .roadmap__icon-wrapper img {
+    display: block;
+    object-fit: contain;
+  }
+
+  /* Duplicate the stage artwork on the two rails and keep each image centered on its rail. */
   .roadmap__timeline-wrapper>.roadmap__item:nth-of-type(2),
   .roadmap__timeline-wrapper>.roadmap__item:nth-of-type(6) {
     position: absolute;
@@ -6505,11 +6591,12 @@ body[data-page="legal"] {
   .roadmap__timeline-wrapper>.roadmap__item:nth-of-type(6) .roadmap__icon-wrapper--stage-main,
   .roadmap__timeline-wrapper>.roadmap__item:nth-of-type(2) .roadmap__icon-wrapper--stage-duplicate,
   .roadmap__timeline-wrapper>.roadmap__item:nth-of-type(6) .roadmap__icon-wrapper--stage-duplicate {
+    display: block;
     position: absolute;
     left: 50%;
     top: 50%;
-    width: 86px;
-    height: 86px;
+    width: clamp(72px, 6.4vw, 86px);
+    height: clamp(72px, 6.4vw, 86px);
     transform: translate(-50%, -50%);
     z-index: 2;
   }
@@ -6526,29 +6613,47 @@ body[data-page="legal"] {
 
   .roadmap__timeline-wrapper>.roadmap__item:nth-of-type(2) .roadmap__icon-wrapper--stage-main img,
   .roadmap__timeline-wrapper>.roadmap__item:nth-of-type(2) .roadmap__icon-wrapper--stage-duplicate img {
+    display: block;
     object-fit: contain;
     filter: drop-shadow(0 0 18px rgba(58, 84, 172, 0.22));
   }
 
   .roadmap__timeline-wrapper>.roadmap__item:nth-of-type(6) .roadmap__icon-wrapper--stage-main img,
   .roadmap__timeline-wrapper>.roadmap__item:nth-of-type(6) .roadmap__icon-wrapper--stage-duplicate img {
+    display: block;
     object-fit: contain;
     filter: drop-shadow(0 0 18px rgba(73, 77, 154, 0.2));
   }
+
+  /* Device captions sit below the upper image instead of painting over it. */
+  .roadmap__timeline-wrapper>.roadmap__item:nth-of-type(2) .roadmap__item-header,
+  .roadmap__timeline-wrapper>.roadmap__item:nth-of-type(6) .roadmap__item-header {
+    top: calc(50% - (var(--roadmap-track-gap) / 2) + 55px);
+    left: 50%;
+    transform: translate(-50%, 0);
+  }
 }
 
-/* ---- Roadmap text stacking + edge-safe headings ---- */
+/* ---- Roadmap text stacking + image-aligned headings ---- */
 @media (min-width: 993px) {
   .roadmap__timeline-wrapper>.roadmap__item {
     z-index: 1;
   }
 
-  .roadmap__timeline-wrapper>.roadmap__item:nth-of-type(1) .roadmap__item-header {
-    left: 100px;
+  .roadmap__timeline-wrapper>.roadmap__item:nth-of-type(1) .roadmap__item-header,
+  .roadmap__timeline-wrapper>.roadmap__item:nth-of-type(8) .roadmap__item-header {
+    left: 50%;
+    width: 150px;
+    max-width: 150px;
   }
 
-  .roadmap__timeline-wrapper>.roadmap__item:nth-of-type(8) .roadmap__item-header {
-    left: calc(100% - 100px);
+  .roadmap__item .roadmap__text-2 span:only-child {
+    width: 150px;
+    color: #fff;
+    font-size: 14px;
+    font-weight: var(--fw-bold);
+    line-height: 1.35;
+    text-wrap: balance;
   }
 }
 
