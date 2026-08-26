@@ -67,6 +67,16 @@ assert_env() {
   [[ -f "$ENV_FILE" ]] || fail ".env yoxdur. Əvvəlcə: cp .env.example .env"
   chmod 600 "$ENV_FILE"
 
+  # These keys replace Spring Boot's normal config search and can make a valid
+  # JAR ignore application.yml/application-prod.yml entirely.
+  local forbidden_key
+  for forbidden_key in SPRING_CONFIG_LOCATION SPRING_CONFIG_ADDITIONAL_LOCATION \
+    SPRING_CONFIG_NAME SPRING_CONFIG_IMPORT; do
+    if grep -Eq "^[[:space:]]*${forbidden_key}[[:space:]]*=" "$ENV_FILE"; then
+      fail ".env daxilində ${forbidden_key} olmamalıdır; bu parametr application.yml yüklənməsini poza bilər."
+    fi
+  done
+
   local key
   for key in TLS_EMAIL DB_NAME DB_USER DB_PASSWORD JWT_SECRET REDIS_PASSWORD \
     ADMIN_SEED_EMAIL ADMIN_SEED_PASSWORD OPENROUTER_API_KEY; do
@@ -246,7 +256,8 @@ deploy_up() {
   backup
 
   info "Production image-lər build olunur və stack başladılır..."
-  "${COMPOSE[@]}" up -d --build
+  "${COMPOSE[@]}" build --pull app
+  "${COMPOSE[@]}" up -d --build --force-recreate
 
   local service
   for service in app chatbot-api admin-bff main-ui web-gateway; do

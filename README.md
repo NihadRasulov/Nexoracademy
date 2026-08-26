@@ -78,7 +78,7 @@ openssl rand -base64 48
 bash deploy.sh preflight
 ```
 
-Preflight keçmədən növbəti mərhələyə keçməyin. Script nümunə parollarını, yanlış domaini, zəif secretləri, Docker daemon-u və Compose konfiqurasiyasını yoxlayır; secretlərin özünü ekrana çıxarmır.
+Preflight keçmədən növbəti mərhələyə keçməyin. Script nümunə parollarını, yanlış domaini, zəif secretləri, Docker daemon-u, Compose konfiqurasiyasını və `application.yml` yüklənməsini poza bilən `SPRING_CONFIG_*` dəyişənlərini yoxlayır; secretlərin özünü ekrana çıxarmır.
 
 ### 3. İlk TLS sertifikatı
 
@@ -100,11 +100,12 @@ Bu tək əmr:
 
 1. PostgreSQL və Redis-i başladır;
 2. migration-dan əvvəl database backup yaradır;
-3. Java, Python, React/C# və gateway image-lərini build edir;
-4. Flyway migrasiyalarını işlədir;
-5. bütün health-check-ləri gözləyir;
-6. public sayt, Java public API, chatbot və admin login üçün smoke test keçirir;
-7. Java admin API-sinin public gateway-dən bağlı olduğunu yoxlayır.
+3. Java image-ni yenidən build edir, JAR daxilində production config və PostgreSQL/YAML dependency-lərini yoxlayır;
+4. Python, React/C# və gateway image-lərini build edib konteynerləri məcburi yeniləyir;
+5. Flyway migrasiyalarını işlədir;
+6. bütün health-check-ləri gözləyir;
+7. public sayt, Java public API, chatbot və admin login üçün smoke test keçirir;
+8. Java admin API-sinin public gateway-dən bağlı olduğunu yoxlayır.
 
 Uğurlu nəticədən sonra:
 
