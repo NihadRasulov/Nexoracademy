@@ -28,6 +28,8 @@
 	</scm>
 	<properties>
 		<java.version>21</java.version>
+		<postgresql.version>42.7.13</postgresql.version>
+		<log4j2.version>2.25.5</log4j2.version>
 	</properties>
 	<dependencies>
 		<!-- DİQQƏT: spring-boot-starter-data-jdbc BİLƏRƏKDƏN yoxdur. Bütün repository-lər
