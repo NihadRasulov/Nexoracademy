@@ -1519,9 +1519,30 @@
     root.setAttribute("aria-busy", "true");
     root.dataset.academySource = "loading";
     try {
-      const page = await publicContentByKey("page.about", { signal });
-      if (!page || typeof page !== "object")
-        throw new ApiError(0, "Academy məlumatının formatı düzgün deyil.");
+      let page = null;
+      try {
+        page = await publicContentByKey("page.about", { signal });
+      } catch (_) {
+        page = null;
+      }
+      if (!page || typeof page !== "object") {
+        const homePage = await publicContentByKey("page.home", { signal });
+        const homeData = contentObject(homePage?.data);
+        const about = contentObject(homeData.about);
+        const highlights = Array.isArray(about.highlights) ? about.highlights : [];
+        page = {
+          title: homePage?.title || "",
+          body: about.description || "",
+          data: {
+            stats: {
+              graduates: highlights[0]?.value || "",
+              employmentRate: highlights[1]?.value || "",
+              instructors: "",
+            },
+            heroImage: about.heroImage || "",
+          },
+        };
+      }
       if (signal.aborted) return;
       applyAcademyContent(root, page);
       root.dataset.academySource = "api";
@@ -1549,7 +1570,7 @@
     card.dataset.vacancyAvailable = "true";
     card.setAttribute("data-summary-only", "true");
     card.setAttribute("data-target-fragment", key);
-    card.href = `career.html?target=${encodeURIComponent(key)}`;
+    card.href = `vacancy-details.html?key=${encodeURIComponent(rawKey)}`;
     if (title) title.textContent = String(item?.title || "Açıq vakansiya");
     if (description) {
       const base = String(item?.body || "Vakansiya haqqında məlumat.");
@@ -1630,6 +1651,55 @@
       refreshVacancyFilters(signal);
     } finally {
       if (!signal.aborted) grid.removeAttribute("aria-busy");
+    }
+  }
+
+  async function initVacancyDetailsPage(signal) {
+    const container = $("#vacancyDetails");
+    if (!container) return;
+    const params = new URLSearchParams(location.search);
+    const key = params.get("key");
+    if (!key) {
+      container.innerHTML = `<div class="Nexora_courseDetailV2__loading">
+        <p class="Nexora_eyebrow">Nexora Academy</p>
+        <h1>Vakansiya tapılmadı</h1>
+        <p>Keçid parametri düzgün deyil.</p>
+        <a class="ai-btn ai-btn--primary" href="career.html" style="margin-top:24px">Karyeraya qayıt</a>
+      </div>`;
+      return;
+    }
+    try {
+      const item = await cachedApiFetch(
+        `/api/v1/public/content/${encodeURIComponent(key)}`,
+        { signal },
+      );
+      if (signal.aborted) return;
+      const data = contentObject(item?.data);
+      const details = [data.department, data.location, data.employmentType]
+        .map((v) => String(v || "").trim())
+        .filter(Boolean);
+      const title = String(item?.title || "Açıq vakansiya");
+      const body = String(item?.body || "");
+      document.title = `${title} | Nexora Academy`;
+      container.innerHTML = `<div class="Nexora_courseDetailV2">
+        <p class="Nexora_eyebrow">Karyera</p>
+        <h1 class="Nexora_courseDetailV2__title">${escapeHtml(title)}</h1>
+        ${details.length ? `<div class="Nexora_courseDetailV2__meta">${details.map((d) => `<span>${escapeHtml(d)}</span>`).join(" · ")}</div>` : ""}
+        <div class="Nexora_courseDetailV2__body" style="margin-top:32px">
+          <div class="Nexora_courseDetailV2__desc" style="white-space:pre-line">${escapeHtml(body)}</div>
+        </div>
+        <div style="margin-top:40px;display:flex;gap:12px;flex-wrap:wrap">
+          <a class="ai-btn ai-btn--primary" href="career.html">Digər vakansiyalar</a>
+        </div>
+      </div>`;
+    } catch (error) {
+      if (error?.name === "AbortError" || signal.aborted) return;
+      container.innerHTML = `<div class="Nexora_courseDetailV2__loading">
+        <p class="Nexora_eyebrow">Nexora Academy</p>
+        <h1>Vakansiya yüklənmədi</h1>
+        <p>${escapeHtml(apiErrorMessage(error))}</p>
+        <a class="ai-btn ai-btn--primary" href="career.html" style="margin-top:24px">Karyeraya qayıt</a>
+      </div>`;
     }
   }
 
@@ -2124,10 +2194,12 @@
     });
     if (image) {
       const fallback = courseMockFallback({ ...course, categoryName });
+      const realImageUrl = safeCourseDetailUrl(course.imageUrl);
+      const nameBasedPath = `assets/courses/${courseTitleToFile(course.title || "")}.svg`;
       image.removeAttribute("data-image-src");
       image.removeAttribute("data-image-fallback");
-      image.src = fallback.src;
-      image.alt = fallback.alt;
+      image.src = realImageUrl || nameBasedPath || fallback.src;
+      image.alt = realImageUrl ? (course.imageAlt || `${course.title || "Kurs"} kursunun əsas vizualı`) : fallback.alt;
     }
     return card;
   }
@@ -2844,6 +2916,9 @@
         break;
       case "career":
         void initVacanciesPage(signal);
+        break;
+      case "vacancy-details":
+        void initVacancyDetailsPage(signal);
         break;
       case "news":
         void initNewsPage(signal);

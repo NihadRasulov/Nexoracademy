@@ -3756,7 +3756,7 @@ input:-webkit-autofill:hover {
   content: "";
   top: 0;
   right: 0;
-  width: 86%;
+  width: 92%;
   height: 100%;
   border-radius: 39px;
   outline: 4px solid #1b2f6b
@@ -4280,6 +4280,10 @@ input:-webkit-autofill:hover {
 }
 
 @media(max-width:768px) {
+  .section--roadmap {
+    display: none
+  }
+
   .roadmap .roadmap__shadows .roadmap__shadow-1 {
     top: 10%;
     left: 0;
@@ -5980,6 +5984,40 @@ body[data-page="course-details"] .Nexora_courseDetailV2__related {
 
   body[data-page="course-details"] .Nexora_courseDetailV2__instructor {
     align-items: flex-start;
+  }
+}
+
+body[data-page="news-details"] .Nexora_courseDetailV2__hero {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+body[data-page="news-details"] .Nexora_courseDetailV2__visual {
+  position: relative;
+  width: 100%;
+  max-width: 720px;
+  max-height: 420px;
+  overflow: hidden;
+  border: 1px solid var(--neutral-10);
+  border-radius: 20px;
+  background: var(--neutral-11);
+}
+
+body[data-page="news-details"] .Nexora_courseDetailV2__visual img {
+  width: 100%;
+  height: 100%;
+  max-height: 420px;
+  object-fit: cover;
+  display: block;
+}
+
+@media (max-width: 768px) {
+  body[data-page="news-details"] .Nexora_courseDetailV2__visual {
+    max-height: 280px;
+  }
+  body[data-page="news-details"] .Nexora_courseDetailV2__visual img {
+    max-height: 280px;
   }
 }
 
