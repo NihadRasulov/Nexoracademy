@@ -13,7 +13,7 @@ permissions:
   contents: read
   packages: write
   security-events: write
- 
+
 jobs:
   # ============================================================
   # Stage: Build
@@ -210,9 +210,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set lower case image name
-        run: echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
-
       - name: Log in to GHCR Container Registry
         uses: docker/login-action@v3
         with:
@@ -227,7 +224,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ github.repository }}
           tags: |
             type=raw,value=latest
             type=sha,format=short
@@ -239,7 +236,6 @@ jobs:
           file: backend/api/Dockerfile
           push: false
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
             nexora-academy:${{ github.sha }}
           outputs: type=docker,dest=/tmp/image.tar
 
@@ -300,9 +296,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set lower case image name
-        run: echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
-
       - name: Log in to GHCR Container Registry
         uses: docker/login-action@v3
         with:
@@ -314,7 +307,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ github.repository }}
           tags: |
             type=raw,value=latest
             type=sha,format=short
