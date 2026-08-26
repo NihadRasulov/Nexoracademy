@@ -177,7 +177,11 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: maven
-
+          
+      - name: Make Maven wrapper executable
+        # mvnw is located in backend/api — reference explicitly
+        run: chmod +x backend/api/mvnw
+        
       - name: Run all tests
         working-directory: backend/api
         run: ./mvnw -B verify
