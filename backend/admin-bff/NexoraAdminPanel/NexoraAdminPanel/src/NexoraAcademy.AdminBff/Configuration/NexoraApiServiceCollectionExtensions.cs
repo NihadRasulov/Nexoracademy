@@ -31,29 +31,7 @@ public static class NexoraApiServiceCollectionExtensions
         services.AddTransient<BackendAuthorizationHandler>();
 
         services.AddHttpClient<IAuthApiClient, AuthApiClient>(ConfigureClient);
-        services.AddHttpClient<IHealthApiClient, HealthApiClient>(ConfigureClient);
-
         AddAuthenticatedClient<IUserApiClient, UserApiClient>(services, ConfigureClient);
-        AddAuthenticatedClient<ICategoryApiClient, CategoryApiClient>(services, ConfigureClient);
-        AddAuthenticatedClient<ICourseApiClient, CourseApiClient>(services, ConfigureClient);
-        AddAuthenticatedClient<ICourseInstructorApiClient, CourseInstructorApiClient>(services, ConfigureClient);
-        AddAuthenticatedClient<IInstructorApiClient, InstructorApiClient>(services, ConfigureClient);
-        AddAuthenticatedClient<ICourseGroupApiClient, CourseGroupApiClient>(services, ConfigureClient);
-        AddAuthenticatedClient<IEnrollmentApiClient, EnrollmentApiClient>(services, ConfigureClient);
-        AddAuthenticatedClient<IPaymentApiClient, PaymentApiClient>(services, ConfigureClient);
-        AddAuthenticatedClient<IScholarshipApiClient, ScholarshipApiClient>(services, ConfigureClient);
-        AddAuthenticatedClient<ICmsContentApiClient, CmsContentApiClient>(services, ConfigureClient);
-        AddAuthenticatedClient<ICampaignApiClient, CampaignApiClient>(services, ConfigureClient);
-        AddAuthenticatedClient<IChatSessionApiClient, ChatSessionApiClient>(services, ConfigureClient);
-        AddAuthenticatedClient<IContactSubmissionApiClient, ContactSubmissionApiClient>(services, ConfigureClient);
-        AddAuthenticatedClient<ILeadApiClient, LeadApiClient>(services, ConfigureClient);
-        AddAuthenticatedClient<IOAuthAccountApiClient, OAuthAccountApiClient>(services, ConfigureClient);
-        AddAuthenticatedClient<ISessionApiClient, SessionApiClient>(services, ConfigureClient);
-        AddAuthenticatedClient<INotificationApiClient, NotificationApiClient>(services, ConfigureClient);
-        AddAuthenticatedClient<IKbArticleApiClient, KbArticleApiClient>(services, ConfigureClient);
-        AddAuthenticatedClient<ICourseReviewApiClient, CourseReviewApiClient>(services, ConfigureClient);
-        AddAuthenticatedClient<IGraduateOutcomeApiClient, GraduateOutcomeApiClient>(services, ConfigureClient);
-        AddAuthenticatedClient<IAuditLogApiClient, AuditLogApiClient>(services, ConfigureClient);
 
         return services;
 

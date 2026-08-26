@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 from llm.prompts import SYSTEM_PROMPT
 from data.loader import load_courses
-from models.schemas import ChatResponse, ActionButton, CourseCard, LeadRequest
+from models.schemas import ChatResponse, ActionButton, CourseCard
 from core.config import settings
 
 logger = logging.getLogger("nexora.orchestrator")
@@ -111,8 +111,15 @@ class Orchestrator:
 
         if is_blocked(text):
             add_history(session, "user", text)
-            result = self._answer_with_llm(session, text)
-            self._finalize(session, text, result, state_before, llm_called=True)
+            from models.schemas import ChatResponse as _CR
+            result = _CR(
+                reply="Bu mövzu haqqında kömək edə bilmirəm. Nexora Academy kursları haqqında sual verə bilərsən.",
+                state="blocked",
+                actions=[],
+                courses=[],
+                capture="none",
+            )
+            self._finalize(session, text, result, state_before, llm_called=False)
             return result
 
         if not text or text in ("/start", ""):
@@ -309,15 +316,17 @@ class Orchestrator:
         if phone:
             session["data"]["phone"] = phone
             update_state(session, "completed")
-            self._store_lead(session)
+            saved = self._store_contact(session)
 
             name = session["data"].get("name", "")
             return ChatResponse(
                 reply=(
-                    f"{name}, məlumatların qeydə alındı! Çox sevindim səni tanıdığıma.\n\n"
-                    f"Komandamız 1 iş günü ərzində {phone} nömrəsi ilə sənə zəng edəcək. "
-                    f"Sənə uyğun kurs haqqında ətraflı məlumat verəcəklər.\n\n"
-                    f"Başqa sualın varsa, mən hələ də buradayam! İstənilən vaxt yaz."
+                    (f"{name}, məlumatların qeydə alındı! Komandamız 1 iş günü ərzində "
+                     f"{phone} nömrəsi ilə sənə zəng edəcək. Sənə uyğun kurs haqqında "
+                     f"ətraflı məlumat verəcəklər.\n\nBaşqa sualın varsa, mən buradayam!"
+                     if saved else
+                     f"{name}, məlumatı hazırda sistemə yaza bilmədim. Zəhmət olmasa "
+                     "saytdakı əlaqə formasından göndər və ya bir az sonra yenidən cəhd et.")
                 ),
                 state="completed",
                 actions=[ActionButton(type="button", label="Yenidən başla", value="basha")],
@@ -493,19 +502,18 @@ class Orchestrator:
             )
         )
 
-    def _store_lead(self, session: dict):
-        from core.lead_service import add_lead
+    def _store_contact(self, session: dict) -> bool:
+        from core.contact_service import submit_contact
         interest = session["data"].get("interest", "")
-        add_lead({
-            "name": session["data"].get("name", ""),
-            "phone": session["data"].get("phone", ""),
-            "interest": interest,
-            "level": session["data"].get("level", ""),
-            "sessionId": session.get("sessionId", ""),
-            "userId": session.get("userId", ""),
-            "source": "chatbot",
-        })
-        telemetry.record_lead(interest)
+        saved = submit_contact(
+            name=session["data"].get("name", ""),
+            phone=session["data"].get("phone", ""),
+            interest=interest,
+            level=session["data"].get("level", ""),
+        )
+        if saved:
+            telemetry.record_lead(interest)
+        return saved
 
     def _recommend_courses(self, interest: str, level: str) -> list[CourseCard]:
         courses = load_courses()

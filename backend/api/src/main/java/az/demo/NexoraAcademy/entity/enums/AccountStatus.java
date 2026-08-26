@@ -3,11 +3,8 @@ package az.demo.NexoraAcademy.entity.enums;
 import jakarta.persistence.Converter;
 
 public enum AccountStatus implements PgEnum {
-    PENDING_VERIFICATION("pending_verification"),
     ACTIVE("active"),
-    SUSPENDED("suspended"),
-    DEACTIVATED("deactivated"),
-    BANNED("banned");
+    DEACTIVATED("deactivated");
 
     private final String dbValue;
 

@@ -24,7 +24,8 @@ RUN addgroup -S spring && adduser -S spring -G spring \
     # /app WORKDIR-i default olaraq root-a məxsusdur, spring istifadəçisi ora yaza bilmir.
     # Qovluğu əvvəlcədən yaradıb ona sahib olmasa, ilk logback appender açılışında
     # "Failed to create parent directories" ilə app boot-da çökür.
-    && mkdir -p /app/logs && chown -R spring:spring /app
+    && mkdir -p /app/logs && chown -R spring:spring /app \
+    && mkdir -p /app/uploads/courses && chown spring:spring /app/uploads/courses
 
 USER spring:spring
 

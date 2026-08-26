@@ -8,7 +8,7 @@ import java.util.UUID;
 
 /**
  * UserDetails that also carries the domain user's UUID, so controllers and
- * services can resolve "who's calling" (e.g. /me endpoints, audit actor id)
+ * services can resolve the private CMS administrator without another lookup.
  * without an extra findByEmail lookup.
  */
 public class AuthenticatedUser extends User {

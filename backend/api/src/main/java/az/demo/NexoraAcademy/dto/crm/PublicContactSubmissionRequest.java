@@ -10,7 +10,7 @@ import java.util.UUID;
 /** Public form payload does not allow callers to attach or alter CRM lead IDs. */
 public record PublicContactSubmissionRequest(
         @NotBlank @Size(min = 2, max = 150) String fullName,
-        @NotBlank @Email @Size(max = 255) String email,
+        @Email @Size(max = 255) String email,
         @PhoneNumber String phone,
         @Size(max = 4000) String message,
         UUID courseId) {

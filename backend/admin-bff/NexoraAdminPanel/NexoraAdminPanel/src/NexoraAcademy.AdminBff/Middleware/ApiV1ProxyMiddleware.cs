@@ -4,6 +4,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
 using NexoraAcademy.AdminBff.Auth;
 using NexoraAcademy.AdminBff.Clients;
+using NexoraAcademy.AdminBff.Configuration;
 using NexoraAcademy.AdminBff.Contracts.Backend;
 using NexoraAcademy.AdminBff.Contracts.Bff;
 
@@ -15,6 +16,7 @@ public sealed class ApiV1ProxyMiddleware(
     ISessionStore sessionStore,
     IAuthApiClient authApiClient,
     IUserApiClient userApiClient,
+    AdminSettings adminSettings,
     ILogger<ApiV1ProxyMiddleware> logger)
 {
     public const string HttpClientName = "NexoraApi-Proxy";
@@ -22,20 +24,48 @@ public sealed class ApiV1ProxyMiddleware(
     public async Task InvokeAsync(HttpContext context)
     {
         var path = context.Request.Path.Value;
-        if (string.IsNullOrEmpty(path) || !path.StartsWith("/api/v1/", StringComparison.OrdinalIgnoreCase))
+        var adminApiPrefix = adminSettings.BasePath.Add("/api/v1").Value!;
+        var isApiPath = !string.IsNullOrEmpty(path)
+            && path.StartsWith(adminApiPrefix + "/", StringComparison.OrdinalIgnoreCase);
+
+        // Relative upload URLs returned by Java must also work while the React
+        // admin runs against the BFF in development. Uploaded files are already
+        // public on the main site, so no admin session is required here.
+        // In production the request arrives with the base prefix (/sys-control-9912/uploads/...),
+        // in development it arrives without (/uploads/...).
+        var uploadsPrefix = adminSettings.BasePath.Add("/uploads").Value!;
+        var isPublicUpload = !string.IsNullOrEmpty(path)
+            && (path.StartsWith(uploadsPrefix, StringComparison.OrdinalIgnoreCase)
+                || path.StartsWith("/uploads/", StringComparison.OrdinalIgnoreCase))
+            && HttpMethods.IsGet(context.Request.Method);
+
+        if (!isApiPath && !isPublicUpload)
         {
             await next(context);
             return;
         }
 
-        if (path.Equals("/api/v1/auth/login", StringComparison.OrdinalIgnoreCase)
+        if (isPublicUpload)
+        {
+            var backendUploadPath = path!;
+            if (path.StartsWith(uploadsPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                backendUploadPath = path[adminSettings.BasePath.Value!.Length..];
+            }
+            await ProxyAsync(context, null, null, backendUploadPath);
+            return;
+        }
+
+        var backendPath = path![adminSettings.BasePath.Value!.Length..];
+
+        if (backendPath.Equals("/api/v1/auth/login", StringComparison.OrdinalIgnoreCase)
             && HttpMethods.IsPost(context.Request.Method))
         {
             await HandleLoginAsync(context);
             return;
         }
 
-        if (path.Equals("/api/v1/auth/logout", StringComparison.OrdinalIgnoreCase)
+        if (backendPath.Equals("/api/v1/auth/logout", StringComparison.OrdinalIgnoreCase)
             && HttpMethods.IsPost(context.Request.Method))
         {
             await HandleLogoutAsync(context);
@@ -43,22 +73,21 @@ public sealed class ApiV1ProxyMiddleware(
         }
 
         var sessionId = context.User.FindFirst(BffAuthConstants.SessionIdClaimType)?.Value;
-        if (string.IsNullOrEmpty(sessionId))
+        if (!string.IsNullOrEmpty(sessionId))
         {
-            await WriteErrorAsync(context.Response, StatusCodes.Status401Unauthorized,
-                "UNAUTHORIZED", "Daxil olmaq teleb olunur.");
+            var session = await sessionStore.GetAsync(sessionId, context.RequestAborted);
+            if (session is null)
+            {
+                await WriteErrorAsync(context.Response, StatusCodes.Status401Unauthorized,
+                    "SESSION_EXPIRED", "Sessiya bitib. Yeniden daxil olun.");
+                return;
+            }
+
+            await ProxyAsync(context, session, sessionId, backendPath);
             return;
         }
 
-        var session = await sessionStore.GetAsync(sessionId, context.RequestAborted);
-        if (session is null)
-        {
-            await WriteErrorAsync(context.Response, StatusCodes.Status401Unauthorized,
-                "SESSION_EXPIRED", "Sessiya bitib. Yeniden daxil olun.");
-            return;
-        }
-
-        await ProxyAsync(context, session, sessionId);
+        await ProxyAsync(context, null, null, backendPath);
     }
 
     private async Task HandleLoginAsync(HttpContext context)
@@ -91,12 +120,9 @@ public sealed class ApiV1ProxyMiddleware(
 
         var response = await authApiClient.LoginAsync(request.Email, request.Password, context.RequestAborted);
 
-        if (response.AccessToken is null)
-        {
-            throw new OtpRequiredException();
-        }
-
-        if (response.RefreshToken is null || response.ExpiresInSeconds is null or <= 0)
+        if (string.IsNullOrWhiteSpace(response.AccessToken)
+            || string.IsNullOrWhiteSpace(response.RefreshToken)
+            || response.ExpiresInSeconds <= 0)
         {
             throw new BackendProtocolException(
                 "The backend login response is missing required token metadata.");
@@ -109,7 +135,7 @@ public sealed class ApiV1ProxyMiddleware(
             string.Empty,
             response.AccessToken,
             response.RefreshToken,
-            DateTimeOffset.UtcNow.AddSeconds(response.ExpiresInSeconds.Value));
+            DateTimeOffset.UtcNow.AddSeconds(response.ExpiresInSeconds));
 
         var sessionId = await sessionStore.CreateAsync(session, context.RequestAborted);
 
@@ -172,22 +198,39 @@ public sealed class ApiV1ProxyMiddleware(
         context.Response.StatusCode = StatusCodes.Status204NoContent;
     }
 
-    private async Task ProxyAsync(HttpContext context, BackendSession session, string sessionId)
+    private async Task ProxyAsync(
+        HttpContext context,
+        BackendSession? session,
+        string? sessionId,
+        string? targetPathOverride = null)
     {
         var client = httpClientFactory.CreateClient(HttpClientName);
-        var targetPath = context.Request.Path.Value!;
+        var targetPath = targetPathOverride ?? context.Request.Path.Value!;
         var queryString = context.Request.QueryString.Value ?? string.Empty;
+        var hasRequestBody = HasBody(context.Request.Method)
+            && (context.Request.ContentLength > 0 || context.Request.ContentLength == null);
+
+        if (hasRequestBody)
+        {
+            // The body may need to be replayed once after a transparent token
+            // refresh. Large multipart bodies are buffered to disk by ASP.NET.
+            context.Request.EnableBuffering();
+            context.Request.Body.Position = 0;
+        }
 
         using var request = new HttpRequestMessage(
             new HttpMethod(context.Request.Method),
             $"{targetPath}{queryString}");
 
-        request.Headers.Authorization =
-            new AuthenticationHeaderValue("Bearer", session.AccessToken);
+        if (session is not null)
+        {
+            request.Headers.Authorization =
+                new AuthenticationHeaderValue("Bearer", session.AccessToken);
+        }
 
         CopyRequestHeaders(context.Request.Headers, request);
 
-        if (HasBody(context.Request.Method) && context.Request.ContentLength > 0)
+        if (hasRequestBody)
         {
             request.Content = new StreamContent(context.Request.Body);
             if (context.Request.ContentType is not null)
@@ -197,9 +240,12 @@ public sealed class ApiV1ProxyMiddleware(
             }
         }
 
-        var response = await client.SendAsync(request, context.RequestAborted);
+        var response = await client.SendAsync(
+            request,
+            HttpCompletionOption.ResponseHeadersRead,
+            context.RequestAborted);
 
-        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        if (response.StatusCode == HttpStatusCode.Unauthorized && session is not null && sessionId is not null)
         {
             logger.LogInformation(
                 "Backend returned 401 for proxied {Method} {Path}; attempting transparent refresh.",
@@ -233,8 +279,9 @@ public sealed class ApiV1ProxyMiddleware(
                     new AuthenticationHeaderValue("Bearer", refreshed.AccessToken);
                 CopyRequestHeaders(context.Request.Headers, retry);
 
-                if (HasBody(context.Request.Method) && context.Request.ContentLength > 0)
+                if (hasRequestBody)
                 {
+                    context.Request.Body.Position = 0;
                     retry.Content = new StreamContent(context.Request.Body);
                     if (context.Request.ContentType is not null)
                     {
@@ -243,7 +290,10 @@ public sealed class ApiV1ProxyMiddleware(
                     }
                 }
 
-                response = await client.SendAsync(retry, context.RequestAborted);
+                response = await client.SendAsync(
+                    retry,
+                    HttpCompletionOption.ResponseHeadersRead,
+                    context.RequestAborted);
             }
             catch (BackendApiException ex) when (ex.StatusCode == (int)HttpStatusCode.Unauthorized)
             {
@@ -256,7 +306,10 @@ public sealed class ApiV1ProxyMiddleware(
             }
         }
 
-        await CopyResponseAsync(context, response);
+        using (response)
+        {
+            await CopyResponseAsync(context, response);
+        }
     }
 
     private static void CopyRequestHeaders(IHeaderDictionary source, HttpRequestMessage target)
@@ -298,8 +351,22 @@ public sealed class ApiV1ProxyMiddleware(
                 context.Response.ContentType = response.Content.Headers.ContentType.ToString();
             }
 
-            var body = await response.Content.ReadAsByteArrayAsync();
-            await context.Response.Body.WriteAsync(body);
+            if (response.Content.Headers.ContentLength is not null)
+            {
+                context.Response.ContentLength = response.Content.Headers.ContentLength;
+            }
+
+            foreach (var header in response.Content.Headers)
+            {
+                if (!header.Key.Equals("Content-Type", StringComparison.OrdinalIgnoreCase)
+                    && !header.Key.Equals("Content-Length", StringComparison.OrdinalIgnoreCase))
+                {
+                    context.Response.Headers[header.Key] = header.Value.ToArray();
+                }
+            }
+
+            await using var body = await response.Content.ReadAsStreamAsync(context.RequestAborted);
+            await body.CopyToAsync(context.Response.Body, context.RequestAborted);
         }
     }
 

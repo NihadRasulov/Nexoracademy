@@ -1,39 +1,32 @@
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/auth/auth-context";
-import { hasRole } from "@/auth/roles";
 import { NAV_GROUPS } from "@/layout/nav-config";
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
-  const { user } = useAuth();
-
   return (
-    <nav className="flex flex-col gap-6 px-3 py-2" aria-label="Əsas naviqasiya">
+    <nav className="flex flex-col gap-6 px-3 py-5" aria-label="Əsas naviqasiya">
       {NAV_GROUPS.map((group) => {
-        const visibleItems = group.items.filter((item) => hasRole(user?.role, item.roleGroup));
-        if (visibleItems.length === 0) return null;
-
         return (
           <div key={group.label}>
-            <p className="mb-1.5 px-3 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            <p className="mb-2 px-3 text-[0.64rem] font-semibold tracking-[0.16em] text-muted-foreground/80 uppercase">
               {group.label}
             </p>
             <div className="flex flex-col gap-0.5">
-              {visibleItems.map((item) => (
+              {group.items.map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}
                   onClick={onNavigate}
                   className={({ isActive }) =>
                     cn(
-                      "flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                      "group relative flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-medium transition-all",
                       isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                        ? "bg-[#1473e6] text-white shadow-md shadow-blue-500/20"
+                        : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                     )
                   }
                 >
-                  <item.icon className="size-4 shrink-0" />
+                  <item.icon className="size-4 shrink-0 transition-transform group-hover:scale-105" />
                   <span className="truncate">{item.label}</span>
                 </NavLink>
               ))}

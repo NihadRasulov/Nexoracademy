@@ -4,10 +4,8 @@ import az.demo.NexoraAcademy.dto.catalog.InstructorRequest;
 import az.demo.NexoraAcademy.dto.catalog.InstructorResponse;
 import az.demo.NexoraAcademy.dto.catalog.PublicInstructorResponse;
 import az.demo.NexoraAcademy.entity.catalog.Instructor;
-import az.demo.NexoraAcademy.entity.identity.User;
 import az.demo.NexoraAcademy.exception.ResourceNotFoundException;
 import az.demo.NexoraAcademy.repository.catalog.InstructorRepository;
-import az.demo.NexoraAcademy.repository.identity.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +21,6 @@ import java.util.UUID;
 public class InstructorService {
 
     private final InstructorRepository instructorRepository;
-    private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
     public List<InstructorResponse> findAll() {
@@ -45,7 +42,6 @@ public class InstructorService {
 
     public InstructorResponse create(InstructorRequest request) {
         Instructor instructor = new Instructor();
-        instructor.setUser(resolveUser(request.userId()));
         instructor.setFullName(request.fullName());
         instructor.setBio(request.bio());
         instructor.setPhotoUrl(request.photoUrl());
@@ -60,7 +56,6 @@ public class InstructorService {
     public InstructorResponse update(UUID id, InstructorRequest request) {
         Instructor instructor = getOrThrow(id);
 
-        instructor.setUser(resolveUser(request.userId()));
         instructor.setFullName(request.fullName());
         instructor.setBio(request.bio());
         instructor.setPhotoUrl(request.photoUrl());
@@ -74,7 +69,6 @@ public class InstructorService {
     public InstructorResponse patch(UUID id, InstructorRequest request) {
         Instructor instructor = getOrThrow(id);
 
-        if (request.userId() != null) instructor.setUser(resolveUser(request.userId()));
         if (request.fullName() != null) instructor.setFullName(request.fullName());
         if (request.bio() != null) instructor.setBio(request.bio());
         if (request.photoUrl() != null) instructor.setPhotoUrl(request.photoUrl());
@@ -92,13 +86,6 @@ public class InstructorService {
         instructorRepository.deleteById(id);
     }
 
-    private User resolveUser(UUID userId) {
-        if (userId == null) {
-            return null;
-        }
-        return userRepository.findById(userId).orElseThrow(() -> ResourceNotFoundException.of("User", userId));
-    }
-
     private Instructor getOrThrow(UUID id) {
         return instructorRepository.findById(id).orElseThrow(() -> ResourceNotFoundException.of("Instructor", id));
     }
@@ -106,7 +93,6 @@ public class InstructorService {
     private InstructorResponse toResponse(Instructor instructor) {
         return new InstructorResponse(
                 instructor.getId(),
-                instructor.getUser() != null ? instructor.getUser().getId() : null,
                 instructor.getFullName(),
                 instructor.getBio(),
                 instructor.getPhotoUrl(),

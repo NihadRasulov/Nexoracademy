@@ -34,10 +34,10 @@ export function DataTable<T extends Record<string, unknown>>({
   rowActions,
 }: DataTableProps<T>) {
   return (
-    <div className="overflow-x-auto rounded-lg border">
+    <div className="overflow-x-auto rounded-2xl border border-border/70 bg-card/90 shadow-sm shadow-sky-950/5">
       <Table>
         <TableHeader>
-          <TableRow className="hover:bg-transparent">
+          <TableRow className="bg-muted/35 hover:bg-muted/35">
             {columns.map((col) => (
               <TableHead key={col.key} className={col.className}>
                 {col.label}
@@ -73,7 +73,7 @@ export function DataTable<T extends Record<string, unknown>>({
 
           {!loading &&
             rows.map((row) => (
-              <TableRow key={rowKey(row)}>
+              <TableRow key={rowKey(row)} className="transition-colors hover:bg-primary/[0.035]">
                 {columns.map((col) => (
                   <TableCell key={col.key} className={col.className}>
                     {col.render ? col.render(row) : renderPrimitive(row[col.key])}

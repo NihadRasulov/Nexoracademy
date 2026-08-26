@@ -24,7 +24,11 @@ public record CourseRequest(
 
         @NotNull(groups = ValidationGroups.OnCreate.class) Short categoryId,
 
+        UUID instructorId,
+
         @NotBlank(groups = ValidationGroups.OnCreate.class) @Size(min = 3, max = 200) String title,
+
+        @Size(max = 500) String imageUrl,
 
         @Size(max = 400) String shortDescription,
 

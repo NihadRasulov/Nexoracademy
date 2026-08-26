@@ -1,95 +1,67 @@
-(() => {
+﻿(() => {
   "use strict";
 
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) =>
     Array.from(root.querySelectorAll(selector));
-  const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
-  const MOCK_IMAGE_FALLBACKS = Object.freeze({
-    "hero-networking": {
-      src: "assets/mock/mock-hero-networking.svg",
-      alt: "Şəbəkə infrastrukturu üzrə nümunəvi hero vizualı",
-    },
+  const IMAGE_FALLBACKS = Object.freeze({
     "course-networking": {
-      src: "assets/mock/mock-course-networking.svg",
-      alt: "Şəbəkə texnologiyaları kursu üçün nümunəvi vizual",
+      src: "assets/courses/CCNA.svg",
+      alt: "Şəbəkə texnologiyaları kursu vizualı",
     },
     "course-cybersecurity": {
-      src: "assets/mock/mock-course-cybersecurity.svg",
-      alt: "Kibertəhlükəsizlik kursu üçün nümunəvi vizual",
+      src: "assets/courses/CCNP.svg",
+      alt: "Kibertəhlükəsizlik kursu vizualı",
     },
     "course-cloud-devops": {
-      src: "assets/mock/mock-course-cloud-devops.svg",
-      alt: "Cloud və DevOps kursu üçün nümunəvi vizual",
-    },
-    "instructor-1": {
-      src: "assets/mock/mock-instructor-networking-1.svg",
-      alt: "Şəbəkə texnologiyaları müəllimi üçün nümunəvi portret",
-    },
-    "instructor-2": {
-      src: "assets/mock/mock-instructor-networking-2.svg",
-      alt: "IT sertifikasiya müəllimi üçün nümunəvi portret",
-    },
-    "instructor-3": {
-      src: "assets/mock/mock-instructor-networking-3.svg",
-      alt: "Cloud texnologiyaları müəllimi üçün nümunəvi portret",
+      src: "assets/courses/IT_Essentials.svg",
+      alt: "Cloud və DevOps kursu vizualı",
     },
     "blog-networking": {
-      src: "assets/mock/mock-blog-networking.svg",
-      alt: "Şəbəkə texnologiyaları bloqu üçün nümunəvi vizual",
+      src: "assets/fallback/blog-networking.svg",
+      alt: "Şəbəkə texnologiyaları bloqu vizualı",
     },
     "blog-cybersecurity": {
-      src: "assets/mock/mock-blog-cybersecurity.svg",
-      alt: "Kibertəhlükəsizlik bloqu üçün nümunəvi vizual",
+      src: "assets/fallback/blog-cybersecurity.svg",
+      alt: "Kibertəhlükəsizlik bloqu vizualı",
     },
     "blog-cloud-devops": {
-      src: "assets/mock/mock-blog-cloud-devops.svg",
-      alt: "Cloud və DevOps bloqu üçün nümunəvi vizual",
+      src: "assets/fallback/blog-cloud-devops.svg",
+      alt: "Cloud və DevOps bloqu vizualı",
     },
-    "scholarship-certification": {
-      src: "assets/mock/mock-scholarship-certification.svg",
-      alt: "IT sertifikasiyası təqaüdü üçün nümunəvi vizual",
-    },
-    "service-networking": {
-      src: "assets/mock/mock-service-networking.svg",
-      alt: "Şəbəkə laboratoriyası xidməti üçün nümunəvi ikon",
-    },
-    "gallery-network-lab": {
-      src: "assets/mock/mock-gallery-network-lab.svg",
-      alt: "Şəbəkə laboratoriyası üçün nümunəvi qalereya vizualı",
+    "academy-certification": {
+      src: "assets/fallback/academy-certification.svg",
+      alt: "IT sertifikasiyası vizualı",
     },
     "career-network-engineer": {
-      src: "assets/mock/mock-career-network-engineer.svg",
-      alt: "Şəbəkə mühəndisliyi karyerası üçün nümunəvi vizual",
+      src: "assets/fallback/career-network-engineer.svg",
+      alt: "Şəbəkə mühəndisliyi karyerası vizualı",
     },
     "faq-networking-guide": {
-      src: "assets/mock/mock-faq-networking-guide.svg",
+      src: "assets/fallback/faq-networking-guide.svg",
       alt: "Şəbəkə sertifikasiyası bələdçisi üçün nümunəvi vizual",
     },
     "decoration-network-nodes": {
-      src: "assets/mock/mock-decoration-network-nodes.svg",
+      src: "assets/fallback/decoration-network-nodes.svg",
       alt: "Şəbəkə qovşaqlarını göstərən dekorativ vizual",
     },
-    "project-networking": {
-      src: "assets/mock/mock-project-networking.svg",
-      alt: "Şəbəkə avtomatlaşdırması layihəsi üçün nümunəvi vizual",
+    "instructor-1": {
+      src: "assets/nexora-portraits/nexora-team-01.jpg",
+      alt: "Nexora Academy təlimçisi",
     },
-    "project-cloud-devops": {
-      src: "assets/mock/mock-project-cloud-devops.svg",
-      alt: "Cloud platforması layihəsi üçün nümunəvi vizual",
+    "instructor-2": {
+      src: "assets/nexora-portraits/nexora-team-02.jpg",
+      alt: "Nexora Academy təlimçisi",
     },
-    "project-cybersecurity": {
-      src: "assets/mock/mock-project-cybersecurity.svg",
-      alt: "Kibertəhlükəsizlik layihəsi üçün nümunəvi vizual",
+    "instructor-3": {
+      src: "assets/nexora-portraits/nexora-team-03.jpg",
+      alt: "Nexora Academy təlimçisi",
     },
   });
-  const IS_LEGACY_ROUTER = false;
-  const API_BASE_URL = resolveApiBaseUrl(
-    document.querySelector('meta[name="nexora-api-base"]')?.content,
-  );
-  const CHATBOT_API_BASE_URL = resolveChatbotApiBaseUrl(API_BASE_URL);
+  const apiBaseMeta = document.querySelector('meta[name="nexora-api-base"]')?.content;
+  const apiBaseEnv = typeof window?.NEXORA_API_BASE !== "undefined" ? window.NEXORA_API_BASE : "";
+  const API_BASE_URL = resolveApiBaseUrl(apiBaseMeta || apiBaseEnv);
   let pageController = null;
-  let coursesRequestId = 0;
 
   function resolveApiBaseUrl(value) {
     const raw = String(value || "")
@@ -111,23 +83,9 @@
     return raw;
   }
 
-  function resolveChatbotApiBaseUrl(platformBase) {
-    try {
-      const parsed = new URL(platformBase, location.href);
-      const loopback = new Set(["localhost", "127.0.0.1", "::1"]);
-      if (loopback.has(parsed.hostname) && parsed.port === "8081") {
-        parsed.port = "8000";
-        return parsed.origin;
-      }
-    } catch (_) {
-      // Deployed traffic uses the same-origin reverse proxy.
-    }
-    return platformBase;
-  }
-
   function applyDataImageFallbacks(root = document) {
     $$("img[data-image-fallback]", root).forEach((image) => {
-      const fallback = MOCK_IMAGE_FALLBACKS[image.dataset.imageFallback];
+      const fallback = IMAGE_FALLBACKS[image.dataset.imageFallback];
       if (!fallback) return;
       const dataSource = safeCourseDetailUrl(image.dataset.imageSrc);
       const dataAlt = String(image.dataset.imageAlt || "").trim();
@@ -183,8 +141,6 @@
 
   function showLegacyFormError(form, error) {
     const aliases = {
-      firstName: "fullName",
-      lastName: "fullName",
       message: "letter",
     };
     Object.keys(error?.errors || {}).forEach((name) =>
@@ -207,30 +163,6 @@
       digits <= 15 &&
       /^\+?\(?\d[\d ()-]*\d$/.test(phone)
     );
-  }
-
-  function safeStoredValue(value) {
-    if (value instanceof File) {
-      return { name: value.name, size: value.size, type: value.type };
-    }
-    return value;
-  }
-
-  function saveOffline(kind, form) {
-    const key = `naic_${kind}_submissions`;
-    let current = [];
-    try {
-      current = JSON.parse(localStorage.getItem(key) || "[]");
-    } catch (_) {
-      current = [];
-    }
-    const data = {};
-    for (const [name, value] of new FormData(form).entries()) {
-      data[name] = safeStoredValue(value);
-    }
-    current.push({ ...data, stored_at: new Date().toISOString() });
-    localStorage.setItem(key, JSON.stringify(current));
-    return { ok: true, offline: true };
   }
 
   class ApiError extends Error {
@@ -295,42 +227,52 @@
     return body;
   }
 
-  async function chatbotApiFetch(path, options = {}) {
-    const headers = new Headers(options.headers || {});
-    if (options.body != null && !headers.has("Content-Type"))
-      headers.set("Content-Type", "application/json");
+  const apiCache = new Map();
+  const inflightCache = new Map();
+  const CACHEABLE_PATHS = new Set(["/api/v1/public/catalog/categories"]);
+  let courseCatalogPromise = null;
+  const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+  const PROTOCOL_REGEX = /^[a-z][a-z0-9+.-]*:/i;
+  const COURSE_CLOUD_REGEX = /cloud|bulud|devops/;
+  const COURSE_CYBER_REGEX = /cyber|kiber|security|təhlükəsizlik/;
+  let lastCategoryStateInput = null;
+  let lastCategoryStateResult = null;
 
-    let response;
-    try {
-      response = await fetch(`${CHATBOT_API_BASE_URL}${path}`, {
-        ...options,
-        headers,
-      });
-    } catch (error) {
-      if (error?.name === "AbortError") throw error;
-      throw new ApiError(0, "Sorğu xidməti ilə əlaqə yaradılmadı.");
+  async function cachedApiFetch(path, options = {}) {
+    const cacheable =
+      CACHEABLE_PATHS.has(path) || path.startsWith("/api/v1/public/content");
+    if (!cacheable || options.body != null) {
+      return apiFetch(path, options);
     }
+    if (apiCache.has(path)) return apiCache.get(path);
+    if (inflightCache.has(path)) return inflightCache.get(path);
+    const promise = apiFetch(path, options).then(
+      (result) => {
+        apiCache.set(path, result);
+        inflightCache.delete(path);
+        return result;
+      },
+      (error) => {
+        inflightCache.delete(path);
+        throw error;
+      },
+    );
+    inflightCache.set(path, promise);
+    return promise;
+  }
 
-    let body;
-    const raw = await response.text();
-    if (raw) {
-      try {
-        body = JSON.parse(raw);
-      } catch (_) {
-        body = { message: raw };
-      }
-    }
-    if (!response.ok) {
-      throw new ApiError(
-        response.status,
-        body?.message ||
-          body?.reply ||
-          response.statusText ||
-          "Sorğu uğursuz oldu.",
-        body,
-      );
-    }
-    return body;
+  function publicContentByKey(key, options = {}) {
+    return cachedApiFetch(
+      `/api/v1/public/content/${encodeURIComponent(key)}`,
+      options,
+    );
+  }
+
+  function publicContentByType(type, options = {}) {
+    return cachedApiFetch(
+      `/api/v1/public/content?type=${encodeURIComponent(type)}`,
+      options,
+    );
   }
 
   function setFormBusy(form, busy) {
@@ -355,30 +297,12 @@
   }
 
   const enumLabels = {
-    GUEST: "Qonaq",
-    STUDENT: "Tələbə",
-    SALES_CRM: "Satış / CRM",
-    CONTENT_MANAGER: "Kontent meneceri",
-    ADMIN: "Administrator",
-    SYSTEM_ADMIN: "Sistem administratoru",
-    PENDING_VERIFICATION: "Təsdiq gözlənilir",
-    ACTIVE: "Aktiv",
-    SUSPENDED: "Dayandırılıb",
-    DEACTIVATED: "Deaktiv edilib",
-    BANNED: "Bloklanıb",
     BEGINNER: "Başlanğıc",
     INTERMEDIATE: "Orta",
     ADVANCED: "İrəli",
     ONLINE: "Onlayn",
     OFFLINE: "Əyani",
     HYBRID: "Hibrid",
-    WAITLISTED: "Gözləmə siyahısı",
-    HELD: "Rezerv edilib",
-    PENDING_PAYMENT: "Ödəniş gözlənilir",
-    CONFIRMED: "Təsdiqlənib",
-    COMPLETED: "Tamamlanıb",
-    CANCELLED: "Ləğv edilib",
-    REFUNDED: "Geri qaytarılıb",
   };
 
   function enumLabel(value) {
@@ -411,35 +335,30 @@
     return `${String(date.getUTCDate()).padStart(2, "0")} ${months[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
   }
 
+  const priceFormatterCache = new Map();
   function formatPrice(value, currency = "AZN") {
     if (value == null || value === "") return "Qiymət üçün müraciət et";
     const amount = Number(value);
     if (!Number.isFinite(amount)) return String(value);
+    const cur = currency || "AZN";
     try {
-      return new Intl.NumberFormat("az-AZ", {
-        style: "currency",
-        currency: currency || "AZN",
-      }).format(amount);
+      let formatter = priceFormatterCache.get(cur);
+      if (!formatter) {
+        formatter = new Intl.NumberFormat("az-AZ", {
+          style: "currency",
+          currency: cur,
+        });
+        priceFormatterCache.set(cur, formatter);
+      }
+      return formatter.format(amount);
     } catch (_) {
-      return `${amount} ${currency || "AZN"}`;
+      return `${amount} ${cur}`;
     }
   }
 
-  function createCourseMenuLink(course, className = "") {
-    const link = document.createElement("a");
-    if (className) link.className = className;
-    link.href = course?.id
-      ? `course-details.html?id=${encodeURIComponent(course.id)}`
-      : "courses.html";
-    link.textContent = course?.title || "Bütün kurslar";
-    return link;
-  }
-
   async function initCourseMenus(signal, closeMobileMenu) {
-    const desktopMenus = $$(".Header_header__menu__drowpdown__KnfZg");
-    const mobileCourseBodies = $$(
-      '.HeaderMobile_menu__accordion__item__lNOEz[type="button"]',
-    )
+    const desktopMenus = $$(".header__dropdown");
+    const mobileCourseBodies = $$('.mobile-menu__accordion-item[type="button"]')
       .filter((button) => {
         const title = $(
           '[class*="menu__accordion__item__header__title"]',
@@ -457,6 +376,21 @@
       const visibleCourses = courses.filter(
         (course) => course?.id && String(course.title || "").trim(),
       );
+      const linkSpecs = visibleCourses.map((course) => ({
+        href: `course-details.html?id=${encodeURIComponent(course.id)}`,
+        text: course.title || "Adsız kurs",
+      }));
+      linkSpecs.push({ href: "courses.html", text: "Bütün kurslar" });
+
+      function instantiateLinks(className) {
+        return linkSpecs.map((spec) => {
+          const link = document.createElement("a");
+          if (className) link.className = className;
+          link.href = spec.href;
+          link.textContent = spec.text;
+          return link;
+        });
+      }
 
       desktopMenus.forEach((menu) => {
         const categoryLinks = Array.from(menu.children).filter(
@@ -464,18 +398,7 @@
             node.tagName === "A" &&
             node.getAttribute("href") === "categories.html",
         );
-        const links = visibleCourses.map((course) =>
-          createCourseMenuLink(
-            course,
-            "Header_header__menu__drowpdown__item__jIbqp",
-          ),
-        );
-        links.push(
-          createCourseMenuLink(
-            null,
-            "Header_header__menu__drowpdown__item__jIbqp",
-          ),
-        );
+        const links = instantiateLinks("header__dropdown-item");
         menu.replaceChildren(...links);
         categoryLinks.forEach((link) => menu.append(link));
       });
@@ -486,10 +409,7 @@
             node.tagName === "A" &&
             node.getAttribute("href") === "categories.html",
         );
-        const links = visibleCourses.map((course) =>
-          createCourseMenuLink(course),
-        );
-        links.push(createCourseMenuLink(null));
+        const links = instantiateLinks("");
         if (closeMobileMenu) {
           links.forEach((link) =>
             link.addEventListener("click", closeMobileMenu, { signal }),
@@ -509,25 +429,25 @@
   }
 
   function initHeader(signal) {
-    const header = $(".Header_header__8yaFd");
+    const header = $(".header");
     if (header) {
       const update = () =>
-        header.classList.toggle("Header_fixed__CRpV_", window.scrollY > 12);
+        header.classList.toggle("header--fixed", window.scrollY > 12);
       update();
       window.addEventListener("scroll", update, { passive: true, signal });
     }
-    const mobileMenu = $(".HeaderMobile_header_mobile_menu__b38W_");
+    const mobileMenu = $(".mobile-menu");
     const menuButtons = $$(".header__menu__btn");
     let closeMobileMenu = null;
     if (mobileMenu && menuButtons.length) {
       const open = () => {
-        mobileMenu.classList.add("HeaderMobile_show__tPAoO");
+        mobileMenu.classList.add("mobile-menu--show");
         document.documentElement.classList.add("naic-menu-open");
         document.body.classList.add("naic-menu-open");
         menuButtons[0]?.setAttribute("aria-expanded", "true");
       };
       const close = () => {
-        mobileMenu.classList.remove("HeaderMobile_show__tPAoO");
+        mobileMenu.classList.remove("mobile-menu--show");
         document.documentElement.classList.remove("naic-menu-open");
         document.body.classList.remove("naic-menu-open");
         menuButtons[0]?.setAttribute("aria-expanded", "false");
@@ -549,29 +469,30 @@
         { signal },
       );
     }
-    $$('.HeaderMobile_menu__accordion__item__lNOEz[type="button"]').forEach(
-      (button) => {
-        const body = $('[class*="menu__accordion__item__body"]', button);
-        if (!body) return;
-        button.setAttribute("aria-expanded", "false");
-        body.hidden = true;
-        button.addEventListener(
-          "click",
-          () => {
-            const expanded = button.getAttribute("aria-expanded") === "true";
-            button.setAttribute("aria-expanded", String(!expanded));
-            button.classList.toggle("HeaderMobile_active__Y_T4I", !expanded);
-            body.hidden = expanded;
-          },
-          { signal },
-        );
-      },
-    );
+    $$('.mobile-menu__accordion-item[type="button"]').forEach((button) => {
+      const body = $('[class*="menu__accordion__item__body"]', button);
+      if (!body) return;
+      button.setAttribute("aria-expanded", "false");
+      body.hidden = true;
+      button.addEventListener(
+        "click",
+        () => {
+          const expanded = button.getAttribute("aria-expanded") === "true";
+          button.setAttribute("aria-expanded", String(!expanded));
+          button.classList.toggle(
+            "mobile-menu__accordion-item--active",
+            !expanded,
+          );
+          body.hidden = expanded;
+        },
+        { signal },
+      );
+    });
     void initCourseMenus(signal, closeMobileMenu);
   }
 
   function initHeroMedia(signal) {
-    const video = $(".HeroSection_video__GVdk5");
+    const video = $(".hero-section__video");
     const playButton = $('[data-hero-control="playback"]');
     const muteButton = $('[data-hero-control="sound"]');
     const hasSource = Boolean(
@@ -659,7 +580,7 @@
     const HOLD_AFTER_TYPE_MS = 1700;
     const PAUSE_AFTER_DELETE_MS = 400;
     const START_DELAY_MS = 250;
-    const title = $(".HeroSection_content__title__Wr5gI");
+    const title = $(".hero-section__title");
     const parts = title ? $$(":scope > span", title) : [];
     if (!title || parts.length !== 2) return;
 
@@ -741,11 +662,9 @@
     const form = $("form#applicationForm");
     if (!form) return;
     form.noValidate = true;
-    const steps = $$('[class*="ai-form__step_"]', form).filter((el) =>
-      el.className.includes("SendApplicationSection_ai-form__step___"),
-    );
+    const steps = $$(".application-form__step", form);
     if (steps.length < 2) return;
-    const activeClass = "SendApplicationSection_active__5RPzX";
+    const activeClass = "application-form__step--active";
     const next = $(".ai-form__step__btn-next", form);
     const back = steps[1].querySelector('button[type="button"]');
 
@@ -800,11 +719,7 @@
         if (!type) invalid.push(...$$('input[name="applicationType"]', form));
         if (!fullname?.value.trim()) invalid.push(fullname);
         if (!email?.value || !validEmail(email.value)) invalid.push(email);
-        if (
-          !phone?.value.trim() ||
-          !/^[+\d\s()-]{7,30}$/.test(phone.value.trim())
-        )
-          invalid.push(phone);
+        if (!phone?.value.trim() || !validPhone(phone.value, true)) invalid.push(phone);
         if (
           !letter?.value.trim() ||
           letter.value.trim().length < 50 ||
@@ -842,7 +757,7 @@
             new Blob([JSON.stringify(data)], { type: "application/json" }),
           );
           body.append("cv", selectedFile, selectedFile.name);
-          await apiFetch("/api/v1/applications", {
+          await apiFetch("/api/v1/public/applications", {
             method: "POST",
             signal,
             body,
@@ -899,17 +814,24 @@
           if (kind === "subscribe") {
             const submit = $('button[type="submit"]', form);
             submit?.setAttribute("disabled", "disabled");
+            form.setAttribute("aria-busy", "true");
             try {
-              saveOffline(kind, form);
-              announce(form, "E-poçt bu cihazda saxlanıldı.", "success");
+              const email = form.elements.email.value.trim();
+              await apiFetch("/api/v1/public/newsletter/subscriptions", {
+                method: "POST",
+                signal,
+                body: JSON.stringify({
+                  email,
+                  consentVersion: "website-v1",
+                }),
+              });
+              announce(form, "Abunəliyiniz uğurla qeydə alındı.", "success");
               form.reset();
-            } catch (_) {
-              announce(
-                form,
-                "Məlumatı brauzer yaddaşında saxlamaq mümkün olmadı.",
-                "error",
-              );
+            } catch (error) {
+              if (error?.name !== "AbortError")
+                showLegacyFormError(form, error);
             } finally {
+              form.removeAttribute("aria-busy");
               submit?.removeAttribute("disabled");
             }
             return;
@@ -923,20 +845,16 @@
             submit?.setAttribute("disabled", "disabled");
             form.setAttribute("aria-busy", "true");
             try {
-              const response = await chatbotApiFetch("/api/lead", {
+              await apiFetch("/api/v1/public/contact-submissions", {
                 method: "POST",
                 signal,
                 body: JSON.stringify({
-                  name: fullName,
+                  fullName,
                   phone,
                   email,
-                  interest: "academy-contact",
-                  note,
-                  source: "website-contact",
+                  message: note,
                 }),
               });
-              if (response?.success !== true)
-                throw new ApiError(0, "Müraciət qeydə alınmadı.");
               form.reset();
               announce(form, "Müraciətiniz uğurla göndərildi.", "success");
             } catch (error) {
@@ -956,9 +874,9 @@
   function initVacancies(signal) {
     const input = $("#searchVacancies");
     if (!input) return;
-    const tabs = $$(".Vacancies_ai-tabs__item__l5MN4");
-    const activeClass = "Vacancies_ai-tabs__item--active__dqm_Y";
-    const cards = $$(".Vacancies_ai-vacancies__item__MWNY2");
+    const tabs = $$(".vacancies__tab");
+    const activeClass = "vacancies__tab--active";
+    const cards = $$(".vacancy-card");
     const locale = "az";
     const filter = () => {
       const query = input.value.trim().toLocaleLowerCase(locale);
@@ -971,7 +889,7 @@
           .toLocaleLowerCase(locale)
           .includes(query);
         const matchesAvailability =
-          !availableOnly || card.dataset.scholarshipAvailable !== "false";
+          !availableOnly || card.dataset.vacancyAvailable !== "false";
         card.hidden = !matchesQuery || !matchesAvailability;
       });
     };
@@ -1013,42 +931,53 @@
       ),
     );
     let currentOffset = 0;
-    const render = (animate = true) => {
-      if (centerFromLayout) {
-        slides.forEach((slide, index) => {
-          const distance = index - active;
-          slide.classList.toggle("swiper-slide-active", distance === 0);
-          slide.classList.toggle("swiper-slide-prev", distance === -1);
-          slide.classList.toggle("swiper-slide-next", distance === 1);
-          slide.classList.toggle(
-            "swiper-slide-visible",
-            Math.abs(distance) <= 2,
-          );
-        });
+    let autoplayTimer = null;
+    let dragState = null;
+    let cachedSlideWidth = slides[0]?.getBoundingClientRect().width || 315;
+    let cachedMarginRight =
+      parseFloat(getComputedStyle(slides[0]).marginRight) || 0;
+
+    function measureLayout() {
+      cachedSlideWidth = slides[0]?.getBoundingClientRect().width || 315;
+      cachedMarginRight =
+        parseFloat(getComputedStyle(slides[0]).marginRight) || 0;
+    }
+
+    function updateSlideClasses() {
+      for (let i = 0; i < slides.length; i++) {
+        const distance = i - active;
+        const slide = slides[i];
+        slide.classList.toggle("swiper-slide-active", distance === 0);
+        slide.classList.toggle("swiper-slide-prev", distance === -1);
+        slide.classList.toggle("swiper-slide-next", distance === 1);
+        slide.classList.toggle(
+          "swiper-slide-visible",
+          Math.abs(distance) <= 2,
+        );
       }
+    }
+
+    function computeOffset() {
       const containerWidth = container.clientWidth || window.innerWidth;
       const activeSlide = slides[active];
-      const slideWidth = activeSlide?.getBoundingClientRect().width || 315;
-      const margin = parseFloat(getComputedStyle(activeSlide).marginRight) || 0;
-      const offset = centerFromLayout
+      return centerFromLayout
         ? containerWidth / 2 -
-          ((activeSlide?.offsetLeft || 0) +
-            (activeSlide?.offsetWidth || slideWidth) / 2)
-        : containerWidth / 2 - slideWidth / 2 - active * (slideWidth + margin);
+            ((activeSlide?.offsetLeft || 0) +
+              (activeSlide?.offsetWidth || cachedSlideWidth) / 2)
+        : containerWidth / 2 -
+            cachedSlideWidth / 2 -
+            active * (cachedSlideWidth + cachedMarginRight);
+    }
+
+    function render(animate = true) {
+      updateSlideClasses();
+      const offset = computeOffset();
       currentOffset = offset;
       wrapper.style.transition = animate ? "transform 480ms ease" : "none";
       wrapper.style.transform = `translate3d(${offset}px, 0, 0)`;
-      slides.forEach((slide, index) => {
-        const distance = index - active;
-        if (!centerFromLayout) {
-          slide.classList.toggle("swiper-slide-active", distance === 0);
-          slide.classList.toggle("swiper-slide-prev", distance === -1);
-          slide.classList.toggle("swiper-slide-next", distance === 1);
-          slide.classList.toggle(
-            "swiper-slide-visible",
-            Math.abs(distance) <= 2,
-          );
-        }
+      for (let i = 0; i < slides.length; i++) {
+        const slide = slides[i];
+        const distance = i - active;
         slide.style.transition = animate
           ? "transform 480ms ease, opacity 480ms ease"
           : "none";
@@ -1056,39 +985,34 @@
         slide.style.zIndex = String(slides.length - Math.abs(distance));
         slide.style.opacity =
           Math.abs(distance) > 3 ? "0.25" : distance === 0 ? "1" : "0.55";
-      });
-    };
-    const move = (delta) => {
+      }
+    }
+    function move(delta) {
       active = (active + delta + slides.length) % slides.length;
       render(true);
-    };
-    let autoplayTimer = null;
-    let dragState = null;
-    const stopAutoplay = () => {
+    }
+
+    function stopAutoplay() {
       if (autoplayTimer === null) return;
       window.clearInterval(autoplayTimer);
       autoplayTimer = null;
-    };
-    const restartAutoplay = () => {
+    }
+
+    function restartAutoplay() {
       stopAutoplay();
       autoplayTimer =
         autoplayMs > 0 && slides.length > 1
           ? window.setInterval(() => move(1), autoplayMs)
           : null;
-    };
-    const manualMove = (delta) => {
+    }
+
+    function manualMove(delta) {
       dragState = null;
       move(delta);
       restartAutoplay();
-    };
-    $(prevSelector)?.addEventListener("click", () => manualMove(-1), {
-      signal,
-    });
-    $(nextSelector)?.addEventListener("click", () => manualMove(1), {
-      signal,
-    });
+    }
 
-    const getRenderedOffset = () => {
+    function getRenderedOffset() {
       const transform = window.getComputedStyle(wrapper).transform;
       if (!transform || transform === "none") return currentOffset;
       const matrix3d = transform.match(/^matrix3d\((.+)\)$/);
@@ -1102,13 +1026,13 @@
         return Number.isFinite(values[4]) ? values[4] : currentOffset;
       }
       return currentOffset;
-    };
-    const getDragThreshold = () => {
-      const activeSlide = slides[active];
-      const slideWidth = activeSlide?.getBoundingClientRect().width || 315;
-      return Math.min(80, Math.max(45, slideWidth * 0.12));
-    };
-    const startDrag = (clientX, clientY, inputType) => {
+    }
+
+    function getDragThreshold() {
+      return Math.min(80, Math.max(45, cachedSlideWidth * 0.12));
+    }
+
+    function startDrag(clientX, clientY, inputType) {
       stopAutoplay();
       const baseOffset = getRenderedOffset();
       dragState = {
@@ -1121,8 +1045,9 @@
       };
       wrapper.style.transition = "none";
       wrapper.style.transform = `translate3d(${baseOffset}px, 0, 0)`;
-    };
-    const updateDrag = (clientX, clientY, event) => {
+    }
+
+    function updateDrag(clientX, clientY, event) {
       if (!dragState) return;
       const deltaX = clientX - dragState.startX;
       const deltaY = clientY - dragState.startY;
@@ -1134,8 +1059,9 @@
       if (dragState.axis !== "horizontal") return;
       event.preventDefault();
       wrapper.style.transform = `translate3d(${dragState.baseOffset + deltaX}px, 0, 0)`;
-    };
-    const finishDrag = (clientX, allowSnap = true) => {
+    }
+
+    function finishDrag(clientX, allowSnap = true) {
       if (!dragState) return;
       const completedDrag = dragState;
       const endX = Number.isFinite(clientX) ? clientX : completedDrag.lastX;
@@ -1151,7 +1077,7 @@
         render(true);
       }
       restartAutoplay();
-    };
+    }
 
     container.addEventListener(
       "mousedown",
@@ -1226,11 +1152,18 @@
     );
     window.addEventListener(
       "resize",
-      () => {
-        dragState = null;
-        render(false);
-        restartAutoplay();
-      },
+      (() => {
+        let resizeTimer = null;
+        return () => {
+          clearTimeout(resizeTimer);
+          resizeTimer = setTimeout(() => {
+            dragState = null;
+            measureLayout();
+            render(false);
+            restartAutoplay();
+          }, 150);
+        };
+      })(),
       { signal },
     );
     signal?.addEventListener(
@@ -1240,94 +1173,40 @@
       },
       { once: true },
     );
+    $(prevSelector)?.addEventListener("click", () => manualMove(-1), {
+      signal,
+    });
+    $(nextSelector)?.addEventListener("click", () => manualMove(1), {
+      signal,
+    });
     requestAnimationFrame(() => render(false));
     restartAutoplay();
   }
 
   function initSliders(signal) {
-    const SCHOLARSHIPS_SLIDER_AUTOPLAY_MS = 4500;
+    const CAREER_SLIDER_AUTOPLAY_MS = 4500;
     setupCoverflow(
       {
-        containerSelector: ".SuccessStories_ai-success--stories__vv5bs .swiper",
-        prevSelector:
-          ".SuccessStories_section__header__controller__prev__aQ8hL",
-        nextSelector:
-          ".SuccessStories_section__header__controller__next__A3AXv",
+        containerSelector: ".success-stories__swiper .swiper",
+        prevSelector: ".success-stories__prev",
+        nextSelector: ".success-stories__next",
         depth: 290,
         centerFromLayout: true,
-        autoplayMs: SCHOLARSHIPS_SLIDER_AUTOPLAY_MS,
+        autoplayMs: CAREER_SLIDER_AUTOPLAY_MS,
       },
       signal,
     );
     setupCoverflow(
       {
-        containerSelector: ".ViewsFromNaic_ai-views--from--naic__Zd_6I .swiper",
-        prevSelector: ".ViewsFromNaic_section__header__controller__prev__cyPxK",
-        nextSelector: ".ViewsFromNaic_section__header__controller__next__wERDV",
+        containerSelector: ".views-naic__swiper .swiper",
+        prevSelector: ".views-naic__prev",
+        nextSelector: ".views-naic__next",
         depth: 125,
         centerFromLayout: true,
-        autoplayMs: SCHOLARSHIPS_SLIDER_AUTOPLAY_MS,
+        autoplayMs: CAREER_SLIDER_AUTOPLAY_MS,
       },
       signal,
     );
-  }
-
-  function initPagination(signal) {
-    const FAQ_PAGE_SIZE = 6;
-    const activeClass = "Pagination_active__qQWfE";
-    $$(".Pagination_ai-pagination__mtI7X").forEach((pagination) => {
-      const buttons = $$(".Pagination_ai-pagination__item___y0si", pagination);
-      const pageButtons = buttons.filter((button) =>
-        /^\d+$/.test(button.textContent.trim()),
-      );
-      const section = pagination.closest(".section");
-      const cards = section
-        ? $$(".BlogCard_ai-blogs__item__4ILGi", section)
-        : [];
-      if (!pageButtons.length || !cards.length) return;
-      const totalPages = Math.min(
-        pageButtons.length,
-        Math.ceil(cards.length / FAQ_PAGE_SIZE),
-      );
-      const prev = buttons.find((button) => {
-        const label = button.getAttribute("aria-label") || "";
-        return label.includes("Əvvəlki") || label.includes("Previous");
-      });
-      const next = buttons.find((button) => {
-        const label = button.getAttribute("aria-label") || "";
-        return label.includes("Növbəti") || label.includes("Next");
-      });
-      let active = clamp(
-        pageButtons.findIndex((button) =>
-          button.classList.contains(activeClass),
-        ),
-        0,
-        totalPages - 1,
-      );
-      const setPage = (index, shouldScroll = true) => {
-        active = clamp(index, 0, totalPages - 1);
-        pageButtons.forEach((button, i) => {
-          button.classList.toggle(activeClass, i === active);
-          if (i === active) button.setAttribute("aria-current", "page");
-          else button.removeAttribute("aria-current");
-        });
-        cards.forEach((card, i) => {
-          card.hidden =
-            i < active * FAQ_PAGE_SIZE || i >= (active + 1) * FAQ_PAGE_SIZE;
-        });
-        if (prev) prev.disabled = active === 0;
-        if (next) next.disabled = active === totalPages - 1;
-        if (shouldScroll) {
-          section.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
-      };
-      pageButtons.forEach((button, i) =>
-        button.addEventListener("click", () => setPage(i), { signal }),
-      );
-      prev?.addEventListener("click", () => setPage(active - 1), { signal });
-      next?.addEventListener("click", () => setPage(active + 1), { signal });
-      setPage(active, false);
-    });
   }
 
   function faqSortOrder(item) {
@@ -1339,142 +1218,185 @@
       : Number.MAX_SAFE_INTEGER;
   }
 
-  function faqCard(template, item, fallback, index) {
-    const card = template.cloneNode(true);
-    const key = String(item?.key || item?.id || `faq-${index + 1}`);
-    const title = $(".BlogCard_ai-blogs__item__title__HICp5", card);
-    const description = $(".BlogCard_ai-blogs__item__desc__OS_Ov", card);
-    const fallbackTitle = $(
-      ".BlogCard_ai-blogs__item__title__HICp5",
-      fallback,
-    )?.textContent.trim();
-    const fallbackDescription = $(
-      ".BlogCard_ai-blogs__item__desc__OS_Ov",
-      fallback,
-    )?.textContent.trim();
-    const itemTitle = String(item?.title || "").trim();
-    const itemBody = String(item?.body || "").trim();
-    card.hidden = false;
-    card.id = key;
-    card.setAttribute("data-summary-only", "true");
-    card.setAttribute("data-target-fragment", key);
-    card.href = IS_LEGACY_ROUTER
-      ? `#/nav/faq?target=${encodeURIComponent(key)}`
-      : `faq.html?target=${encodeURIComponent(key)}`;
-    if (title) title.textContent = itemTitle || fallbackTitle || "FAQ";
-    if (description) {
-      description.textContent =
-        itemBody ||
-        fallbackDescription ||
-        "Bu sualın cavabı daha sonra əlavə ediləcək.";
-    }
-    return card;
-  }
-
-  function faqStateCard(template, titleText, descriptionText) {
-    const card = template.cloneNode(true);
-    const title = $(".BlogCard_ai-blogs__item__title__HICp5", card);
-    const description = $(".BlogCard_ai-blogs__item__desc__OS_Ov", card);
-    const button = $("button", card);
-    card.hidden = false;
-    card.removeAttribute("id");
-    card.removeAttribute("href");
-    card.removeAttribute("data-summary-only");
-    card.removeAttribute("data-target-fragment");
-    card.setAttribute("aria-disabled", "true");
-    card.setAttribute("tabindex", "-1");
-    if (title) title.textContent = titleText;
-    if (description) description.textContent = descriptionText;
-    if (button) button.disabled = true;
-    return card;
-  }
-
-  function rebuildFaqPagination(signal, cardCount) {
-    const current = $(".Pagination_ai-pagination__mtI7X");
-    if (!current) return;
-    const pagination = current.cloneNode(true);
-    const buttons = $$(".Pagination_ai-pagination__item___y0si", pagination);
-    const pageButtons = buttons.filter((button) =>
-      /^\d+$/.test(button.textContent.trim()),
-    );
-    const next = buttons.find((button) => {
-      const label = button.getAttribute("aria-label") || "";
-      return label.includes("Növbəti") || label.includes("Next");
-    });
-    const template = pageButtons[0];
-    if (!template || !next) return;
-    pageButtons.forEach((button) => button.remove());
-    const totalPages = Math.max(1, Math.ceil(cardCount / 6));
-    Array.from({ length: totalPages }, (_, index) => {
-      const button = template.cloneNode(true);
-      button.textContent = String(index + 1);
-      button.classList.toggle("Pagination_active__qQWfE", index === 0);
-      if (index === 0) button.setAttribute("aria-current", "page");
-      else button.removeAttribute("aria-current");
-      next.before(button);
-    });
-    current.replaceWith(pagination);
-    initPagination(signal);
+  function renderFaqAccordion(items, signal) {
+    const accordion = $(".faq-accordion");
+    if (!accordion) return;
+    accordion.innerHTML = items
+      .map((item, index) => {
+        const question = String(item?.title || "Sual");
+        const answer = String(item?.body || "Cavab daha sonra əlavə ediləcək.");
+        const id = `faq-answer-cms-${index + 1}`;
+        return `<div class="faq-item">
+          <button class="faq-question" type="button" aria-expanded="false" aria-controls="${id}">
+            <span>${escapeHtml(question)}</span>
+            <span class="faq-indicator" aria-hidden="true">⌄</span>
+          </button>
+          <div class="faq-answer" id="${id}"><div class="faq-answer__inner"><p>${escapeHtml(answer)}</p></div></div>
+        </div>`;
+      })
+      .join("");
+    initFaqAccordion(signal);
   }
 
   async function initFaqPage(signal) {
-    const grid = $(".Blogs_ai-blogs__RyLaX");
-    if (!grid) return;
-    const currentCards = $$(".BlogCard_ai-blogs__item__4ILGi", grid);
-    const template = currentCards[0];
-    if (!template) return;
-    const fallbackCards = currentCards.map((card) => card.cloneNode(true));
-    grid.setAttribute("aria-busy", "true");
-    grid.dataset.faqSource = "loading";
+    const accordion = $(".faq-accordion");
+    if (!accordion) return;
+    accordion.setAttribute("aria-busy", "true");
+    accordion.dataset.faqSource = "loading";
 
     try {
-      const content = await apiFetch("/api/v1/content/cms-content", {
-        signal,
-      });
+      const content = await publicContentByType("FAQ", { signal });
       if (!Array.isArray(content))
         throw new ApiError(0, "FAQ məlumatının formatı düzgün deyil.");
       if (signal.aborted) return;
       const items = content
         .filter(
-          (item) =>
-            String(item?.type || "").toUpperCase() === "FAQ" &&
-            item?.published === true,
+          (item) => String(item?.type || "").toUpperCase() === "FAQ",
         )
         .sort(
           (left, right) =>
             faqSortOrder(left) - faqSortOrder(right) ||
             String(left?.key || "").localeCompare(String(right?.key || "")),
-        );
+      );
       if (!items.length) {
-        grid.replaceChildren(
-          faqStateCard(
-            template,
-            "FAQ tapılmadı",
-            "Hazırda dərc olunmuş sual-cavab mövcud deyil.",
-          ),
-        );
-        grid.dataset.faqSource = "api-empty";
-        rebuildFaqPagination(signal, 1);
+        accordion.innerHTML = `<div class="Nexora_emptyState">
+          <h3>FAQ tapılmadı</h3>
+          <p>Hazırda dərc olunmuş sual-cavab mövcud deyil.</p>
+        </div>`;
+        accordion.dataset.faqSource = "api-empty";
         return;
       }
-      grid.replaceChildren(
-        ...items.map((item, index) =>
-          faqCard(
-            template,
-            item,
-            fallbackCards[index % fallbackCards.length],
-            index,
-          ),
-        ),
-      );
-      grid.dataset.faqSource = "api";
-      applyDataImageFallbacks(grid);
-      rebuildFaqPagination(signal, items.length);
+      renderFaqAccordion(items, signal);
+      accordion.dataset.faqSource = "api";
     } catch (error) {
       if (error?.name === "AbortError" || signal.aborted) return;
-      grid.replaceChildren(...fallbackCards);
-      grid.dataset.faqSource = "fallback";
-      rebuildFaqPagination(signal, fallbackCards.length);
+      accordion.dataset.faqSource = "fallback";
+    } finally {
+      if (!signal.aborted) accordion.removeAttribute("aria-busy");
+    }
+  }
+
+  const MAX_HOMEPAGE_NEWS = 4;
+
+  function newsCard(item, index) {
+    const key = String(item?.key || `news-${index + 1}`);
+    const title = String(item?.title || "").trim() || "Xəbər";
+    const body = String(item?.body || "").trim();
+    const data = item?.data && typeof item.data === "object" ? item.data : {};
+    const coverImage = safeCourseDetailUrl(data.cover_image_url);
+    const fallbackKeys = ["blog-networking", "blog-cybersecurity", "blog-cloud-devops"];
+    const fallbackKey = fallbackKeys[index % fallbackKeys.length];
+    const fallback = IMAGE_FALLBACKS[fallbackKey];
+    const imgSrc = coverImage || fallback?.src || "";
+    const imgAlt = coverImage ? title : fallback?.alt || title;
+    return `<a class="blog-card" href="news.html?target=${encodeURIComponent(key)}">
+      ${imgSrc ? `<div class="blog-card__media"><img alt="${escapeHtml(imgAlt)}" data-nimg="1" decoding="async" height="400" loading="lazy" width="400" ${coverImage ? `src="${escapeHtml(coverImage)}"` : `data-image-src="" data-image-fallback="${fallbackKey}"`} style="color: transparent" /></div>` : ""}
+      <div class="blog-card__content">
+        <h3 class="blog-card__title">${escapeHtml(title)}</h3>
+        <p class="blog-card__desc">${escapeHtml(body.length > 160 ? body.slice(0, 160) + "…" : body) || "Xəbərin davamı üçün baxın."}</p>
+      </div>
+      <span aria-hidden="true" class="ai-btn ai-btn--icon ai-btn--blur ai-btn--sm blog-card__cta">
+        <svg class="" fill="none" height="100%" stroke="#ffffff" viewbox="0 0 24 24" width="100%" xmlns="http://www.w3.org/2000/svg">
+          <path d="M6 18L18 6M18 6H10M18 6V14" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+        </svg>
+      </span>
+    </a>`;
+  }
+
+  function newsStateCard(title, description) {
+    return `<div class="Nexora_emptyState" style="min-height:180px">
+      <h3>${escapeHtml(title)}</h3>
+      <p>${escapeHtml(description)}</p>
+    </div>`;
+  }
+
+  async function initNewsSection(signal) {
+    const container = $("#newsSection");
+    const status = $("#newsStatus");
+    if (!container) return;
+    container.setAttribute("aria-busy", "true");
+    if (status) status.textContent = "Xəbərlər yüklənir…";
+
+    try {
+      const content = await publicContentByType("NEWS", { signal });
+      if (!Array.isArray(content))
+        throw new ApiError(0, "Xəbər məlumatının formatı düzgün deyil.");
+      if (signal.aborted) return;
+      const items = content
+        .filter(
+          (item) => String(item?.type || "").toUpperCase() === "NEWS",
+        )
+        .sort(
+          (left, right) =>
+            (Number(left?.sortOrder) || 0) - (Number(right?.sortOrder) || 0) ||
+            String(left?.key || "").localeCompare(String(right?.key || "")),
+        )
+        .slice(0, MAX_HOMEPAGE_NEWS);
+      if (!items.length) {
+        container.innerHTML = newsStateCard(
+          "Hələ elan yoxdur",
+          "Yeni xəbərlər və elanlar burada yayımlanacaq.",
+        );
+        if (status) status.textContent = "";
+        container.dataset.newsSource = "api-empty";
+        return;
+      }
+      container.innerHTML = items.map((item, i) => newsCard(item, i)).join("");
+      if (status) status.textContent = "";
+      container.dataset.newsSource = "api";
+      applyDataImageFallbacks(container);
+    } catch (error) {
+      if (error?.name === "AbortError" || signal.aborted) return;
+      container.innerHTML = newsStateCard(
+        "Xəbərlər yüklənə bilmədi",
+        "Zəhmət olmasa bir az sonra yenidən yoxlayın.",
+      );
+      if (status) status.textContent = "";
+      container.dataset.newsSource = "fallback";
+    } finally {
+      if (!signal.aborted) {
+        container.removeAttribute("aria-busy");
+      }
+    }
+  }
+
+  async function initNewsPage(signal) {
+    const grid = $("#newsGrid");
+    if (!grid) return;
+    grid.setAttribute("aria-busy", "true");
+
+    try {
+      const content = await publicContentByType("NEWS", { signal });
+      if (!Array.isArray(content))
+        throw new ApiError(0, "Xəbər məlumatının formatı düzgün deyil.");
+      if (signal.aborted) return;
+      const items = content
+        .filter(
+          (item) => String(item?.type || "").toUpperCase() === "NEWS",
+        )
+        .sort(
+          (left, right) =>
+            (Number(left?.sortOrder) || 0) - (Number(right?.sortOrder) || 0) ||
+            String(left?.key || "").localeCompare(String(right?.key || "")),
+        );
+      if (!items.length) {
+        grid.innerHTML = newsStateCard(
+          "Hələ elan yoxdur",
+          "Yeni xəbərlər və elanlar burada yayımlanacaq.",
+        );
+        grid.dataset.newsSource = "api-empty";
+        return;
+      }
+      grid.innerHTML = items.map((item, i) => newsCard(item, i)).join("");
+      grid.dataset.newsSource = "api";
+      applyDataImageFallbacks(grid);
+    } catch (error) {
+      if (error?.name === "AbortError" || signal.aborted) return;
+      grid.innerHTML = newsStateCard(
+        "Xəbərlər yüklənə bilmədi",
+        "Zəhmət olmasa bir az sonra yenidən yoxlayın.",
+      );
+      grid.dataset.newsSource = "fallback";
     } finally {
       if (!signal.aborted) grid.removeAttribute("aria-busy");
     }
@@ -1497,10 +1419,7 @@
   }
 
   function setAcademyHeroImage(root, value) {
-    const image = $(
-      ".WhoWeAreSection_ai-who-we-are__media__image__cNM9o img",
-      root,
-    );
+    const image = $(".who-we-are__image img", root);
     const source = safeCourseDetailUrl(value);
     if (!image || !source) return;
     const fallback = image.currentSrc || image.getAttribute("src") || "";
@@ -1520,13 +1439,10 @@
     const data = page?.data && typeof page.data === "object" ? page.data : {};
     const stats =
       data.stats && typeof data.stats === "object" ? data.stats : {};
-    const breadcrumb = $(".NavigateSection_current__x72AF", root);
-    const info = $(".WhoWeAreSection_ai-who-we-are__info__XGRRl p", root);
+    const breadcrumb = $(".navigate-section__current", root);
+    const info = $(".who-we-are__info p", root);
     const infoTitle = info ? $("strong", info) : null;
-    const statItems = $$(
-      ".WhoWeAreSection_ai-who-we-are__stats__item__W5tzn",
-      root,
-    );
+    const statItems = $$(".who-we-are__stat", root);
     const statValues = [
       {
         count: academyMetric(stats.graduates, "+"),
@@ -1549,14 +1465,8 @@
     statItems.forEach((item, index) => {
       const metric = statValues[index];
       if (!metric?.count) return;
-      const count = $(
-        ".WhoWeAreSection_ai-who-we-are__stats__item__count__j8gSP",
-        item,
-      );
-      const label = $(
-        ".WhoWeAreSection_ai-who-we-are__stats__item__title__3BeOo",
-        item,
-      );
+      const count = $(".who-we-are__stat-count", item);
+      const label = $(".who-we-are__stat-title", item);
       if (count) count.textContent = metric.count;
       if (label) label.textContent = metric.label;
     });
@@ -1571,22 +1481,10 @@
     root.setAttribute("aria-busy", "true");
     root.dataset.academySource = "loading";
     try {
-      const content = await apiFetch("/api/v1/content/cms-content", {
-        signal,
-      });
-      if (!Array.isArray(content))
+      const page = await publicContentByKey("page.about", { signal });
+      if (!page || typeof page !== "object")
         throw new ApiError(0, "Academy məlumatının formatı düzgün deyil.");
       if (signal.aborted) return;
-      const page = content.find(
-        (item) =>
-          String(item?.type || "").toUpperCase() === "PAGE" &&
-          item?.key === "page.about" &&
-          item?.published === true,
-      );
-      if (!page) {
-        root.dataset.academySource = "fallback";
-        return;
-      }
       applyAcademyContent(root, page);
       root.dataset.academySource = "api";
     } catch (error) {
@@ -1597,59 +1495,26 @@
     }
   }
 
-  function scholarshipAvailable(item, now = Date.now()) {
-    return Boolean(
-      item?.active === true &&
-      publicDateAllows(item.validFrom, "from", now) &&
-      publicDateAllows(item.validUntil, "until", now),
-    );
-  }
-
-  function scholarshipNumber(value, suffix = "") {
-    if (value == null || value === "") return "";
-    const number = Number(value);
-    if (!Number.isFinite(number)) return "";
-    const formatted = new Intl.NumberFormat("az-AZ", {
-      maximumFractionDigits: 2,
-    }).format(number);
-    return `${formatted}${suffix}`;
-  }
-
-  function scholarshipCard(template, item, fallback, index) {
+  function vacancyCard(template, item, index) {
     const card = template.cloneNode(true);
-    const title = $(".Vacancies_ai-vacancies__item__title__n3bnL", card);
-    const description = $(".Vacancies_ai-vacancies__item__desc__A0Adm", card);
-    const fallbackTitle = $(
-      ".Vacancies_ai-vacancies__item__title__n3bnL",
-      fallback,
-    )?.textContent.trim();
-    const fallbackDescription = $(
-      ".Vacancies_ai-vacancies__item__desc__A0Adm",
-      fallback,
-    )?.textContent.trim();
-    const name = String(item?.name || "").trim();
-    const body = String(item?.description || "").trim();
-    const details = [];
-    const discount = scholarshipNumber(item?.discountPct, "%");
-    const recipients = scholarshipNumber(item?.maxRecipients);
-    const validFrom = item?.validFrom ? formatDate(item.validFrom) : "";
-    const validUntil = item?.validUntil ? formatDate(item.validUntil) : "";
-    if (discount) details.push(`${discount} dəstək`);
-    if (recipients) details.push(`${recipients} yer`);
-    if (validFrom && validUntil) details.push(`${validFrom} – ${validUntil}`);
-    else if (validUntil) details.push(`${validUntil} tarixinədək`);
-    else if (validFrom) details.push(`${validFrom} tarixindən`);
-    const key = `scholarship-${String(item?.id ?? index + 1)}`;
+    const title = $(".vacancy-card__title", card);
+    const description = $(".vacancy-card__desc", card);
+    const data = contentObject(item?.data);
+    const details = [data.department, data.location, data.employmentType]
+      .map((value) => String(value || "").trim())
+      .filter(Boolean);
+    const rawKey = String(item?.key || `vacancy-${index + 1}`);
+    const key = rawKey.replace(/[^a-z0-9_-]+/gi, "-");
 
     card.hidden = false;
     card.id = key;
-    card.dataset.scholarshipAvailable = String(scholarshipAvailable(item));
+    card.dataset.vacancyAvailable = "true";
     card.setAttribute("data-summary-only", "true");
     card.setAttribute("data-target-fragment", key);
-    card.href = `scholarships.html?target=${encodeURIComponent(key)}`;
-    if (title) title.textContent = name || fallbackTitle || "Təqaüd";
+    card.href = `career.html?target=${encodeURIComponent(key)}`;
+    if (title) title.textContent = String(item?.title || "Açıq vakansiya");
     if (description) {
-      const base = body || fallbackDescription || "Təqaüd məlumatı.";
+      const base = String(item?.body || "Vakansiya haqqında məlumat.");
       description.textContent = details.length
         ? `${base} ${details.join(" · ")}`
         : base;
@@ -1657,142 +1522,309 @@
     return card;
   }
 
-  function scholarshipStateCard(template) {
+  function vacancyStateCard(template, failed = false) {
     const card = template.cloneNode(true);
-    const title = $(".Vacancies_ai-vacancies__item__title__n3bnL", card);
-    const description = $(".Vacancies_ai-vacancies__item__desc__A0Adm", card);
+    const title = $(".vacancy-card__title", card);
+    const description = $(".vacancy-card__desc", card);
     const button = $("button", card);
     card.hidden = false;
     card.removeAttribute("id");
     card.removeAttribute("href");
     card.removeAttribute("data-summary-only");
     card.removeAttribute("data-target-fragment");
-    card.dataset.scholarshipAvailable = "true";
+    card.dataset.vacancyAvailable = "true";
     card.setAttribute("aria-disabled", "true");
     card.setAttribute("tabindex", "-1");
-    if (title) title.textContent = "Təqaüd tapılmadı";
+    if (title) title.textContent = failed ? "Vakansiyalar yüklənmədi" : "Açıq vakansiya yoxdur";
     if (description) {
-      description.textContent =
-        "Hazırda göstərilə bilən təqaüd proqramı mövcud deyil.";
+      description.textContent = failed
+        ? "Məlumatı yükləmək mümkün olmadı. Bir az sonra yenidən yoxlayın."
+        : "Hazırda yayımlanmış açıq mövqe mövcud deyil.";
     }
     if (button) button.disabled = true;
     return card;
   }
 
-  function refreshScholarshipFilters(signal) {
-    const current = $(".Vacancies_section__search__FSfJg");
+  function refreshVacancyFilters(signal) {
+    const current = $(".vacancies__search");
     if (!current) return;
     const replacement = current.cloneNode(true);
     current.replaceWith(replacement);
     initVacancies(signal);
   }
 
-  async function initScholarshipsPage(signal) {
-    const grid = $(".Vacancies_ai-vacancies__qEBqV");
+  async function initVacanciesPage(signal) {
+    const grid = $(".vacancies__grid");
     if (!grid) return;
-    const currentCards = $$(".Vacancies_ai-vacancies__item__MWNY2", grid);
+    const currentCards = $$(".vacancy-card", grid);
     const template = currentCards[0];
     if (!template) return;
-    const fallbackCards = currentCards.map((card) => card.cloneNode(true));
     grid.setAttribute("aria-busy", "true");
-    grid.dataset.scholarshipsSource = "loading";
+    grid.dataset.vacanciesSource = "loading";
     try {
-      const scholarships = await apiFetch("/api/v1/scholarships", { signal });
-      if (!Array.isArray(scholarships))
-        throw new ApiError(0, "Təqaüd məlumatının formatı düzgün deyil.");
+      const vacancies = await publicContentByType("VACANCY", { signal });
+      if (!Array.isArray(vacancies))
+        throw new ApiError(0, "Vakansiya məlumatının formatı düzgün deyil.");
       if (signal.aborted) return;
-      const items = [...scholarships].sort(
+      const items = [...vacancies].sort(
         (left, right) =>
-          Number(left?.id ?? Number.MAX_SAFE_INTEGER) -
-            Number(right?.id ?? Number.MAX_SAFE_INTEGER) ||
-          String(left?.name || "").localeCompare(
-            String(right?.name || ""),
+          Number(left?.sortOrder ?? 0) - Number(right?.sortOrder ?? 0) ||
+          String(left?.title || "").localeCompare(
+            String(right?.title || ""),
             "az",
           ),
       );
       if (!items.length) {
-        grid.replaceChildren(scholarshipStateCard(template));
-        grid.dataset.scholarshipsSource = "api-empty";
-        refreshScholarshipFilters(signal);
+        grid.replaceChildren(vacancyStateCard(template));
+        grid.dataset.vacanciesSource = "api-empty";
+        refreshVacancyFilters(signal);
         return;
       }
       grid.replaceChildren(
-        ...items.map((item, index) =>
-          scholarshipCard(
-            template,
-            item,
-            fallbackCards[index % fallbackCards.length],
-            index,
-          ),
-        ),
+        ...items.map((item, index) => vacancyCard(template, item, index)),
       );
-      grid.dataset.scholarshipsSource = "api";
-      refreshScholarshipFilters(signal);
+      grid.dataset.vacanciesSource = "api";
+      refreshVacancyFilters(signal);
     } catch (error) {
       if (error?.name === "AbortError" || signal.aborted) return;
-      grid.replaceChildren(...fallbackCards);
-      grid.dataset.scholarshipsSource = "fallback";
-      refreshScholarshipFilters(signal);
+      grid.replaceChildren(vacancyStateCard(template, true));
+      grid.dataset.vacanciesSource = "error";
+      refreshVacancyFilters(signal);
     } finally {
       if (!signal.aborted) grid.removeAttribute("aria-busy");
     }
   }
 
-  function applyHomeBanner(root, banner) {
-    const video = $(".HeroSection_video__GVdk5", root);
-    const data =
-      banner?.data &&
-      typeof banner.data === "object" &&
-      !Array.isArray(banner.data)
-        ? banner.data
-        : {};
-    const image = safeCourseDetailUrl(data.image, "");
-
-    if (image && video) video.poster = image;
+  function contentObject(value) {
+    return value && typeof value === "object" && !Array.isArray(value)
+      ? value
+      : {};
   }
 
-  async function initHomeBanner(signal) {
-    const root = $(".HeroSection_heroSection__FTiId");
-    if (!root) return;
+  function replaceSplitHeading(heading, lead, accent, tail = "") {
+    if (!heading) return;
+    const leadText = String(lead || "").trim();
+    const accentText = String(accent || "").trim();
+    const tailText = String(tail || "").trim();
+    if (!leadText && !accentText && !tailText) return;
+    const previousHighlight = $(".ai-highlight", heading);
+    const highlight = document.createElement("span");
+    highlight.className = previousHighlight?.className || "ai-highlight";
+    highlight.textContent = accentText;
+    const nodes = [];
+    if (leadText) nodes.push(document.createTextNode(`${leadText} `));
+    if (accentText) nodes.push(highlight);
+    if (tailText) nodes.push(document.createTextNode(` ${tailText}`));
+    heading.replaceChildren(...nodes);
+  }
 
-    root.setAttribute("aria-busy", "true");
-    root.dataset.bannerSource = "loading";
-    try {
-      const content = await apiFetch("/api/v1/content/cms-content", { signal });
-      if (!Array.isArray(content))
-        throw new ApiError(0, "Banner məlumatının formatı düzgün deyil.");
-      if (signal.aborted) return;
+  function applyHomeContent(page) {
+    const data = contentObject(page?.data);
+    const hero = contentObject(data.hero);
+    const titleParts = $$(".hero-section__title > span");
+    if (titleParts[0] && String(hero.titleLead || "").trim())
+      titleParts[0].textContent = String(hero.titleLead).trim();
+    if (titleParts[1] && String(hero.titleAccent || "").trim())
+      titleParts[1].textContent = String(hero.titleAccent).trim();
 
-      const banner = content.find(
-        (item) =>
-          String(item?.type || "").toUpperCase() === "BANNER" &&
-          item?.key === "banner.home-hero" &&
-          item?.published === true,
-      );
-      if (!banner) {
-        root.dataset.bannerSource = "fallback";
-        return;
+    const video = $(".hero-section__video");
+    const videoUrl = safeCourseDetailUrl(hero.videoUrl);
+    const posterUrl = safeCourseDetailUrl(hero.posterUrl);
+    if (video) {
+      const source = $("source", video);
+      const currentSource = source?.getAttribute("src") || video.getAttribute("src") || "";
+      if (videoUrl && videoUrl !== currentSource) {
+        if (source) source.setAttribute("src", videoUrl);
+        else video.setAttribute("src", videoUrl);
+        video.load();
       }
+      if (posterUrl) video.poster = posterUrl;
+      else video.removeAttribute("poster");
+    }
 
-      applyHomeBanner(root, banner);
-      root.dataset.bannerSource = "api";
+    const stats = Array.isArray(data.stats) ? data.stats : [];
+    const statsRoot = $(".stat-section");
+    if (statsRoot && stats.length) {
+      statsRoot.innerHTML = stats
+        .map((metric) => {
+          const item = contentObject(metric);
+          return `<div class="stat-section__item"><div class="stat-section__content"><span class="stat-section__count">${escapeHtml(item.value)}</span><span class="stat-section__title">${escapeHtml(item.label)}</span></div></div>`;
+        })
+        .join("");
+    }
+
+    const services = contentObject(data.services);
+    replaceSplitHeading(
+      $(".section--work .section__header__title"),
+      services.titleLead,
+      services.titleAccent,
+      services.titleTail,
+    );
+    const serviceItems = Array.isArray(services.items) ? services.items : [];
+    const serviceRoot = $(".service-section");
+    if (serviceRoot && serviceItems.length) {
+      serviceRoot.innerHTML = serviceItems
+        .map((entry) => {
+          const item = contentObject(entry);
+          const imageUrl = safeCourseDetailUrl(item.imageUrl);
+          return `<div class="service-card"><div class="service-card__container"><div class="service-card__content"><h3 class="service-card__title">${escapeHtml(item.title)}</h3><p class="service-card__desc">${escapeHtml(item.description)}</p></div>${imageUrl ? `<div class="service-card__icon"><img alt="${escapeHtml(item.title)}" class="service-card__icon" decoding="async" height="220" loading="lazy" src="${escapeHtml(imageUrl)}" width="220" /></div>` : ""}</div></div>`;
+        })
+        .join("");
+    }
+
+    const about = contentObject(data.about);
+    replaceSplitHeading(
+      $(".section--who-we-are .section__header__title"),
+      about.titleLead,
+      about.titleAccent,
+    );
+    const aboutText = $(".section--who-we-are .who-we-are__info p");
+    if (aboutText && String(about.description || "").trim())
+      aboutText.textContent = String(about.description).trim();
+    const highlights = Array.isArray(about.highlights) ? about.highlights : [];
+    const highlightNodes = $$(".section--who-we-are .who-we-are__stat");
+    highlights.forEach((entry, index) => {
+      const item = contentObject(entry);
+      const node = highlightNodes[index];
+      if (!node) return;
+      const value = $(".who-we-are__stat-count", node);
+      const label = $(".who-we-are__stat-title", node);
+      if (value) value.textContent = String(item.value || "");
+      if (label) label.textContent = String(item.label || "");
+    });
+    const team = Array.isArray(about.team) ? about.team : [];
+    const teamRoot = $(".section--who-we-are .who-we-are__media");
+    if (teamRoot && team.length) {
+      teamRoot.innerHTML = team
+        .map((entry) => {
+          const member = contentObject(entry);
+          const imageUrl = safeCourseDetailUrl(member.imageUrl);
+          if (!imageUrl || !String(member.name || "").trim()) return "";
+          const alt = `${String(member.name).trim()} — ${String(member.role || "Komanda üzvü").trim()} | Nexora Academy`;
+          return `<div class="who-we-are__image"><img alt="${escapeHtml(alt)}" decoding="async" height="400" loading="lazy" src="${escapeHtml(imageUrl)}" width="400" /><div class="who-we-are__image-info"><span>${escapeHtml(member.name)}</span><span>${escapeHtml(member.role)}</span></div></div>`;
+        })
+        .join("");
+    }
+
+    const roadmap = contentObject(data.roadmap);
+    const roadmapHeader = $$(".section--roadmap .section__header__content > p");
+    replaceSplitHeading(roadmapHeader[0], roadmap.eyebrow, roadmap.title);
+    if (roadmapHeader[1] && String(roadmap.description || "").trim())
+      roadmapHeader[1].textContent = String(roadmap.description).trim();
+    const roadmapItems = Array.isArray(roadmap.items) ? roadmap.items : [];
+    const roadmapNodes = $$(".section--roadmap .roadmap__item");
+    roadmapItems.forEach((entry, index) => {
+      const item = contentObject(entry);
+      const node = roadmapNodes[index];
+      if (!node) return;
+      const copy = $$(
+        ".roadmap__header-text > span, .roadmap__dot-text-1 > span, .roadmap__dot-text-2 > span, .roadmap__dot-text-3 > span",
+        node,
+      );
+      if (copy[0] && String(item.title || "").trim())
+        copy[0].textContent = String(item.title).trim();
+      if (copy[1] && String(item.description || "").trim())
+        copy[1].textContent = String(item.description).trim();
+    });
+
+    const sections = contentObject(data.sections);
+    replaceSplitHeading(
+      $(".section--projects .section__header__title"),
+      sections.coursesTitleLead,
+      sections.coursesTitleAccent,
+    );
+    replaceSplitHeading(
+      $(".section--blogs .section__header__title"),
+      sections.newsTitleLead,
+      sections.newsTitleAccent,
+    );
+    replaceSplitHeading(
+      $(".section--application .section__header__title"),
+      sections.applicationTitleLead,
+      sections.applicationTitleAccent,
+    );
+    const newsletterTitle = $(".subscribe-section__title");
+    if (newsletterTitle && String(sections.newsletterTitle || "").trim())
+      newsletterTitle.textContent = String(sections.newsletterTitle).trim();
+  }
+
+  async function initHomeContent(signal) {
+    const root = $(".hero-section");
+    if (!root) return null;
+    root.setAttribute("aria-busy", "true");
+    root.dataset.contentSource = "loading";
+    try {
+      const page = await publicContentByKey("page.home", { signal });
+      if (!page || typeof page !== "object")
+        throw new ApiError(0, "Ana səhifə məlumatının formatı düzgün deyil.");
+      if (signal.aborted) return null;
+      applyHomeContent(page);
+      root.dataset.contentSource = "api";
+      return page;
     } catch (error) {
-      if (error?.name === "AbortError" || signal.aborted) return;
-      root.dataset.bannerSource = "fallback";
+      if (error?.name === "AbortError" || signal.aborted) return null;
+      root.dataset.contentSource = "fallback";
+      return null;
     } finally {
       if (!signal.aborted) root.removeAttribute("aria-busy");
     }
   }
 
+  function applySiteSettings(page) {
+    const data = contentObject(page?.data);
+    $$('[data-site-footer]').forEach((footer) => {
+      const address = $(".footer__address a", footer);
+      const phone = $('.footer__contacts a[href^="tel:"]', footer);
+      const email = $('.footer__contacts a[href^="mailto:"]', footer);
+      if (address && String(data.address || "").trim()) {
+        address.textContent = String(data.address).trim();
+        const addressUrl = safeCourseDetailUrl(data.addressUrl);
+        if (addressUrl) address.href = addressUrl;
+      }
+      if (phone && String(data.phone || "").trim()) {
+        const phoneText = String(data.phone).trim();
+        phone.textContent = phoneText;
+        phone.href = `tel:${phoneText.replace(/[^\d+]/g, "")}`;
+      }
+      if (email && String(data.email || "").trim()) {
+        const emailText = String(data.email).trim();
+        email.textContent = emailText;
+        email.href = `mailto:${emailText}`;
+      }
+
+      const socialColumn = $$(".footer__column", footer).find(
+        (column) => $(".footer__heading", column)?.textContent.trim() === "Sosial media",
+      );
+      const socialList = socialColumn ? $(".footer__menu-list", socialColumn) : null;
+      const socials = Array.isArray(data.socials) ? data.socials : [];
+      if (socialList && socials.length) {
+        socialList.innerHTML = socials
+          .map((entry) => {
+            const social = contentObject(entry);
+            const url = safeCourseDetailUrl(social.url);
+            if (!url || !String(social.label || "").trim()) return "";
+            return `<li><a href="${escapeHtml(url)}" rel="noopener noreferrer" target="_blank">${escapeHtml(social.label)}</a></li>`;
+          })
+          .join("");
+      }
+    });
+  }
+
+  async function initSiteSettings(signal) {
+    if (!$('[data-site-footer]')) return;
+    try {
+      const page = await publicContentByKey("page.site-settings", { signal });
+      if (signal.aborted || !page || typeof page !== "object") return;
+      applySiteSettings(page);
+    } catch (error) {
+      if (error?.name === "AbortError" || signal.aborted) return;
+      // Static footer remains the resilient fallback.
+    }
+  }
+
   function applyContactContent(root, page) {
-    const title = $(
-      ".InfoSection_ai-contact__content__info__title__zykdV",
-      root,
-    );
-    const items = $$(
-      ".InfoSection_ai-contact__content__info__contact__item__pX_uX",
-      root,
-    );
+    const title = $(".contact-info__title", root);
+    const items = $$(".contact-info__item", root);
     const data =
       page?.data && typeof page.data === "object" && !Array.isArray(page.data)
         ? page.data
@@ -1811,25 +1843,15 @@
   }
 
   async function initContactPage(signal) {
-    const root = $(".ContactContainer_ai-contact__Fur87");
+    const root = $(".contact-container");
     if (!root) return;
     root.setAttribute("aria-busy", "true");
     root.dataset.contactSource = "loading";
     try {
-      const content = await apiFetch("/api/v1/content/cms-content", { signal });
-      if (!Array.isArray(content))
+      const page = await publicContentByKey("page.contact", { signal });
+      if (!page || typeof page !== "object")
         throw new ApiError(0, "Əlaqə məlumatının formatı düzgün deyil.");
       if (signal.aborted) return;
-      const page = content.find(
-        (item) =>
-          String(item?.type || "").toUpperCase() === "PAGE" &&
-          item?.key === "page.contact" &&
-          item?.published === true,
-      );
-      if (!page) {
-        root.dataset.contactSource = "fallback";
-        return;
-      }
       applyContactContent(root, page);
       root.dataset.contactSource = "api";
     } catch (error) {
@@ -1855,6 +1877,7 @@
   }
 
   function publicCategoryState(categories) {
+    if (categories === lastCategoryStateInput) return lastCategoryStateResult;
     const byId = new Map();
     (Array.isArray(categories) ? categories : []).forEach((category) => {
       if (category?.id != null) byId.set(String(category.id), category);
@@ -1893,17 +1916,20 @@
             "az",
           ),
       );
-    return {
+    const result = {
       byId,
       visible,
       visibleIds: new Set(visible.map((category) => String(category.id))),
     };
+    lastCategoryStateInput = categories;
+    lastCategoryStateResult = result;
+    return result;
   }
 
   function publicDateAllows(value, boundary, now = Date.now()) {
     if (value == null || value === "") return true;
     const raw = String(value);
-    const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(raw);
+    const dateOnly = DATE_ONLY_REGEX.test(raw);
     const timestamp = Date.parse(
       dateOnly
         ? `${raw}${boundary === "until" ? "T23:59:59.999" : "T00:00:00"}`
@@ -1938,6 +1964,7 @@
   function renderCourseCard(course, categoryNames) {
     course = courseViewModel(course);
     const category = categoryNames.get(String(course.categoryId)) || "Kurs";
+    const title = course.title || "Adsız kurs";
     const description =
       course.shortDescription ||
       course.targetAudience ||
@@ -1945,13 +1972,21 @@
     const duration = course.durationWeeks
       ? `${escapeHtml(course.durationWeeks)} həftə`
       : "";
+    const courseFallback = courseImageFallback(course);
+    const realImageUrl = safeCourseDetailUrl(course.imageUrl);
+    const nameBasedPath = `assets/courses/${courseTitleToFile(title)}.svg`;
+    const imageUrl = realImageUrl || nameBasedPath;
+    const imageAlt = realImageUrl
+      ? course.imageAlt || `${title} kursunun əsas vizualı`
+      : `${title} kursunun əsas vizualı`;
     return `<article class="Nexora_courseCard">
       <div class="Nexora_courseCardTop">
         <span class="Nexora_badge">${escapeHtml(category)}</span>
         <span class="Nexora_coursePrice">${escapeHtml(formatPrice(course.basePrice, course.currency))}</span>
       </div>
+      <img class="Nexora_courseCardImage" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(imageAlt)}" loading="lazy" onerror="this.onerror=null;this.src='${escapeHtml(courseFallback.src)}';this.alt='${escapeHtml(courseFallback.alt)}'" />
       <div class="Nexora_courseCardBody">
-        <h3>${escapeHtml(course.title || "Adsız kurs")}</h3>
+        <h3>${escapeHtml(title)}</h3>
         <p>${escapeHtml(description)}</p>
       </div>
       <div class="Nexora_courseMeta">
@@ -1963,27 +1998,13 @@
     </article>`;
   }
 
-  function renderCoursesPagination(container, current, hasNext) {
-    if (current <= 0 && !hasNext) {
-      container.innerHTML = "";
-      return;
-    }
-    container.innerHTML = `
-      <button type="button" data-course-page="${current - 1}" aria-label="Əvvəlki səhifə" ${current <= 0 ? "disabled" : ""}>‹</button>
-      <button type="button" class="Nexora_paginationActive" aria-current="page" disabled>${current + 1}</button>
-      <button type="button" data-course-page="${current + 1}" aria-label="Növbəti səhifə" ${hasNext ? "" : "disabled"}>›</button>`;
-  }
-
   function projectCourseStateCard(template, title, description, action = null) {
     const card = template.cloneNode(true);
     card.removeAttribute("id");
     $$("[id]", card).forEach((node) => node.removeAttribute("id"));
-    const titleNode = $(".ProjectCard_ai-projects__item__title__mSuta", card);
-    const descriptionNode = $(
-      ".ProjectCard_ai-projects__item__desc__DQd6_",
-      card,
-    );
-    const link = $(".ProjectCard_ai-projects__item__cta__t2MnB", card);
+    const titleNode = $(".project-card__title", card);
+    const descriptionNode = $(".project-card__desc", card);
+    const link = $(".project-card__cta", card);
     const image = $("img", card);
     if (titleNode) titleNode.textContent = title;
     if (descriptionNode) descriptionNode.textContent = description;
@@ -2003,7 +2024,7 @@
       }
     }
     if (image) {
-      const fallback = MOCK_IMAGE_FALLBACKS["course-networking"];
+      const fallback = IMAGE_FALLBACKS["course-networking"];
       image.removeAttribute("data-image-src");
       image.removeAttribute("data-image-fallback");
       image.src = fallback.src;
@@ -2017,9 +2038,9 @@
     const card = template.cloneNode(true);
     $$("[id]", card).forEach((node) => node.removeAttribute("id"));
     card.id = String(course.slug || course.id || "");
-    const title = $(".ProjectCard_ai-projects__item__title__mSuta", card);
-    const description = $(".ProjectCard_ai-projects__item__desc__DQd6_", card);
-    const link = $(".ProjectCard_ai-projects__item__cta__t2MnB", card);
+    const title = $(".project-card__title", card);
+    const description = $(".project-card__desc", card);
+    const link = $(".project-card__cta", card);
     const image = $("img", card);
     const categoryName = categoryNames.get(String(course.categoryId)) || "";
     const detailUrl = `course-details.html?id=${encodeURIComponent(course.id || "")}`;
@@ -2064,7 +2085,7 @@
       window.location.assign(detailUrl);
     });
     if (image) {
-      const fallback = courseMockFallback({ ...course, categoryName });
+      const fallback = courseImageFallback({ ...course, categoryName });
       image.removeAttribute("data-image-src");
       image.removeAttribute("data-image-fallback");
       image.src = fallback.src;
@@ -2074,42 +2095,56 @@
   }
 
   async function loadPublicCourseCatalog(signal) {
-    const categories = await apiFetch("/api/v1/categories", { signal });
-    if (!Array.isArray(categories))
-      throw new ApiError(0, "Kateqoriya məlumatı əlçatan deyil.");
-    const categoryState = publicCategoryState(categories);
-    const categoryNames = new Map(
-      categoryState.visible.map((category) => [
-        String(category.id),
-        category.name || category.slug || String(category.id),
-      ]),
-    );
-    const baseParams = new URLSearchParams({
-      size: "100",
-      sort: "title,asc",
-      published: "true",
-      active: "true",
-    });
-    const firstParams = new URLSearchParams(baseParams);
-    firstParams.set("page", "0");
-    const firstPage = await apiFetch(`/api/v1/courses?${firstParams}`, {
-      signal,
-    });
-    const totalPages = Math.min(
-      100,
-      Math.max(1, Number.parseInt(firstPage?.totalPages, 10) || 1),
-    );
-    const remainingPages = await Promise.all(
-      Array.from({ length: totalPages - 1 }, (_, index) => {
-        const params = new URLSearchParams(baseParams);
-        params.set("page", String(index + 1));
-        return apiFetch(`/api/v1/courses?${params}`, { signal });
-      }),
-    );
-    const courses = [firstPage, ...remainingPages]
-      .flatMap((page) => (Array.isArray(page?.content) ? page.content : []))
-      .filter((course) => isPublicCourse(course, categoryState.visibleIds));
-    return { courses, categoryNames };
+    if (signal?.aborted) throw new DOMException("Aborted", "AbortError");
+    if (courseCatalogPromise) return courseCatalogPromise;
+    const work = async () => {
+      const categories = await cachedApiFetch("/api/v1/public/catalog/categories", { signal });
+      if (!Array.isArray(categories))
+        throw new ApiError(0, "Kateqoriya məlumatı əlçatan deyil.");
+      const categoryState = publicCategoryState(categories);
+      const categoryNames = new Map(
+        categoryState.visible.map((category) => [
+          String(category.id),
+          category.name || category.slug || String(category.id),
+        ]),
+      );
+      const baseParams = new URLSearchParams({
+        size: "100",
+        sort: "title,asc",
+        published: "true",
+        active: "true",
+      });
+      const firstParams = new URLSearchParams(baseParams);
+      firstParams.set("page", "0");
+      const firstPage = await apiFetch(`/api/v1/public/catalog/courses?${firstParams}`, {
+        signal,
+      });
+      const totalPages = Math.min(
+        100,
+        Math.max(1, Number.parseInt(firstPage?.totalPages, 10) || 1),
+      );
+      const remainingPages = await Promise.all(
+        Array.from({ length: totalPages - 1 }, (_, index) => {
+          const params = new URLSearchParams(baseParams);
+          params.set("page", String(index + 1));
+          return apiFetch(`/api/v1/public/catalog/courses?${params}`, { signal });
+        }),
+      );
+      const courses = [firstPage, ...remainingPages]
+        .flatMap((page) => (Array.isArray(page?.content) ? page.content : []))
+        .filter((course) => isPublicCourse(course, categoryState.visibleIds));
+      return { courses, categoryNames };
+    };
+    courseCatalogPromise = work()
+      .then((result) => {
+        courseCatalogPromise = null;
+        return result;
+      })
+      .catch((error) => {
+        courseCatalogPromise = null;
+        throw error;
+      });
+    return courseCatalogPromise;
   }
 
   function featuredCourseTimestamp(course) {
@@ -2118,9 +2153,9 @@
   }
 
   async function initHomeFeaturedCourses(signal) {
-    const container = $(".ProjectsSection_ai-projects__NQP37");
+    const container = $(".projects-section");
     if (!container) return;
-    const template = $(".ProjectCard_ai-projects__item__oGKFx", container);
+    const template = $(".project-card", container);
     if (!template) return;
 
     container.setAttribute("aria-busy", "true");
@@ -2135,16 +2170,51 @@
     try {
       const { courses, categoryNames } = await loadPublicCourseCatalog(signal);
       if (signal.aborted) return;
-      const featuredCourses = [...courses]
-        .sort(
-          (left, right) =>
-            featuredCourseTimestamp(right) - featuredCourseTimestamp(left) ||
-            String(left?.title || "").localeCompare(
-              String(right?.title || ""),
-              "az",
-            ),
-        )
-        .slice(0, 3);
+      let preferredIds = [];
+      try {
+        const page = await publicContentByKey("page.home", { signal });
+        const data = contentObject(page?.data);
+        preferredIds = Array.isArray(data.featuredCourseIds)
+          ? data.featuredCourseIds.map(String).slice(0, 3)
+          : [];
+      } catch (error) {
+        if (error?.name === "AbortError" || signal.aborted) return;
+      }
+
+      let featuredCourses = preferredIds.length
+        ? preferredIds
+            .map((id) => courses.find((course) => String(course.id) === id))
+            .filter(Boolean)
+        : [];
+
+      if (!featuredCourses.length) {
+        featuredCourses = [];
+        for (let i = 0; i < courses.length; i++) {
+          const course = courses[i];
+          let insertAt = 3;
+          for (let j = 0; j < 3; j++) {
+            if (j >= featuredCourses.length) {
+              insertAt = j;
+              break;
+            }
+            const tsDiff =
+              featuredCourseTimestamp(course) -
+              featuredCourseTimestamp(featuredCourses[j]);
+            if (
+              tsDiff > 0 ||
+              (tsDiff === 0 &&
+                String(course?.title || "").localeCompare(
+                  String(featuredCourses[j]?.title || ""),
+                  "az",
+                ) < 0)
+            ) {
+              insertAt = j;
+              break;
+            }
+          }
+          if (insertAt < 3) featuredCourses.splice(insertAt, 0, course);
+        }
+      }
       if (!featuredCourses.length) {
         container.replaceChildren(
           projectCourseStateCard(
@@ -2177,9 +2247,9 @@
   }
 
   function initProjectCoursesPage(signal) {
-    const container = $(".ProjectsSection_ai-projects__Djj2c");
+    const container = $(".projects-section--courses");
     if (!container) return;
-    const template = $(".ProjectCard_ai-projects__item__oGKFx", container);
+    const template = $(".project-card", container);
     if (!template) return;
     container.setAttribute("aria-busy", "true");
     container.replaceChildren(
@@ -2225,181 +2295,6 @@
       });
   }
 
-  function initCoursesPage(signal) {
-    const form = $("#courseFilters");
-    const grid = $("#coursesGrid");
-    const status = $("#coursesStatus");
-    const pagination = $("#coursesPagination");
-    if (!form || !grid || !status || !pagination) {
-      initProjectCoursesPage(signal);
-      return;
-    }
-
-    const categorySelect = $("#courseCategory", form);
-    const categoryNames = new Map();
-    let visibleCategoryIds = new Set();
-    let categoriesReady = false;
-    const initialParams = new URLSearchParams(location.search);
-    let currentPage = Math.max(
-      0,
-      Number.parseInt(initialParams.get("page") || "0", 10) || 0,
-    );
-    let searchTimer = null;
-
-    const applyUrlState = () => {
-      ["q", "categoryId", "difficulty", "deliveryFormat"].forEach((name) => {
-        const field = form.elements[name];
-        if (field) field.value = initialParams.get(name) || "";
-      });
-    };
-
-    const syncUrlState = () => {
-      const values = new FormData(form);
-      const params = new URLSearchParams();
-      ["q", "categoryId", "difficulty", "deliveryFormat"].forEach((name) => {
-        const value = String(values.get(name) || "").trim();
-        if (value) params.set(name, value);
-      });
-      if (currentPage > 0) params.set("page", String(currentPage));
-      history.replaceState(
-        null,
-        "",
-        `${location.pathname}${params.size ? `?${params}` : ""}`,
-      );
-    };
-
-    const loadCategories = async () => {
-      const categories = await apiFetch("/api/v1/categories", { signal });
-      if (!Array.isArray(categories) || signal.aborted)
-        throw new ApiError(0, "Kateqoriya məlumatı əlçatan deyil.");
-      const publicState = publicCategoryState(categories);
-      visibleCategoryIds = publicState.visibleIds;
-      publicState.visible.forEach((category) => {
-        categoryNames.set(
-          String(category.id),
-          category.name || category.slug || String(category.id),
-        );
-        const option = document.createElement("option");
-        option.value = String(category.id);
-        option.textContent =
-          category.name || category.slug || String(category.id);
-        categorySelect.appendChild(option);
-      });
-      categoriesReady = true;
-      applyUrlState();
-    };
-
-    const loadCourses = async (pageNumber = 0) => {
-      const requestId = ++coursesRequestId;
-      currentPage = Math.max(0, pageNumber);
-      syncUrlState();
-      status.textContent = "Kurslar yüklənir…";
-      status.dataset.state = "loading";
-      grid.setAttribute("aria-busy", "true");
-
-      const values = new FormData(form);
-      const params = new URLSearchParams({
-        page: String(currentPage),
-        size: "9",
-        sort: "title,asc",
-        published: "true",
-        active: "true",
-      });
-      ["q", "categoryId", "difficulty", "deliveryFormat"].forEach((name) => {
-        const value = String(values.get(name) || "").trim();
-        if (value) params.set(name, value);
-      });
-
-      try {
-        if (!categoriesReady)
-          throw new ApiError(
-            0,
-            "Kurs görünürlüyünü yoxlamaq üçün kateqoriya məlumatı əlçatan deyil.",
-          );
-        const page = await apiFetch(`/api/v1/courses?${params}`, { signal });
-        if (signal.aborted || requestId !== coursesRequestId) return;
-        const rawCourses = Array.isArray(page?.content) ? page.content : [];
-        const courses = rawCourses.filter((course) =>
-          isPublicCourse(course, visibleCategoryIds),
-        );
-        grid.innerHTML = courses
-          .map((course) => renderCourseCard(course, categoryNames))
-          .join("");
-        if (!courses.length) {
-          grid.innerHTML =
-            '<div class="Nexora_emptyState"><h3>Uyğun kurs tapılmadı</h3><p>Filtrləri dəyişərək yenidən yoxlayın.</p></div>';
-        }
-        status.textContent = courses.length
-          ? `Bu səhifədə ${courses.length} açıq kurs göstərilir`
-          : "Açıq kurs tapılmadı";
-        status.dataset.state = "success";
-        renderCoursesPagination(
-          pagination,
-          currentPage,
-          page?.last === false || rawCourses.length >= 9,
-        );
-      } catch (error) {
-        if (error?.name === "AbortError" || requestId !== coursesRequestId)
-          return;
-        grid.innerHTML = `<div class="Nexora_emptyState"><h3>Kursları göstərmək mümkün olmadı</h3><p>${escapeHtml(apiErrorMessage(error))}</p></div>`;
-        status.textContent = "Kurs kataloqu əlçatan deyil";
-        status.dataset.state = "error";
-        pagination.innerHTML = "";
-      } finally {
-        if (requestId === coursesRequestId) grid.removeAttribute("aria-busy");
-      }
-    };
-
-    form.addEventListener(
-      "input",
-      (event) => {
-        if (event.target.name !== "q") return;
-        clearTimeout(searchTimer);
-        searchTimer = setTimeout(() => loadCourses(0), 300);
-      },
-      { signal },
-    );
-    form.addEventListener(
-      "change",
-      (event) => {
-        if (event.target.name === "q") return;
-        loadCourses(0);
-      },
-      { signal },
-    );
-    form.addEventListener("reset", () => setTimeout(() => loadCourses(0), 0), {
-      signal,
-    });
-    pagination.addEventListener(
-      "click",
-      (event) => {
-        const button = event.target.closest("button[data-course-page]");
-        if (!button || button.disabled) return;
-        const nextPage = Number(button.dataset.coursePage);
-        if (!Number.isInteger(nextPage) || nextPage < 0) return;
-        loadCourses(nextPage);
-        $(".Nexora_catalogSection")?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      },
-      { signal },
-    );
-    signal.addEventListener("abort", () => clearTimeout(searchTimer), {
-      once: true,
-    });
-
-    loadCategories()
-      .then(() => loadCourses(currentPage))
-      .catch((error) => {
-        if (error?.name === "AbortError") return;
-        grid.innerHTML = `<div class="Nexora_emptyState"><h3>Kursları göstərmək mümkün olmadı</h3><p>${escapeHtml(apiErrorMessage(error))}</p></div>`;
-        status.textContent = "Kurs kataloqu əlçatan deyil";
-        status.dataset.state = "error";
-        pagination.innerHTML = "";
-      });
-  }
-
   function renderCategoryCard(category, categoryState) {
     const parent = categoryState.byId.get(String(category.parentId));
     const parentText = parent
@@ -2419,7 +2314,7 @@
     const status = $("#categoriesStatus");
     if (!grid || !status) return;
     try {
-      const categories = await apiFetch("/api/v1/categories", { signal });
+      const categories = await cachedApiFetch("/api/v1/public/catalog/categories", { signal });
       if (signal.aborted) return;
       const categoryState = publicCategoryState(categories);
       grid.innerHTML = categoryState.visible.length
@@ -2461,10 +2356,10 @@
     }
     try {
       const [category, categories] = await Promise.all([
-        apiFetch(`/api/v1/categories/${encodeURIComponent(categoryId)}`, {
+        apiFetch(`/api/v1/public/catalog/categories/${encodeURIComponent(categoryId)}`, {
           signal,
         }),
-        apiFetch("/api/v1/categories", { signal }),
+        cachedApiFetch("/api/v1/public/catalog/categories", { signal }),
       ]);
       if (signal.aborted) return;
       const categoryState = publicCategoryState(categories);
@@ -2500,7 +2395,7 @@
         published: "true",
         active: "true",
       });
-      const page = await apiFetch(`/api/v1/courses?${params}`, { signal });
+      const page = await apiFetch(`/api/v1/public/catalog/courses?${params}`, { signal });
       if (signal.aborted) return;
       const categoryNames = new Map(
         categoryState.visible.map((item) => [
@@ -2533,13 +2428,17 @@
   function safeCourseDetailUrl(value, fallback = "") {
     const raw = String(value || "").trim();
     if (!raw) return fallback;
-    if (!/^[a-z][a-z0-9+.-]*:/i.test(raw) && !raw.startsWith("//")) return raw;
+    if (!PROTOCOL_REGEX.test(raw) && !raw.startsWith("//")) return raw;
     try {
       const parsed = new URL(raw, location.href);
       return ["http:", "https:"].includes(parsed.protocol) ? raw : fallback;
     } catch (_) {
       return fallback;
     }
+  }
+
+  function courseTitleToFile(title) {
+    return String(title || "").trim().replaceAll(/\s+/g, "_");
   }
 
   function courseDetailTextList(value) {
@@ -2599,16 +2498,16 @@
       : "";
   }
 
-  function courseMockFallback(course) {
+  function courseImageFallback(course) {
     const context =
       `${course.title || ""} ${course.categoryName || ""}`.toLocaleLowerCase(
         "az",
       );
-    if (/cloud|bulud|devops/.test(context))
-      return MOCK_IMAGE_FALLBACKS["course-cloud-devops"];
-    if (/cyber|kiber|security|təhlükəsizlik/.test(context))
-      return MOCK_IMAGE_FALLBACKS["course-cybersecurity"];
-    return MOCK_IMAGE_FALLBACKS["course-networking"];
+    if (COURSE_CLOUD_REGEX.test(context))
+      return IMAGE_FALLBACKS["course-cloud-devops"];
+    if (COURSE_CYBER_REGEX.test(context))
+      return IMAGE_FALLBACKS["course-cybersecurity"];
+    return IMAGE_FALLBACKS["course-networking"];
   }
 
   function renderCourseInstructor(instructor) {
@@ -2617,7 +2516,7 @@
     if (!name) return "";
     const title = String(instructor.title || "").trim();
     const fallbackIndex = (name.codePointAt(0) || 0) % 3;
-    const fallback = MOCK_IMAGE_FALLBACKS[`instructor-${fallbackIndex + 1}`];
+    const fallback = IMAGE_FALLBACKS[`instructor-${fallbackIndex + 1}`];
     const realImageUrl = safeCourseDetailUrl(instructor.imageUrl);
     const imageUrl = realImageUrl || fallback.src;
     const imageAlt = realImageUrl ? instructor.imageAlt || name : fallback.alt;
@@ -2654,12 +2553,13 @@
       ? `${course.durationWeeks} həftə`
       : "";
     const difficulty = enumLabel(course.difficulty);
-    const courseFallback = courseMockFallback(course);
+    const courseFallback = courseImageFallback(course);
     const realImageUrl = safeCourseDetailUrl(course.imageUrl);
-    const imageUrl = realImageUrl || courseFallback.src;
+    const nameBasedPath = `assets/courses/${courseTitleToFile(title)}.svg`;
+    const imageUrl = realImageUrl || nameBasedPath;
     const imageAlt = realImageUrl
       ? course.imageAlt || `${title} kursunun əsas vizualı`
-      : courseFallback.alt;
+      : `${title} kursunun əsas vizualı`;
     const categoryName = options.categoryName || "Nexora Academy";
     const metaItems = [difficulty, deliveryFormat, duration].filter(Boolean);
     const courseId = String(course.id || "").trim();
@@ -2698,7 +2598,7 @@
           ${shortDescription ? `<p class="Nexora_pageLead">${escapeHtml(shortDescription)}</p>` : ""}
         </div>
         <figure class="Nexora_courseDetailV2__visual">
-          <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(imageAlt)}" />
+          <img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(imageAlt)}" onerror="this.onerror=null;this.src='${escapeHtml(courseFallback.src)}';this.alt='${escapeHtml(courseFallback.alt)}'" />
         </figure>
       </section>
 
@@ -2779,10 +2679,6 @@
     const params = new URLSearchParams(location.search);
     const courseSlug = params.get("course")?.trim() || "";
 
-    const reviewsContainer = $("#courseReviews");
-    const reviewsStatus = $("#reviewsStatus");
-    const reviewForm = $("#reviewForm");
-    const reviewAccess = $("#reviewAccess");
     let relatedContainer = null;
     let relatedStatus = null;
 
@@ -2790,30 +2686,17 @@
     if (!courseId && !courseSlug) {
       container.innerHTML =
         '<div class="Nexora_emptyState"><h1>Kurs seçilməyib</h1><p>Kataloqdan kurs seçərək yenidən yoxlayın.</p></div>';
-      if (reviewsStatus) reviewsStatus.textContent = "";
       return;
-    }
-
-    if (reviewForm) reviewForm.hidden = true;
-    if (reviewAccess) reviewAccess.hidden = false;
-    const accessMessage = reviewAccess ? $("p", reviewAccess) : null;
-    if (accessMessage)
-      accessMessage.textContent =
-        "Dərc olunmuş rəylər və təhlükəsiz rəy uyğunluğu üçün açıq xidmət hələ mövcud deyil.";
-    if (reviewsContainer) reviewsContainer.innerHTML = "";
-    if (reviewsStatus) {
-      reviewsStatus.textContent = "Rəy bölməsi server dəstəyi gözləyir.";
-      reviewsStatus.dataset.state = "error";
     }
 
     const loadCourse = async () => {
       try {
         const courseRequest = courseId
-          ? apiFetch(`/api/v1/courses/${encodeURIComponent(courseId)}`, {
+          ? apiFetch(`/api/v1/public/catalog/courses/${encodeURIComponent(courseId)}`, {
               signal,
             })
           : apiFetch(
-              `/api/v1/courses?${new URLSearchParams({
+              `/api/v1/public/catalog/courses?${new URLSearchParams({
                 q: courseSlug,
                 page: "0",
                 size: "20",
@@ -2830,7 +2713,7 @@
             });
         const [course, categories] = await Promise.all([
           courseRequest,
-          apiFetch("/api/v1/categories", { signal }),
+          cachedApiFetch("/api/v1/public/catalog/categories", { signal }),
         ]);
         if (signal.aborted) return;
         const categoryState = publicCategoryState(categories);
@@ -2862,7 +2745,7 @@
         relatedStatus.textContent = "Əlaqəli kurslar yüklənir…";
         const relatedResults = await Promise.allSettled(
           relatedIds.map((id) =>
-            apiFetch(`/api/v1/courses/${encodeURIComponent(id)}`, { signal }),
+            apiFetch(`/api/v1/public/catalog/courses/${encodeURIComponent(id)}`, { signal }),
           ),
         );
         if (signal.aborted) return;
@@ -2897,11 +2780,11 @@
   function initApiPage(signal) {
     switch (document.body.dataset.page) {
       case "home":
-        void initHomeBanner(signal);
         void initHomeFeaturedCourses(signal);
+        void initNewsSection(signal);
         break;
       case "courses":
-        initCoursesPage(signal);
+        initProjectCoursesPage(signal);
         break;
       case "categories":
         void initCategoriesPage(signal);
@@ -2921,8 +2804,11 @@
       case "elaqe":
         void initContactPage(signal);
         break;
-      case "scholarships":
-        void initScholarshipsPage(signal);
+      case "career":
+        void initVacanciesPage(signal);
+        break;
+      case "news":
+        void initNewsPage(signal);
         break;
       default:
         break;
@@ -2930,7 +2816,6 @@
   }
 
   function initStandaloneTarget() {
-    if (IS_LEGACY_ROUTER) return;
     const target = new URLSearchParams(location.search).get("target");
     if (!target) return;
     const node = document.getElementById(target);
@@ -2944,19 +2829,123 @@
     );
   }
 
+  const STAT_COUNT_UP_DURATION_MS = 1800;
+
+  function initStatCounters(signal) {
+    if (signal?.aborted) return;
+    const root = $(".stat-section");
+    if (!root) return;
+    const counters = $$(".stat-section__count", root);
+    if (!counters.length) return;
+
+    const targets = counters.map((counter) => {
+      const match = String(counter.textContent || "").match(
+        /^\s*(\d+)\s*(\+)?\s*$/,
+      );
+      return {
+        counter,
+        value: match ? parseInt(match[1], 10) : 0,
+        suffix: match && match[2] ? "+" : "",
+      };
+    });
+
+    const run = () => {
+      if (
+        window.matchMedia &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches
+      ) {
+        targets.forEach(({ counter, value, suffix }) => {
+          counter.textContent = `${value}${suffix}`;
+        });
+        return;
+      }
+      const start = performance.now();
+      targets.forEach(({ counter, value, suffix }) => {
+        counter.textContent = `0${suffix}`;
+      });
+      const tick = (now) => {
+        const progress = Math.min((now - start) / STAT_COUNT_UP_DURATION_MS, 1);
+        const eased = progress >= 1 ? 1 : 1 - Math.pow(1 - progress, 3);
+        targets.forEach(({ counter, value, suffix }) => {
+          counter.textContent = `${Math.round(eased * value)}${suffix}`;
+        });
+        if (progress < 1) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    };
+
+    if (!("IntersectionObserver" in window)) {
+      run();
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          observer.unobserve(entry.target);
+          run();
+        });
+      },
+      { threshold: 0.3 },
+    );
+    observer.observe(root);
+  }
+
+  function initFaqAccordion(signal) {
+    const root = $(".faq-accordion");
+    if (!root) return;
+    const items = $$(".faq-item", root);
+    if (!items.length) return;
+    items.forEach((item) => {
+      const question = $(".faq-question", item);
+      const answer = $(".faq-answer", item);
+      if (!question || !answer) return;
+      question.addEventListener(
+        "click",
+        () => {
+          const isOpen = item.classList.contains("is-open");
+          items.forEach((other) => {
+            const otherQuestion = $(".faq-question", other);
+            const otherAnswer = $(".faq-answer", other);
+            other.classList.remove("is-open");
+            if (otherQuestion)
+              otherQuestion.setAttribute("aria-expanded", "false");
+            if (otherAnswer) otherAnswer.style.maxHeight = "0px";
+          });
+          if (!isOpen) {
+            item.classList.add("is-open");
+            question.setAttribute("aria-expanded", "true");
+            answer.style.maxHeight = `${answer.scrollHeight}px`;
+          }
+        },
+        { signal },
+      );
+    });
+  }
+
   function initPage(signal) {
     applyDataImageFallbacks();
     initStandaloneTarget();
     initHeader(signal);
     initHeroMedia(signal);
-    initHeroTypewriter(signal);
     initApplicationForm(signal);
     initSimpleForms(signal);
     initVacancies(signal);
     initSliders(signal);
-    initPagination(signal);
     initPhoneInputs(signal);
+    initFaqAccordion(signal);
     initApiPage(signal);
+    void initSiteSettings(signal);
+    if (document.body.dataset.page === "home") {
+      void initHomeContent(signal).finally(() => {
+        if (signal.aborted) return;
+        initHeroTypewriter(signal);
+        initStatCounters(signal);
+      });
+    } else {
+      initHeroTypewriter(signal);
+      initStatCounters(signal);
+    }
   }
 
   const boot = () => {
@@ -2969,418 +2958,3 @@
   else boot();
 })();
 
-/* ══════════════════════════════════════════════════════════════
-   Nexora AI Chat Widget
-   ══════════════════════════════════════════════════════════════ */
-(() => {
-  "use strict";
-
-  const API_URL = "/api/chat";
-  const STORAGE_KEY = "nexora-ai-session-id";
-  const MAX_HISTORY = 80;
-
-  let sessionId = getOrCreateSessionId();
-  let pending = false;
-  let history = [];
-  let requestController = null;
-  let lastRequest = null;
-  let initialized = false;
-
-  function createId() {
-    if (window.crypto?.randomUUID) return window.crypto.randomUUID();
-    return `nexora-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  }
-
-  function getOrCreateSessionId() {
-    try {
-      const existing = window.localStorage.getItem(STORAGE_KEY);
-      if (existing) return existing;
-      const created = createId();
-      window.localStorage.setItem(STORAGE_KEY, created);
-      return created;
-    } catch (_) {
-      return createId();
-    }
-  }
-
-  function $(sel, root) {
-    return (root || document).querySelector(sel);
-  }
-
-  const elements = {
-    fab: $("#chat-fab"),
-    widget: $("#chat-widget"),
-    close: $("#chat-close"),
-    messages: $("#chat-messages"),
-    form: $("#chat-form"),
-    input: $("#chat-input"),
-    send: $("#chat-send"),
-  };
-
-  let {
-    fab,
-    widget,
-    close: closeBtn,
-    messages: messagesEl,
-    form: chatForm,
-    input: chatInput,
-    send: chatSend,
-  } = elements;
-
-  if (!fab || !widget) return;
-
-  function resizeInput() {
-    chatInput.style.height = "auto";
-    chatInput.style.height = Math.min(chatInput.scrollHeight, 100) + "px";
-  }
-
-  function scrollToBottom() {
-    requestAnimationFrame(() => {
-      messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior: "smooth" });
-    });
-  }
-
-  function escapeHtml(text) {
-    const d = document.createElement("div");
-    d.textContent = text;
-    return d.innerHTML;
-  }
-
-  function normalizeText(v, fb) {
-    return typeof v === "string" ? v : fb || "";
-  }
-
-  /* ── Rebind after SPA route change ── */
-  function rebindChatWidget() {
-    const newFab = $("#chat-fab");
-    const newWidget = $("#chat-widget");
-    const newClose = $("#chat-close");
-    const newForm = $("#chat-form");
-    const newInput = $("#chat-input");
-    const newSend = $("#chat-send");
-    const newMessages = $("#chat-messages");
-    if (!newFab || !newWidget) return;
-
-    Object.assign(elements, {
-      fab: newFab,
-      widget: newWidget,
-      close: newClose,
-      form: newForm,
-      input: newInput,
-      send: newSend,
-      messages: newMessages,
-    });
-    fab = elements.fab;
-    widget = elements.widget;
-    closeBtn = elements.close;
-    chatForm = elements.form;
-    chatInput = elements.input;
-    chatSend = elements.send;
-    messagesEl = elements.messages;
-
-    newFab.onclick = () => {
-      if (isOpen) closeWidget();
-      else openWidget();
-    };
-    newClose.onclick = closeWidget;
-    newForm.onsubmit = (e) => {
-      e.preventDefault();
-      const v = newInput.value.trim();
-      if (!v || pending) return;
-      newInput.value = "";
-      resizeInput();
-      newSend.disabled = true;
-      sendMessage(v);
-    };
-    newInput.oninput = () => {
-      resizeInput();
-      newSend.disabled = pending || !newInput.value.trim();
-    };
-    newInput.onkeydown = (e) => {
-      if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
-        e.preventDefault();
-        newForm.requestSubmit();
-      }
-    };
-  }
-
-  /* ── Open / Close ── */
-  let isOpen = false;
-
-  function openWidget() {
-    if (isOpen) {
-      closeWidget();
-      return;
-    }
-    widget.hidden = false;
-    isOpen = true;
-    requestAnimationFrame(() => {
-      widget.classList.add("open");
-      fab.classList.add("chat-fab--active");
-      chatInput.focus();
-    });
-    if (!initialized) {
-      initialized = true;
-      initConversation();
-    }
-  }
-
-  function closeWidget() {
-    isOpen = false;
-    widget.classList.remove("open");
-    fab.classList.remove("chat-fab--active");
-    setTimeout(() => {
-      widget.hidden = true;
-    }, 300);
-  }
-
-  fab.addEventListener("click", openWidget);
-  closeBtn.addEventListener("click", closeWidget);
-  widget.addEventListener("click", (e) => {
-    if (e.target === widget) closeWidget();
-  });
-
-  /* ── Messages ── */
-  function addMessage(role, text, response) {
-    const wrap = document.createElement("div");
-    wrap.className = "chat-msg" + (role === "user" ? " chat-msg--user" : "");
-
-    const avatar = document.createElement("div");
-    avatar.className = "chat-msg__avatar";
-    avatar.textContent = "✦";
-
-    const body = document.createElement("div");
-
-    const bubble = document.createElement("div");
-    bubble.className = "chat-msg__bubble";
-    bubble.textContent = normalizeText(text, "No response received.");
-    body.appendChild(bubble);
-
-    if (role === "assistant" && response) {
-      const actions = response.actions || [];
-      if (actions.length) {
-        const actionsWrap = document.createElement("div");
-        actionsWrap.className = "chat-msg__actions";
-        actions.forEach((a) => {
-          const label = normalizeText(a?.label).trim();
-          const value = normalizeText(a?.value, label).trim();
-          if (!label || !value) return;
-          const btn = document.createElement("button");
-          btn.type = "button";
-          btn.className = "chat-action-btn";
-          btn.textContent = label;
-          btn.addEventListener("click", () => {
-            if (!pending) sendMessage(value, label);
-          });
-          actionsWrap.appendChild(btn);
-        });
-        body.appendChild(actionsWrap);
-      }
-
-      const courses = response.courses || [];
-      if (courses.length) {
-        const coursesWrap = document.createElement("div");
-        coursesWrap.className = "chat-msg__courses";
-        courses.forEach((c) => {
-          const card = document.createElement("div");
-          card.className = "chat-course";
-          card.innerHTML =
-            '<div class="chat-course__top"><span class="chat-course__category"></span><span class="chat-course__price"></span></div>' +
-            '<div class="chat-course__name"></div>' +
-            '<div class="chat-course__meta"></div>' +
-            '<div class="chat-course__tools"></div>';
-          card.querySelector(".chat-course__category").textContent =
-            normalizeText(c?.category, "Course");
-          card.querySelector(".chat-course__name").textContent = normalizeText(
-            c?.name,
-            "Nexora course",
-          );
-          card.querySelector(".chat-course__price").textContent =
-            Number.isFinite(c?.price) ? c.price + " AZN" : "";
-          const meta = card.querySelector(".chat-course__meta");
-          [
-            c?.level,
-            c?.instructor,
-            [c?.schedule?.days, c?.schedule?.time].filter(Boolean).join(" · "),
-          ]
-            .filter(Boolean)
-            .forEach((m) => {
-              const s = document.createElement("span");
-              s.textContent = m;
-              meta.appendChild(s);
-            });
-          const tools = card.querySelector(".chat-course__tools");
-          (Array.isArray(c?.tools) ? c.tools.slice(0, 5) : []).forEach((t) => {
-            const tag = document.createElement("span");
-            tag.className = "chat-course__tool";
-            tag.textContent = t;
-            tools.appendChild(tag);
-          });
-          coursesWrap.appendChild(card);
-        });
-        body.appendChild(coursesWrap);
-      }
-    }
-
-    wrap.appendChild(avatar);
-    wrap.appendChild(body);
-    messagesEl.appendChild(wrap);
-    history.push({ role, text: normalizeText(text), response });
-    if (history.length > MAX_HISTORY) history = history.slice(-MAX_HISTORY);
-    scrollToBottom();
-  }
-
-  function addError(text) {
-    const banner = document.createElement("div");
-    banner.className = "chat-error";
-    banner.innerHTML = '<span></span><button type="button">Retry</button>';
-    banner.querySelector("span").textContent = text;
-    banner.querySelector("button").addEventListener("click", () => {
-      banner.remove();
-      if (lastRequest)
-        sendMessage(lastRequest.value, lastRequest.display, { silent: true });
-    });
-    messagesEl.appendChild(banner);
-    scrollToBottom();
-  }
-
-  function showTyping() {
-    const el = document.createElement("div");
-    el.className = "chat-typing";
-    el.id = "chat-active-typing";
-    el.innerHTML =
-      '<div class="chat-msg__avatar">✦</div><div class="chat-typing__dots"><span></span><span></span><span></span></div>';
-    messagesEl.appendChild(el);
-    scrollToBottom();
-  }
-
-  function hideTyping() {
-    const el = document.getElementById("chat-active-typing");
-    if (el) el.remove();
-  }
-
-  function setPending(v) {
-    pending = v;
-    chatInput.disabled = v;
-    chatSend.disabled = v || !chatInput.value.trim();
-    document.querySelectorAll(".chat-action-btn").forEach((b) => {
-      b.disabled = v || b.dataset.used === "true";
-    });
-  }
-
-  /* ── API ── */
-  async function requestChat(message) {
-    requestController?.abort();
-    requestController = new AbortController();
-    const tid = setTimeout(() => requestController.abort(), 35000);
-    try {
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({ message, sessionId, conversationId: sessionId }),
-        signal: requestController.signal,
-      });
-      if (!res.ok) throw new Error("Server " + res.status);
-      const data = await res.json();
-      if (!data || typeof data.reply !== "string")
-        throw new Error("Invalid response");
-      return data;
-    } finally {
-      clearTimeout(tid);
-    }
-  }
-
-  async function sendMessage(value, display, opts) {
-    const msg = normalizeText(value).trim();
-    if (!msg || pending) return;
-    lastRequest = { value: msg, display };
-    document.querySelectorAll(".chat-action-btn").forEach((b) => {
-      b.dataset.used = "true";
-      b.disabled = true;
-    });
-    if (!opts?.silent) addMessage("user", display || msg);
-    setPending(true);
-    showTyping();
-    try {
-      const data = await requestChat(msg);
-      hideTyping();
-      addMessage("assistant", data.reply, data);
-      setConnection(data.capture);
-    } catch (err) {
-      hideTyping();
-      const aborted = err?.name === "AbortError";
-      addError(
-        aborted ? "Timeout. Try again." : "Could not reach the AI. Retry.",
-      );
-    } finally {
-      setPending(false);
-      chatInput.focus();
-    }
-  }
-
-  function setConnection(capture) {
-    // placeholder — no connection status in widget version
-  }
-
-  async function initConversation() {
-    setPending(true);
-    showTyping();
-    try {
-      const data = await requestChat("/start");
-      hideTyping();
-      addMessage("assistant", data.reply, data);
-    } catch (_) {
-      hideTyping();
-      addError("AI is not responding. Make sure chatbot-api is running.");
-    } finally {
-      setPending(false);
-    }
-  }
-
-  function resetChat() {
-    requestController?.abort();
-    sessionId = createId();
-    try {
-      localStorage.setItem(STORAGE_KEY, sessionId);
-    } catch (_) {}
-    history = [];
-    lastRequest = null;
-    messagesEl.innerHTML = "";
-    chatInput.value = "";
-    resizeInput();
-    initialized = true;
-    initConversation();
-  }
-
-  /* ── Events ── */
-  chatForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const v = chatInput.value.trim();
-    if (!v || pending) return;
-    chatInput.value = "";
-    resizeInput();
-    chatSend.disabled = true;
-    sendMessage(v);
-  });
-
-  chatInput.addEventListener("input", () => {
-    resizeInput();
-    chatSend.disabled = pending || !chatInput.value.trim();
-  });
-
-  chatInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && !e.shiftKey && !e.isComposing) {
-      e.preventDefault();
-      chatForm.requestSubmit();
-    }
-  });
-
-  // New chat button — add to header if exists
-  const newChatBtn = $("#chat-new-btn");
-  if (newChatBtn) newChatBtn.addEventListener("click", resetChat);
-
-  window.__rebindChatWidget = rebindChatWidget;
-})();

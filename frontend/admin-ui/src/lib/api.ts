@@ -1,15 +1,29 @@
 import { ApiError, type ErrorResponse } from "@/lib/api-error";
-import { DEMO_MODE } from "@/lib/demo/demo-mode";
-import { demoRequest } from "@/lib/demo/demo-router";
 
 const configuredApiOrigin = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/+$/, "");
 export const API_BASE_URL = configuredApiOrigin || "";
 const REQUEST_TIMEOUT_MS = 30_000;
 
+function adminBasePath(): string {
+  if (typeof document === "undefined") return "";
+  const pathname = new URL(document.baseURI).pathname.replace(/\/+$/, "");
+  return pathname === "/" ? "" : pathname;
+}
+
 export type QueryParams = Record<string, string | number | boolean | undefined | null>;
 
+export function assetUrl(value: string | null | undefined): string {
+  const raw = String(value ?? "").trim();
+  if (!raw || !raw.startsWith("/")) return raw;
+  return API_BASE_URL ? `${API_BASE_URL}${raw}` : raw;
+}
+
 function buildUrl(path: string, query?: QueryParams): string {
-  const url = new URL(path.replace(/^\//, ""), API_BASE_URL + "/");
+  const origin = API_BASE_URL || window.location.origin;
+  const normalizedPath = path.startsWith("/api/v1/")
+    ? `${adminBasePath()}${path}`
+    : path;
+  const url = new URL(normalizedPath.replace(/^\//, ""), `${origin}/`);
   if (query) {
     for (const [key, value] of Object.entries(query)) {
       if (value !== undefined && value !== null && value !== "") {
@@ -20,27 +34,27 @@ function buildUrl(path: string, query?: QueryParams): string {
   return url.toString();
 }
 
+export function adminApiUrl(path: string): string {
+  return buildUrl(path);
+}
+
 async function request<T>(
   method: string,
   path: string,
-  options?: { body?: unknown; query?: QueryParams },
+  options?: { body?: unknown; query?: QueryParams; isFormData?: boolean; timeoutMs?: number },
 ): Promise<T> {
-  if (DEMO_MODE) {
-    return demoRequest<T>(method, path, options?.body, options?.query);
-  }
-
   let response: Response;
   try {
     const headers: Record<string, string> = {};
-    if (options?.body !== undefined) {
+    if (options?.body !== undefined && !options?.isFormData) {
       headers["Content-Type"] = "application/json";
     }
     response = await fetch(buildUrl(path, options?.query), {
       method,
       credentials: "include",
       headers,
-      body: options?.body !== undefined ? JSON.stringify(options.body) : undefined,
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      body: options?.body !== undefined ? (options.isFormData ? (options.body as FormData) : JSON.stringify(options.body)) : undefined,
+      signal: AbortSignal.timeout(options?.timeoutMs ?? REQUEST_TIMEOUT_MS),
     });
   } catch (error) {
     if (error instanceof DOMException && error.name === "TimeoutError") {
@@ -93,6 +107,8 @@ function isErrorResponse(value: unknown): value is ErrorResponse {
 export const api = {
   get: <T>(path: string, query?: QueryParams) => request<T>("GET", path, { query }),
   post: <T>(path: string, body?: unknown) => request<T>("POST", path, { body }),
+  postForm: <T>(path: string, formData: FormData, timeoutMs?: number) =>
+    request<T>("POST", path, { body: formData, isFormData: true, timeoutMs }),
   put: <T>(path: string, body?: unknown) => request<T>("PUT", path, { body }),
   patch: <T>(path: string, body?: unknown) => request<T>("PATCH", path, { body }),
   delete: <T>(path: string) => request<T>("DELETE", path),

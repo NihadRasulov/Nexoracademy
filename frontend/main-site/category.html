@@ -3,7 +3,8 @@
 <head>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+    <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Nexora Academy kateqoriya məlumatı və açıq kursları.">
@@ -12,45 +13,46 @@
   <title>Kateqoriya | Nexora Academy</title>
   <link rel="stylesheet" href="style.css">
   <script defer src="app.js"></script>
+  <script defer src="chat.js"></script>
 </head>
 <body class="__variable_7fc4d2 antialiased" style="overflow:auto" data-page="category">
   <noscript>Bu saytın işləməsi üçün JavaScript aktiv olmalıdır.</noscript>
 
 <div>
-<header class="Header_header__8yaFd">
+<header class="header">
 <div class="container">
-<div class="Header_header__content__5T2vO">
-<div class="Header_header__content__group__96cQG">
-<div class="Header_header__content__group__item__t0_4X">
-<a class="Header_header__logo__wY5vW" href="index.html">
+<div class="header__content">
+<div class="header__group">
+<div class="header__group-item">
+<a class="header__logo" href="index.html">
 <img alt="Nexora Academy" data-nimg="1" decoding="async" height="52" loading="eager" src="assets/logo.svg" style="color:transparent" width="107"/>
 </a>
 </div>
 </div>
-<div class="Header_header__content__group__96cQG">
-<div class="Header_header__content__group__item__t0_4X">
-<div class="Header_header__menu__QSH1x">
-<div class="Header_header__menu__body__cdNzt">
-<ul class="Header_header__menu__list__fvVyw">
+<div class="header__group">
+<div class="header__group-item">
+<div class="header__menu">
+<div class="header__menu-body">
+<ul class="header__menu-list">
 <li>
-<a class="Header_header__menu__link__i1AD1" href="index.html">
+<a class="header__menu-link" href="index.html">
 <span>
               Ana səhifə
              </span>
 </a>
 </li>
 <li>
-<div class="Header_header__menu__drowpdown__KnfZg">
-<a class="Header_header__menu__drowpdown__item__jIbqp" href="courses.html">
+<div class="header__dropdown">
+<a class="header__dropdown-item" href="courses.html">
               Bütün kurslar
              </a>
-<a class="Header_header__menu__drowpdown__item__jIbqp" href="categories.html">Kurs kateqoriyaları</a>
+<a class="header__dropdown-item" href="categories.html">Kurs kateqoriyaları</a>
 </div>
-<p class="Header_header__menu__link__i1AD1 Header_active__9DNVy">
+<p class="header__menu-link header__menu-link--active">
 <span>
               Kurslar
              </span>
-<span class="Header_header__menu__arrow__nvxph">
+<span class="header__dropdown-arrow">
 <svg fill="none" height="18" viewbox="0 0 18 18" width="18" xmlns="http://www.w3.org/2000/svg">
 <path d="M14.9405 6.71252L10.0505 11.6025C9.47305 12.18 8.52805 12.18 7.95055 11.6025L3.06055 6.71252" stroke="white" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" stroke-width="1.5">
 </path>
@@ -59,28 +61,35 @@
 </p>
 </li>
 <li>
-<a class="Header_header__menu__link__i1AD1" href="academy.html">
+<a class="header__menu-link" href="academy.html">
 <span>
               Akademiya
              </span>
 </a>
 </li>
 <li>
-<a class="Header_header__menu__link__i1AD1" href="scholarships.html">
+<a class="header__menu-link" href="career.html">
 <span>
               Karyera
              </span>
 </a>
 </li>
 <li>
-<a class="Header_header__menu__link__i1AD1" href="faq.html">
+<a class="header__menu-link" href="faq.html">
 <span>
               FAQ
              </span>
 </a>
 </li>
 <li>
-<a class="Header_header__menu__link__i1AD1" href="contact.html" rel="noopener noreferrer">
+<a class="header__menu-link" href="news.html">
+<span>
+              Xəbərlər
+             </span>
+</a>
+</li>
+<li>
+<a class="header__menu-link" href="contact.html" rel="noopener noreferrer">
 <span>
               Əlaqə
              </span>
@@ -109,11 +118,11 @@
 </div>
 </div>
 </header>
-<div class="HeaderMobile_header_mobile_menu__b38W_">
-<div class="HeaderMobile_header_mobile_menu__content__QXr0E">
-<div class="HeaderMobile_header_mobile_menu__title__N_ti5">
-<a class="HeaderMobile_header_mobile_menu__logo__V5ZUK" href="index.html">
-<img alt="Nexora Academy" data-nimg="1" decoding="async" height="52" loading="lazy" src="assets/logo.svg" style="color:transparent" width="107"/>
+<div class="mobile-menu">
+<div class="mobile-menu__content">
+<div class="mobile-menu__title">
+<a class="mobile-menu__logo" href="index.html">
+<img alt="Nexora Academy" data-nimg="1" decoding="async" height="52" loading="lazy" src="assets/logo.png" style="color:transparent" width="107"/>
 </a>
 <button class="ai-btn ai-btn--icon ai-btn--gray ai-btn--xs header__menu__btn d-lg-flex d-none" type="button">
 <svg class="" height="24" viewbox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
@@ -122,79 +131,88 @@
 </svg>
 </button>
 </div>
-<div class="HeaderMobile_header__menu__body__mobile__Qr4AK">
-<div class="HeaderMobile_menu__accordion__a4KMH">
-<div class="HeaderMobile_menu__accordion__item__lNOEz">
-<div class="HeaderMobile_menu__accordion__item__header__tKY8U">
-<a class="HeaderMobile_menu__accordion__item__header__title__m4g5z" href="index.html">
+<div class="mobile-menu__body-mobile">
+<div class="mobile-menu__accordion">
+<div class="mobile-menu__accordion-item">
+<div class="mobile-menu__accordion-header">
+<a class="mobile-menu__accordion-title" href="index.html">
           Ana səhifə
          </a>
 </div>
 </div>
-<div class="HeaderMobile_divider__RUyAL">
+<div class="mobile-menu__divider">
 </div>
-<button class="HeaderMobile_menu__accordion__item__lNOEz" type="button">
-<div class="HeaderMobile_menu__accordion__item__header__tKY8U">
-<p class="HeaderMobile_menu__accordion__item__header__title__m4g5z">
+<button class="mobile-menu__accordion-item" type="button">
+<div class="mobile-menu__accordion-header">
+<p class="mobile-menu__accordion-title">
           Kurslar
          </p>
-<span class="HeaderMobile_menu__accordion__item__header__icon__Zy71M">
+<span class="mobile-menu__accordion-icon">
 <svg class="" height="24" viewbox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
 <path clip-rule="evenodd" d="M16.631 11.1054C16.8673 11.3418 17.0001 11.6625 17.0001 11.9968C17.0001 12.3311 16.8673 12.6517 16.631 12.8882L9.49852 20.0206C9.38221 20.1411 9.24309 20.2371 9.08926 20.3032C8.93544 20.3693 8.76999 20.404 8.60258 20.4055C8.43517 20.407 8.26915 20.3751 8.1142 20.3117C7.95925 20.2483 7.81848 20.1546 7.7001 20.0363C7.58171 19.9179 7.48809 19.7771 7.4247 19.6222C7.3613 19.4672 7.3294 19.3012 7.33086 19.1338C7.33231 18.9664 7.36709 18.8009 7.43317 18.6471C7.49925 18.4933 7.5953 18.3541 7.71572 18.2378L13.9568 11.9968L7.71572 5.75574C7.48605 5.51795 7.35897 5.19946 7.36184 4.86888C7.36472 4.5383 7.49732 4.22207 7.73108 3.9883C7.96485 3.75454 8.28108 3.62194 8.61166 3.61907C8.94224 3.61619 9.26073 3.74328 9.49852 3.97294L16.631 11.1054Z" fill="white" fill-rule="evenodd">
 </path>
 </svg>
 </span>
 </div>
-<div class="HeaderMobile_menu__accordion__item__body__yE0mi">
+<div class="mobile-menu__accordion-body">
 <a href="courses.html">
           Bütün kurslar
          </a>
 <a href="categories.html">Kurs kateqoriyaları</a>
 </div>
 </button>
-<div class="HeaderMobile_divider__RUyAL">
+<div class="mobile-menu__divider">
 </div>
-<div class="HeaderMobile_menu__accordion__item__lNOEz">
-<div class="HeaderMobile_menu__accordion__item__header__tKY8U">
-<a class="HeaderMobile_menu__accordion__item__header__title__m4g5z" href="academy.html">
+<div class="mobile-menu__accordion-item">
+<div class="mobile-menu__accordion-header">
+<a class="mobile-menu__accordion-title" href="academy.html">
           Akademiya
          </a>
 </div>
 </div>
-<div class="HeaderMobile_divider__RUyAL">
+<div class="mobile-menu__divider">
 </div>
-<div class="HeaderMobile_menu__accordion__item__lNOEz">
-<div class="HeaderMobile_menu__accordion__item__header__tKY8U">
-<a class="HeaderMobile_menu__accordion__item__header__title__m4g5z" href="scholarships.html">
+<div class="mobile-menu__accordion-item">
+<div class="mobile-menu__accordion-header">
+<a class="mobile-menu__accordion-title" href="career.html">
           Karyera
          </a>
 </div>
 </div>
-<div class="HeaderMobile_divider__RUyAL">
+<div class="mobile-menu__divider">
 </div>
-<div class="HeaderMobile_menu__accordion__item__lNOEz">
-<div class="HeaderMobile_menu__accordion__item__header__tKY8U">
-<a class="HeaderMobile_menu__accordion__item__header__title__m4g5z" href="faq.html">
+<div class="mobile-menu__accordion-item">
+<div class="mobile-menu__accordion-header">
+<a class="mobile-menu__accordion-title" href="faq.html">
           FAQ
          </a>
 </div>
 </div>
-<div class="HeaderMobile_divider__RUyAL">
+<div class="mobile-menu__divider">
 </div>
-<div class="HeaderMobile_menu__accordion__item__lNOEz">
-<div class="HeaderMobile_menu__accordion__item__header__tKY8U">
-<a class="HeaderMobile_menu__accordion__item__header__title__m4g5z" href="contact.html" rel="noopener noreferrer">
+<div class="mobile-menu__accordion-item">
+<div class="mobile-menu__accordion-header">
+<a class="mobile-menu__accordion-title" href="news.html">
+          Xəbərlər
+         </a>
+</div>
+</div>
+<div class="mobile-menu__divider">
+</div>
+<div class="mobile-menu__accordion-item">
+<div class="mobile-menu__accordion-header">
+<a class="mobile-menu__accordion-title" href="contact.html" rel="noopener noreferrer">
           Əlaqə
          </a>
 </div>
 </div>
-<div class="HeaderMobile_divider__RUyAL">
+<div class="mobile-menu__divider">
 </div>
 
 </div>
 </div>
-<div class="HeaderMobile_header_mobile_menu__footer___wEiC">
-<ul class="SocialMediaList_socialList__BZJJ2">
+<div class="mobile-menu__footer">
+<ul class="social-media-list">
 
 
 <li>
@@ -283,57 +301,64 @@
 </section>
 </main>
 <!--/$-->
-<footer class="Footer_footer__nexora" data-site-footer>
-  <div class="container Footer_footer__container__w6N4a">
-    <div class="Footer_footer__content__1FEJs">
-      <div class="Footer_footer__brand__P9k2m">
-        <a class="Footer_footer__logo__ATYE7" href="index.html" aria-label="Nexora Academy &mdash; Ana s&#601;hif&#601;">
-          <img alt="Nexora Academy" decoding="async" height="62" loading="lazy" src="assets/logo.svg" width="128" />
+<footer class="footer" data-site-footer>
+  <div class="container footer__container">
+    <div class="footer__content">
+      <div class="footer__brand">
+        <a class="footer__logo" href="index.html" aria-label="Nexora Academy &mdash; Ana s&#601;hif&#601;">
+          <img alt="Nexora Academy" decoding="async" height="62" loading="lazy" src="assets/logo.png" width="128" />
         </a>
-        <address class="Footer_footer__address__b8X3q"><a href="https://maps.app.goo.gl/sLNza7qxnoQFUVLr9" rel="noopener noreferrer" target="_blank">AF City, Baku, Azerbaijan</a></address>
-        <div class="Footer_footer__contacts__M2d7r">
-          <div class="Footer_footer__contact__f4V1c">
-            <span class="Footer_footer__contactLabel__n7L5s">Telefon n&#246;mr&#601;si</span>
-            <a href="tel:+994518710363">+994 51 871 03 63</a>
+        <address class="footer__address"><a href="https://maps.app.goo.gl/sLNza7qxnoQFUVLr9" rel="noopener noreferrer" target="_blank">AF City, Baku, Azerbaijan</a></address>
+        <div class="footer__contacts">
+          <div class="footer__contact">
+            <span class="footer__contact-label">Telefon n&#246;mr&#601;si</span>
+            <a href="tel:+994506690452">+994 50 669 04 52</a>
           </div>
-          <div class="Footer_footer__contact__f4V1c">
-            <span class="Footer_footer__contactLabel__n7L5s">E-po&#231;t</span>
+          <div class="footer__contact">
+            <span class="footer__contact-label">E-po&#231;t</span>
             <a href="mailto:office@nexoracademy.az">office@nexoracademy.az</a>
           </div>
         </div>
       </div>
-      <nav class="Footer_footer__column__t5C9p Footer_footer__menu__lA6VV" aria-label="S&#252;r&#601;tli ke&#231;idl&#601;r">
-        <h2 class="Footer_footer__heading__x3Q8v">S&#252;r&#601;tli ke&#231;idl&#601;r</h2>
-        <ul class="Footer_footer__menu__list__Q4jxf">
+      <nav class="footer__column footer__menu" aria-label="S&#252;r&#601;tli ke&#231;idl&#601;r">
+        <h2 class="footer__heading">S&#252;r&#601;tli ke&#231;idl&#601;r</h2>
+        <ul class="footer__menu-list">
           <li><a href="index.html">Ana s&#601;hif&#601;</a></li>
           <li><a href="courses.html">B&#252;t&#252;n kurslar</a></li>
           <li><a href="academy.html">Akademiya</a></li>
-          <li><a href="scholarships.html">Karyera</a></li>
+          <li><a href="career.html">Karyera</a></li>
           <li><a href="faq.html">FAQ</a></li>
+          <li><a href="news.html">X&#601;b&#601;rl&#601;r</a></li>
           <li><a href="contact.html">&#399;laq&#601;</a></li>
         </ul>
       </nav>
-      <div class="Footer_footer__column__t5C9p">
-        <h2 class="Footer_footer__heading__x3Q8v">Sosial media</h2>
-        <ul class="Footer_footer__menu__list__Q4jxf">
+      <div class="footer__column">
+        <h2 class="footer__heading">Sosial media</h2>
+        <ul class="footer__menu-list">
           <li>
             <a href="https://www.instagram.com/_nexoracademy" rel="noopener noreferrer" target="_blank">Instagram</a>
           </li>
           <li>
             <a href="https://www.linkedin.com/company/nexoracademy/" rel="noopener noreferrer" target="_blank">LinkedIn</a>
           </li>
+          <li>
+            <a href="https://www.facebook.com/profile.php?id=61591853181639" rel="noopener noreferrer" target="_blank">Facebook</a>
+          </li>
+          <li>
+            <a href="https://wa.me/994506690452" rel="noopener noreferrer" target="_blank">WhatsApp</a>
+          </li>
         </ul>
       </div>
-      <div class="Footer_footer__column__t5C9p">
-        <h2 class="Footer_footer__heading__x3Q8v">H&#252;quqi</h2>
-        <ul class="Footer_footer__menu__list__Q4jxf">
+      <div class="footer__column">
+        <h2 class="footer__heading">H&#252;quqi</h2>
+        <ul class="footer__menu-list">
           <li><a href="terms.html">&#350;&#601;rtl&#601;r</a></li>
           <li><a href="privacy.html">M&#601;xfilik</a></li>
           <li><a href="accessibility.html">&#399;l&#231;atanl&#305;q</a></li>
         </ul>
       </div>
     </div>
-    <div class="Footer_copyright__OGhGQ">
+    <div class="footer__copyright">
       &copy; 2026 Nexora Academy. B&#252;t&#252;n h&#252;quqlar qorunur.
     </div>
   </div>

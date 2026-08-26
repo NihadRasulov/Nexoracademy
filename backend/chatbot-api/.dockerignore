@@ -13,3 +13,5 @@ htmlcov/
 .coverage
 venv/
 .venv/
+chroma_db/
+app/chroma_db/

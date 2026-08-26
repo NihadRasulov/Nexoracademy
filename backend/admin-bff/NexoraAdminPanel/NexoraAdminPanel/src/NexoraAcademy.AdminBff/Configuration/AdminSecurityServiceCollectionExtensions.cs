@@ -38,7 +38,7 @@ public static class AdminSecurityServiceCollectionExtensions
                 options.Cookie.Name = BffAuthConstants.CookieName;
                 options.Cookie.HttpOnly = true;
                 options.Cookie.IsEssential = true;
-                options.Cookie.Path = "/";
+                options.Cookie.Path = settings.BasePath.Value;
                 options.Cookie.SameSite = SameSiteMode.Strict;
                 options.Cookie.SecurePolicy = environment.IsDevelopment()
                     ? CookieSecurePolicy.SameAsRequest
@@ -64,7 +64,7 @@ public static class AdminSecurityServiceCollectionExtensions
             options.AddPolicy(BffAuthConstants.PanelAccessPolicy, policy =>
             {
                 policy.RequireAuthenticatedUser();
-                policy.RequireRole(Roles.PanelAccess.Split(','));
+                policy.RequireRole(Roles.Admin);
             });
         });
     }
@@ -147,17 +147,20 @@ public static class AdminSecurityServiceCollectionExtensions
                     cancellationToken);
             };
 
-            options.AddPolicy(BffRateLimitPolicies.Login, context =>
-                RateLimitPartition.GetFixedWindowLimiter(
-                    partitionKey: GetClientIp(context),
-                    factory: _ => new FixedWindowRateLimiterOptions
-                    {
-                        AutoReplenishment = true,
-                        PermitLimit = settings.LoginRateLimit.PermitLimit,
-                        Window = TimeSpan.FromSeconds(settings.LoginRateLimit.WindowSeconds),
-                        QueueLimit = 0,
-                        QueueProcessingOrder = QueueProcessingOrder.OldestFirst
-                    }));
+            var loginPath = settings.BasePath.Add("/api/v1/auth/login");
+            options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+                context.Request.Path.Equals(loginPath, StringComparison.OrdinalIgnoreCase)
+                    ? RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey: GetClientIp(context),
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            AutoReplenishment = true,
+                            PermitLimit = settings.LoginRateLimit.PermitLimit,
+                            Window = TimeSpan.FromSeconds(settings.LoginRateLimit.WindowSeconds),
+                            QueueLimit = 0,
+                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+                        })
+                    : RateLimitPartition.GetNoLimiter("unlimited"));
         });
     }
 

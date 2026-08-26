@@ -7,17 +7,14 @@ import jakarta.validation.constraints.Size;
 
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 public record InstructorRequest(
-        UUID userId,
-
         @NotBlank(groups = ValidationGroups.OnCreate.class) @Size(min = 2, max = 150) String fullName,
 
         @Size(max = 8000) String bio,
 
         @Size(max = 2048)
-        @Pattern(regexp = "^https?://.+", message = "photoUrl must be a valid http(s) URL")
+        @Pattern(regexp = "^(https?://.+|/uploads/.+)$", message = "photoUrl must be an http(s) or uploaded media URL")
         String photoUrl,
 
         @Size(max = 2048)

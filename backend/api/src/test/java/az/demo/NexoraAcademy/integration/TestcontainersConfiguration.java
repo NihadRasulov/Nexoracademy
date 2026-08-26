@@ -12,14 +12,14 @@ import org.testcontainers.utility.DockerImageName;
  * <p>Before this existed, every integration test connected to whatever database
  * {@code .env} happened to point at — the developer's own dev instance. That made the
  * suite unrunnable on CI (no {@code .env}, no Postgres on localhost:5432) and, worse,
- * let tests write rows (users, courses, enrollments, audit logs) straight into a
+ * let tests write rows (administrators, courses and CMS content) straight into a
  * database someone was also using by hand.
  *
  * <p>{@code @ServiceConnection} feeds the container's JDBC url/credentials to Spring as
  * {@code JdbcConnectionDetails}, which outranks any {@code spring.datasource.*} property —
  * so the {@code DB_*} values in {@code .env} are ignored during tests without needing
  * a separate {@code application-test.yml}. Flyway then runs V1..V13 against the empty
- * container, which also means every migration is exercised on every build.
+ * container, which also means the complete migration chain is exercised on every build.
  *
  * <p>The image is {@code pgvector/pgvector:pg16}, not plain {@code postgres} —
  * {@code V1__init_extensions_and_schemas.sql} does {@code CREATE EXTENSION vector}, which

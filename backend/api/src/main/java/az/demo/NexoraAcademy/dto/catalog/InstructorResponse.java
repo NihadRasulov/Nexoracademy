@@ -8,7 +8,6 @@ import java.util.UUID;
 
 public record InstructorResponse(
         UUID id,
-        UUID userId,
         String fullName,
         String bio,
         String photoUrl,

@@ -1,10 +1,11 @@
 """
 Centralised configuration for the Nexora chatbot.
 All settings are read from environment variables with safe defaults.
-Redis and PostgreSQL are optional – the system degrades gracefully without them.
+Redis is optional in development; production contact submissions are sent to Java.
 """
 from __future__ import annotations
 import os
+import sys
 from dataclasses import dataclass, field
 
 
@@ -39,13 +40,12 @@ class Config:
     rate_limit_max: int = int(os.environ.get("RATE_LIMIT_MAX", "40"))
     rate_limit_window_s: int = int(os.environ.get("RATE_LIMIT_WINDOW_S", "60"))
 
-    # ── Database ─────────────────────────────────────────────────────────────
-    database_url: str = field(
-        default_factory=lambda: os.environ.get(
-            "DATABASE_URL", "sqlite:///./nexora_leads.db"
-        )
+    # ── Main platform ────────────────────────────────────────────────────────
+    platform_api_url: str = field(
+        default_factory=lambda: os.environ.get("PLATFORM_API_URL", "http://localhost:8081").rstrip("/")
     )
-    db_echo: bool = field(default_factory=lambda: os.environ.get("DB_ECHO", "false").lower() == "true")
+    catalog_timeout_s: float = float(os.environ.get("CATALOG_TIMEOUT_S", "4"))
+    catalog_cache_ttl_s: int = int(os.environ.get("CATALOG_CACHE_TTL_S", "300"))
 
     # ── Application ──────────────────────────────────────────────────────────
     port: int = int(os.environ.get("PORT", "8000"))
@@ -70,14 +70,25 @@ class Config:
         return bool(self.openrouter_api_key)
 
     def validate(self) -> list[str]:
-        """Return a list of warnings about missing/risky configuration."""
+        """Return a list of warnings; in production, critical issues become errors."""
         warnings = []
+        errors = []
         if not self.openrouter_api_key:
             warnings.append("OPENROUTER_API_KEY not set – LLM will be unavailable")
         if not self.redis_enabled:
-            warnings.append("Redis disabled – sessions will be in-memory only (not suitable for production)")
-        if "sqlite" in self.database_url and self.is_production:
-            warnings.append("SQLite detected in production – use PostgreSQL")
+            msg = "Redis disabled – sessions will be in-memory only"
+            if self.is_production:
+                errors.append(msg + " (FATAL in production)")
+            else:
+                warnings.append(msg)
+        if self.is_production and not self.platform_api_url.startswith(("http://", "https://")):
+            errors.append("PLATFORM_API_URL is invalid (FATAL)")
+        if self.is_production and errors:
+            import logging
+            log = logging.getLogger("nexora.config")
+            for e in errors:
+                log.critical("config_error msg=%s", e)
+            sys.exit(1)
         return warnings
 
 

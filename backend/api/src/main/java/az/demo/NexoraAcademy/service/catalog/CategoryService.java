@@ -28,8 +28,25 @@ public class CategoryService {
     }
 
     @Transactional(readOnly = true)
+    public List<CategoryResponse> findPublicAll() {
+        return categoryRepository.findAll().stream()
+                .filter(category -> Boolean.TRUE.equals(category.getActive()))
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
     public CategoryResponse findById(Short id) {
         return toResponse(getOrThrow(id));
+    }
+
+    @Transactional(readOnly = true)
+    public CategoryResponse findPublicById(Short id) {
+        Category category = getOrThrow(id);
+        if (!Boolean.TRUE.equals(category.getActive())) {
+            throw ResourceNotFoundException.of("Category", id);
+        }
+        return toResponse(category);
     }
 
     public CategoryResponse create(CategoryRequest request) {

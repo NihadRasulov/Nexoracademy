@@ -6,12 +6,17 @@ export function BrandMark() {
     <Link
       to="/dashboard"
       aria-label="Nexora admin panel — ana səhifə"
-      className="block border-b border-sidebar-border px-4 py-4"
+      className="group block border-b border-sidebar-border/70 px-4 py-5"
     >
-      <BrandLogo className="max-h-11 dark:brightness-110" />
-      <span className="mt-2 block text-center text-[0.65rem] font-semibold tracking-[0.18em] text-muted-foreground uppercase">
-        Admin Panel
-      </span>
+      <div className="flex items-center gap-3">
+        <div className="relative flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white p-1.5 shadow-sm ring-1 ring-sky-300/20">
+          <BrandLogo className="max-h-8" />
+        </div>
+        <div className="min-w-0">
+          <span className="block truncate text-[0.95rem] font-bold tracking-tight text-sidebar-foreground">Nexora Academy</span>
+          <span className="mt-0.5 block text-[0.6rem] font-semibold tracking-[0.16em] text-primary uppercase">Content manager</span>
+        </div>
+      </div>
     </Link>
   );
 }

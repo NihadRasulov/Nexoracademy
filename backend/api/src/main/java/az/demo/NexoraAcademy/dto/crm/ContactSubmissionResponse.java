@@ -7,7 +7,6 @@ import java.util.UUID;
 
 public record ContactSubmissionResponse(
         UUID id,
-        UUID leadId,
         SubmissionType type,
         UUID courseId,
         String fullName,

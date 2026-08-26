@@ -1,6 +1,5 @@
 package az.demo.NexoraAcademy.entity.catalog;
 
-import az.demo.NexoraAcademy.entity.identity.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -29,10 +28,6 @@ public class Instructor {
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(updatable = false, nullable = false)
     private UUID id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    private User user;
 
     @Column(name = "full_name", nullable = false, length = 150)
     private String fullName;

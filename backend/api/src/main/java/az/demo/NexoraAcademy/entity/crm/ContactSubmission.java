@@ -29,10 +29,6 @@ public class ContactSubmission {
     @Column(updatable = false, nullable = false)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "lead_id")
-    private Lead lead;
-
     @Column(nullable = false)
     private SubmissionType type;
 

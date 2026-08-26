@@ -18,9 +18,8 @@ import java.lang.annotation.Target;
  * ("Məmmədəliyeva", "Hacıbababəyov", "Nəcəfquliyeva") and given names ~11
  * ("Nurməhəmməd", "Məhəmmədəli"), so a single part never approaches the 100 the column
  * previously allowed. 40 is deliberately not tightened to ~20: hyphenated double
- * surnames ("Məmmədəliyeva-Nəcəfquliyeva" is 27) and the platform's foreign-locale
- * students would be rejected outright, and a registration a real person cannot complete
- * costs far more than a slightly loose upper bound. 40 also sits just above the 39
+ * surnames ("Məmmədəliyeva-Nəcəfquliyeva" is 27) and foreign-locale administrator
+ * names would otherwise be rejected. 40 also sits just above the 39
  * characters ICAO 9303 allots to the full name field of a machine-readable passport,
  * which is the practical ceiling for a name that has to fit on an ID document at all.
  *

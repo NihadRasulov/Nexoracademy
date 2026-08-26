@@ -38,8 +38,7 @@ public class CrudLoggingAspect {
     private enum Operation { CREATE, READ, UPDATE, DELETE }
 
     @Around("execution(public * az.demo.NexoraAcademy.service..*.*(..)) "
-            + "&& !target(az.demo.NexoraAcademy.service.JwtService) "
-            + "&& !target(az.demo.NexoraAcademy.service.notify.EmailService)")
+            + "&& !target(az.demo.NexoraAcademy.service.JwtService)")
     public Object logCrud(ProceedingJoinPoint joinPoint) throws Throwable {
         String methodName = joinPoint.getSignature().getName();
         Operation operation = classify(methodName);

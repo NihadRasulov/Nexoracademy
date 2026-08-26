@@ -14,4 +14,6 @@ public interface CmsContentRepository extends JpaRepository<CmsContent, Long> {
     Optional<CmsContent> findByKeyAndPublishedTrue(String key);
 
     List<CmsContent> findByTypeAndPublishedTrueOrderBySortOrderAscUpdatedAtDesc(CmsContentType type);
+
+    long countByTypeAndPublishedTrue(CmsContentType type);
 }

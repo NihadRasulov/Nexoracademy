@@ -14,6 +14,7 @@ import { Pencil, Plus, Search, Trash2 } from "lucide-react";
 
 export function ResourcePage<T extends Record<string, unknown>>({ config }: { config: ResourceConfig<T> }) {
   const { listQuery, createMutation, updateMutation, deleteMutation } = useResourceCrud<T>(config);
+  const readOnly = config.readOnly === true;
   const [search, setSearch] = useState("");
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<T | null>(null);
@@ -91,10 +92,12 @@ export function ResourcePage<T extends Record<string, unknown>>({ config }: { co
         title={config.title}
         description={config.description}
         actions={
-          <Button onClick={openCreate}>
-            <Plus className="size-4" />
-            Yeni
-          </Button>
+          readOnly ? undefined : (
+            <Button onClick={openCreate}>
+              <Plus className="size-4" />
+              Yeni
+            </Button>
+          )
         }
       />
 
@@ -117,36 +120,44 @@ export function ResourcePage<T extends Record<string, unknown>>({ config }: { co
         rows={rows}
         rowKey={(row) => String(row[config.idField])}
         loading={listQuery.isLoading}
-        rowActions={(row) => (
-          <div className="flex justify-end gap-1">
-            <Button variant="ghost" size="icon" onClick={() => openEdit(row)} aria-label="Redaktə et" title="Redaktə et">
-              <Pencil className="size-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => setDeleting(row)} aria-label="Sil" title="Sil">
-              <Trash2 className="size-4 text-destructive" />
-            </Button>
-          </div>
-        )}
+        rowActions={
+          readOnly
+            ? undefined
+            : (row) => (
+                <div className="flex justify-end gap-1">
+                  <Button variant="ghost" size="icon" onClick={() => openEdit(row)} aria-label="Redaktə et" title="Redaktə et">
+                    <Pencil className="size-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => setDeleting(row)} aria-label="Sil" title="Sil">
+                    <Trash2 className="size-4 text-destructive" />
+                  </Button>
+                </div>
+              )
+        }
       />
 
-      <ResourceFormDialog
-        open={formOpen}
-        onOpenChange={setFormOpen}
-        config={config}
-        initialValues={editing}
-        submitting={createMutation.isPending || updateMutation.isPending}
-        fieldErrors={fieldErrors}
-        onSubmit={handleSubmit}
-      />
+      {!readOnly && (
+        <>
+          <ResourceFormDialog
+            open={formOpen}
+            onOpenChange={setFormOpen}
+            config={{ ...config, fields: config.fields ?? [] }}
+            initialValues={editing}
+            submitting={createMutation.isPending || updateMutation.isPending}
+            fieldErrors={fieldErrors}
+            onSubmit={handleSubmit}
+          />
 
-      <ConfirmDialog
-        open={deleting !== null}
-        onOpenChange={(open) => !open && setDeleting(null)}
-        title={`${config.title} silinsin?`}
-        description="Bu əməliyyat geri qaytarıla bilməz."
-        pending={deleteMutation.isPending}
-        onConfirm={handleDelete}
-      />
+          <ConfirmDialog
+            open={deleting !== null}
+            onOpenChange={(open) => !open && setDeleting(null)}
+            title={`${config.title} silinsin?`}
+            description="Bu əməliyyat geri qaytarıla bilməz."
+            pending={deleteMutation.isPending}
+            onConfirm={handleDelete}
+          />
+        </>
+      )}
     </div>
   );
 }

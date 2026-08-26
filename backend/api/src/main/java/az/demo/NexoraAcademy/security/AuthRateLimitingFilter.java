@@ -19,11 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * In-memory, per-IP fixed-window rate limiter for the auth endpoints most exposed to
- * brute-force / credential-stuffing / spam: password login, OTP verification,
- * registration, and the two "always succeeds, sends an email" endpoints
- * (forgot-password, resend-verification) which would otherwise let anyone mail-bomb
- * an arbitrary address for free (see AuthService#forgotPassword / #resendVerification).
+ * In-memory, per-IP fixed-window limiter for the private admin login endpoint.
  *
  * Deliberately in-memory (ConcurrentHashMap), not Redis/Bucket4j-backed — this app
  * runs as a single instance. If it's ever scaled horizontally behind a load balancer,
@@ -33,12 +29,8 @@ import java.util.concurrent.atomic.AtomicLong;
 @Component
 public class AuthRateLimitingFilter extends OncePerRequestFilter {
 
-    private static final Map<String, Integer> LIMITS_PER_MINUTE = Map.of(
-            "/api/v1/auth/register", 5,
-            "/api/v1/auth/login", 10,
-            "/api/v1/auth/forgot-password", 5,
-            "/api/v1/auth/resend-verification", 5
-    );
+    private static final Map<String, Integer> LIMITS_PER_MINUTE =
+            Map.of("/api/v1/auth/login", 10);
 
     private static final long WINDOW_MILLIS = 60_000L;
     private static final long STALE_AFTER_MILLIS = WINDOW_MILLIS * 5;

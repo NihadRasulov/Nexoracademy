@@ -36,9 +36,6 @@ public class User {
     @Column(nullable = false, unique = true, columnDefinition = "citext")
     private String email;
 
-    @Column(name = "email_verified_at")
-    private Instant emailVerifiedAt;
-
     @Column(length = 20)
     private String phone;
 
@@ -53,10 +50,10 @@ public class User {
     private String passwordHash;
 
     @Column(nullable = false)
-    private UserRole role = UserRole.STUDENT;
+    private UserRole role = UserRole.ADMIN;
 
     @Column(nullable = false)
-    private AccountStatus status = AccountStatus.PENDING_VERIFICATION;
+    private AccountStatus status = AccountStatus.ACTIVE;
 
     @Column(length = 10)
     private String locale = "az-AZ";
@@ -68,12 +65,6 @@ public class User {
 
     @Column(name = "last_login_at")
     private Instant lastLoginAt;
-
-    @Column(name = "failed_login_count", nullable = false)
-    private Short failedLoginCount = 0;
-
-    @Column(name = "locked_until")
-    private Instant lockedUntil;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

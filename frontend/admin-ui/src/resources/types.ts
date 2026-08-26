@@ -15,7 +15,9 @@ export type FieldType =
   | "keyValue"
   | "json"
   | "jsonArray"
-  | "guidArray";
+  | "guidArray"
+  /** File upload; stores the returned public URL string (see ImageUploadField). */
+  | "image";
 
 export interface FieldOption {
   value: string;
@@ -53,6 +55,12 @@ export interface ResourceConfig<T extends Record<string, unknown> = Record<strin
   idField: keyof T & string;
   roleGroup: RoleGroup;
   columns: ColumnConfig<T>[];
-  fields: FieldConfig[];
+  /** Form fields for create/edit. Omit for read-only resources. */
+  fields?: FieldConfig[];
   searchKeys?: (keyof T & string)[];
+  /**
+   * When true the page renders list + search only: create/edit/delete actions
+   * are hidden (server-side writes are rejected anyway).
+   */
+  readOnly?: boolean;
 }

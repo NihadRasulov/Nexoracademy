@@ -1,6 +1,5 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "@/auth/auth-context";
-import { hasRole, type RoleGroup } from "@/auth/roles";
 import { AlertTriangle, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -36,16 +35,6 @@ export function RequireAuth() {
 
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  return <Outlet />;
-}
-
-export function RequireRole({ group }: { group: RoleGroup }) {
-  const { user } = useAuth();
-
-  if (!hasRole(user?.role, group)) {
-    return <Navigate to="/403" replace />;
   }
 
   return <Outlet />;

@@ -6,7 +6,6 @@ import az.demo.NexoraAcademy.entity.enums.UserRole;
 import az.demo.NexoraAcademy.entity.identity.User;
 import az.demo.NexoraAcademy.repository.catalog.CategoryRepository;
 import az.demo.NexoraAcademy.repository.identity.UserRepository;
-import az.demo.NexoraAcademy.service.notify.EmailService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,7 +14,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.HashMap;
@@ -27,7 +25,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Verifies: public GET works unauthenticated, unauthenticated POST is
+ * Verifies: the dedicated public catalog works unauthenticated, admin routes
+ * remain protected, an ADMIN can create a course, and the search/filter/pagination
  * rejected, an ADMIN can create a course, and the search/filter/pagination
  * endpoint (Task 13) finds it.
  */
@@ -44,9 +43,6 @@ class CourseCrudAndSearchIntegrationTest {
     private CategoryRepository categoryRepository;
     @Autowired
     private PasswordEncoder passwordEncoder;
-    @MockitoSpyBean
-    private EmailService emailService;
-
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private String adminToken;
@@ -83,8 +79,11 @@ class CourseCrudAndSearchIntegrationTest {
 
     @Test
     void unauthenticatedUserCanReadButNotWriteCourses() throws Exception {
-        mockMvc.perform(get("/api/v1/courses"))
+        mockMvc.perform(get("/api/v1/public/catalog/courses"))
                 .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/courses"))
+                .andExpect(status().isUnauthorized());
 
         String body = "{\"slug\":\"unauth-course\",\"categoryId\":" + categoryId
                 + ",\"title\":\"Unauth Course\",\"difficulty\":\"BEGINNER\",\"deliveryFormat\":\"ONLINE\"}";
@@ -108,7 +107,7 @@ class CourseCrudAndSearchIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.slug").value(slug));
 
-        mockMvc.perform(get("/api/v1/courses")
+        mockMvc.perform(get("/api/v1/public/catalog/courses")
                         .param("q", uniqueWord)
                         .param("page", "0")
                         .param("size", "10"))

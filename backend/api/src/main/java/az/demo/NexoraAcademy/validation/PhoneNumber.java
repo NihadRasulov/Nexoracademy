@@ -15,7 +15,7 @@ import java.lang.annotation.Target;
  * A phone number in the shape the platform actually stores it.
  *
  * <p><b>Max length 20 is not cosmetic</b> — every phone column in the schema is
- * {@code VARCHAR(20)} (identity.users, crm.leads, crm.contact_submissions). The previous
+ * {@code VARCHAR(20)} (identity.users and crm.contact_submissions). The previous
  * rule, {@code ^\+?[0-9 ()-]{6,20}$}, allowed the leading "+" *on top of* 20 characters,
  * so a 21-character number passed validation and then failed at INSERT with a
  * DataIntegrityViolationException instead of a clean 400.

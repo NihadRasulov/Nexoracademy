@@ -33,7 +33,6 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     private UserDetails build(User user) {
-        boolean locked = user.getStatus() == AccountStatus.SUSPENDED || user.getStatus() == AccountStatus.BANNED;
         boolean disabled = user.getStatus() == AccountStatus.DEACTIVATED;
 
         return new AuthenticatedUser(
@@ -41,7 +40,7 @@ public class CustomUserDetailsService implements UserDetailsService {
                 user.getEmail(),
                 user.getPasswordHash(),
                 !disabled,
-                !locked,
+                true,
                 List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()))
         );
     }

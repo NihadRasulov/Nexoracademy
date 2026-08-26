@@ -15,6 +15,8 @@ public interface CourseRepository extends JpaRepository<Course, UUID>, JpaSpecif
 
     boolean existsByCategoryId(Short categoryId);
 
-    @EntityGraph(attributePaths = {"category", "createdBy"})
+    long countByPublishedTrueAndActiveTrueAndDeletedAtIsNull();
+
+    @EntityGraph(attributePaths = {"category", "instructor", "createdBy"})
     List<Course> findAll();
 }

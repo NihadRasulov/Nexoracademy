@@ -1,24 +1,12 @@
-import type { RoleGroup } from "@/auth/roles";
 import {
-  Award,
-  BadgePercent,
   BookOpen,
-  Bot,
-  CalendarRange,
-  ClipboardList,
-  FileText,
+  BriefcaseBusiness,
+  CircleHelp,
   Gauge,
-  GraduationCap,
-  KeyRound,
-  LayoutGrid,
-  Link2,
-  MailWarning,
-  MessagesSquare,
-  Receipt,
-  ScrollText,
-  Star,
-  Users,
-  UsersRound,
+  Inbox,
+  Newspaper,
+  PanelsTopLeft,
+  Settings2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -26,7 +14,8 @@ export interface NavItem {
   label: string;
   to: string;
   icon: LucideIcon;
-  roleGroup: RoleGroup;
+  description?: string;
+  keywords?: string[];
 }
 
 export interface NavGroup {
@@ -37,50 +26,24 @@ export interface NavGroup {
 export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Ümumi",
-    items: [{ label: "Ana Panel", to: "/dashboard", icon: Gauge, roleGroup: "panelAccess" }],
+    items: [{ label: "Ana panel", to: "/dashboard", icon: Gauge, description: "Canlı göstəricilər və son fəaliyyət", keywords: ["dashboard", "statistika", "hesabat"] }],
   },
   {
-    label: "İstifadəçilər",
-    items: [{ label: "İstifadəçilər", to: "/users", icon: Users, roleGroup: "adminOnly" }],
-  },
-  {
-    label: "Akademik Kontent",
+    label: "Sayt və kontent",
     items: [
-      { label: "Kateqoriyalar", to: "/categories", icon: LayoutGrid, roleGroup: "contentManager" },
-      { label: "Kurslar", to: "/courses", icon: BookOpen, roleGroup: "contentManager" },
-      { label: "Müəllimlər", to: "/instructors", icon: UsersRound, roleGroup: "contentManager" },
-      { label: "Kurs-Müəllim Əlaqələri", to: "/course-instructors", icon: Link2, roleGroup: "contentManager" },
-      { label: "Kurs Qrupları", to: "/course-groups", icon: CalendarRange, roleGroup: "contentManager" },
-      { label: "Kurs Rəyləri", to: "/course-reviews", icon: Star, roleGroup: "contentManager" },
-      { label: "Məzun Hekayələri", to: "/graduate-outcomes", icon: GraduationCap, roleGroup: "contentManager" },
-      { label: "Bilgi Bazası", to: "/kb-articles", icon: Bot, roleGroup: "contentManager" },
-      { label: "CMS Məzmun", to: "/cms-content", icon: FileText, roleGroup: "contentManager" },
+      { label: "Ana səhifə", to: "/homepage", icon: PanelsTopLeft, description: "Hero, statistika və sayt parametrləri", keywords: ["homepage", "hero", "esas sehife"] },
+      { label: "Haqqımızda", to: "/about", icon: Settings2, description: "Akademiya haqqında məzmun", keywords: ["about", "haqqimizda", "akademiya"] },
+      { label: "Xəbərlər", to: "/news", icon: Newspaper, description: "Xəbər yarat və yayımla", keywords: ["xeber", "blog", "məqalə", "yazi"] },
+      { label: "FAQ", to: "/faq", icon: CircleHelp, description: "Tez-tez verilən suallar", keywords: ["sual", "cavab", "faq"] },
+      { label: "Vakansiyalar", to: "/vacancies", icon: BriefcaseBusiness, description: "Açıq iş elanları", keywords: ["vakansiya", "is elani", "karyera"] },
     ],
   },
   {
-    label: "Qeydiyyat & Ödəniş",
-    items: [
-      { label: "Qeydiyyatlar", to: "/enrollments", icon: ClipboardList, roleGroup: "salesCrm" },
-      { label: "Ödənişlər", to: "/payments", icon: Receipt, roleGroup: "adminOnly" },
-      { label: "Təqaüdlər", to: "/scholarships", icon: BadgePercent, roleGroup: "adminOnly" },
-    ],
+    label: "Tədris",
+    items: [{ label: "Kurs kataloqu", to: "/catalog", icon: BookOpen, description: "Kurs, kateqoriya və təlimçilər", keywords: ["kurs", "kateqoriya", "muellim", "telimci"] }],
   },
   {
-    label: "CRM & Satış",
-    items: [
-      { label: "Kampaniyalar", to: "/campaigns", icon: Award, roleGroup: "salesCrm" },
-      { label: "Lead-ler", to: "/leads", icon: MailWarning, roleGroup: "salesCrm" },
-      { label: "Əlaqə Formaları", to: "/contact-submissions", icon: MessagesSquare, roleGroup: "salesCrm" },
-      { label: "Chat Sessiyaları", to: "/chat-sessions", icon: MessagesSquare, roleGroup: "salesCrm" },
-    ],
-  },
-  {
-    label: "Sistem",
-    items: [
-      { label: "OAuth Hesabları", to: "/oauth-accounts", icon: KeyRound, roleGroup: "adminOnly" },
-      { label: "Sessiyalar", to: "/sessions", icon: KeyRound, roleGroup: "adminOnly" },
-      { label: "Bildirişlər", to: "/notifications", icon: MailWarning, roleGroup: "adminOnly" },
-      { label: "Audit Loqları", to: "/audit-logs", icon: ScrollText, roleGroup: "adminOnly" },
-    ],
+    label: "Müraciətlər",
+    items: [{ label: "Gələnlər", to: "/inbox", icon: Inbox, description: "Başvuru, mesaj və abunəçilər", keywords: ["inbox", "muraciet", "mesaj", "cv", "newsletter", "abune"] }],
   },
 ];

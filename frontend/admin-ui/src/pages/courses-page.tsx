@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Search, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, Pencil, Trash2, ImagePlus } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { ErrorBanner } from "@/components/error-banner";
 import { DataTable } from "@/components/data-table";
@@ -11,7 +11,7 @@ import { ResourceFormDialog } from "@/resources/resource-form-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BoolBadge, StatusBadge } from "@/lib/format";
-import { api } from "@/lib/api";
+import { api, assetUrl } from "@/lib/api";
 import { ApiError } from "@/lib/api-error";
 import type { PagedResult } from "@/types/common";
 import type { FieldConfig } from "@/resources/types";
@@ -20,7 +20,9 @@ export interface CourseRow extends Record<string, unknown> {
   id: string;
   slug: string;
   categoryId: number;
+  instructorId?: string | null;
   title: string;
+  imageUrl?: string | null;
   difficulty: string;
   deliveryFormat: string;
   basePrice?: number | null;
@@ -32,7 +34,15 @@ export interface CourseRow extends Record<string, unknown> {
 const COURSE_FIELDS: FieldConfig[] = [
   { name: "slug", label: "Slug", type: "text", required: true, placeholder: "web-development-101" },
   { name: "categoryId", label: "Kateqoriya", type: "reference", refKind: "category", required: true, placeholder: "Kateqoriya seçin" },
+  { name: "instructorId", label: "Təlimçi", type: "reference", refKind: "instructor", placeholder: "Təlimçi seçin (istəyə bağlı)" },
   { name: "title", label: "Başlıq", type: "text", required: true },
+  {
+    name: "imageUrl",
+    label: "Kurs şəkli",
+    type: "image",
+    placeholder: "Şəkil yükləyin",
+    helpText: "JPG, PNG və ya WEBP. Maksimum 5MB.",
+  },
   { name: "shortDescription", label: "Qısa açıqlama", type: "textarea" },
   { name: "fullDescription", label: "Tam açıqlama", type: "textarea" },
   { name: "targetAudience", label: "Hədəf auditoriya", type: "textarea" },
@@ -186,6 +196,22 @@ export function CoursesPage() {
 
       <DataTable
         columns={[
+          {
+            key: "imageUrl",
+            label: "Şəkil",
+            render: (r) =>
+              r.imageUrl ? (
+                <img
+                  src={assetUrl(r.imageUrl)}
+                  alt=""
+                  className="h-9 w-14 rounded border border-border object-cover"
+                />
+              ) : (
+                <div className="flex h-9 w-14 items-center justify-center rounded border border-border bg-muted/30">
+                  <ImagePlus className="size-3.5 text-muted-foreground" aria-hidden />
+                </div>
+              ),
+          },
           { key: "title", label: "Başlıq" },
           { key: "slug", label: "Slug" },
           { key: "difficulty", label: "Səviyyə", render: (r) => <StatusBadge value={r.difficulty} /> },

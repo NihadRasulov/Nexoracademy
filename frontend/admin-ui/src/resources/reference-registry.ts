@@ -7,12 +7,8 @@ import type { PagedResult } from "@/types/common";
  */
 export type ReferenceKind =
   | "course"
-  | "user"
   | "category"
-  | "courseGroup"
-  | "instructor"
-  | "enrollment"
-  | "lead";
+  | "instructor";
 
 export interface ReferenceItem {
   id: string;
@@ -45,13 +41,6 @@ export const REFERENCES: Record<ReferenceKind, ReferenceDef> = {
     label: (c) => str(c.title) || str(c.slug) || str(c.id),
     sublabel: (c) => str(c.slug) || undefined,
   },
-  user: {
-    apiPath: "/api/v1/users",
-    paged: true,
-    searchParam: "q",
-    label: (u) => str(u.fullName) || str(u.email) || str(u.id),
-    sublabel: (u) => str(u.email) || undefined,
-  },
   category: {
     apiPath: "/api/v1/categories",
     paged: false,
@@ -59,28 +48,10 @@ export const REFERENCES: Record<ReferenceKind, ReferenceDef> = {
     label: (c) => str(c.name) || str(c.slug) || str(c.id),
     sublabel: (c) => str(c.slug) || undefined,
   },
-  courseGroup: {
-    apiPath: "/api/v1/course-groups",
-    paged: false,
-    label: (g) => str(g.groupCode) || str(g.id),
-    sublabel: (g) => (g.status ? str(g.status) : undefined),
-  },
   instructor: {
     apiPath: "/api/v1/instructors",
-    paged: true,
+    paged: false,
     label: (i) => str(i.fullName) || str(i.id),
-  },
-  enrollment: {
-    apiPath: "/api/v1/enrollments",
-    paged: false,
-    label: (e) => `${str(e.id).slice(0, 8)}… · ${str(e.status)}`,
-    sublabel: (e) => (e.userId ? `user ${str(e.userId).slice(0, 8)}…` : undefined),
-  },
-  lead: {
-    apiPath: "/api/v1/sales/leads",
-    paged: false,
-    label: (l) => str(l.fullName) || str(l.email) || str(l.id),
-    sublabel: (l) => str(l.email) || undefined,
   },
 };
 

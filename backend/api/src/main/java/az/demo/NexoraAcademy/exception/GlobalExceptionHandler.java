@@ -91,8 +91,7 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Ownership/role checks thrown from inside services (e.g. EnrollmentService,
-     * CourseReviewService) are plain AccessDeniedException too, but since they're
+     * Service authorization checks are plain AccessDeniedException too, but since they're
      * thrown from within a controller method rather than the security filter chain,
      * Spring MVC's exception resolution catches them here before they'd ever reach
      * CustomAccessDeniedHandler — without this handler they fell through to the

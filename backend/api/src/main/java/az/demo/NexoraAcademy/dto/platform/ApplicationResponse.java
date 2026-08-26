@@ -10,6 +10,7 @@ public record ApplicationResponse(
         String phone,
         String letter,
         String cvFilename,
+        boolean cvAvailable,
         String status,
         Instant createdAt
 ) {

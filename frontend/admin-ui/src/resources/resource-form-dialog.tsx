@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ChevronDown, Loader2 } from "lucide-react";
+import { ImageUploadField } from "@/components/image-upload";
 import { MultiReferencePicker, ReferencePicker } from "@/components/reference-picker";
 import { KeyValueEditor, StringListInput } from "@/components/structured-inputs";
 import type { FieldConfig } from "@/resources/types";
@@ -180,6 +181,15 @@ function FieldInput({
   switch (field.type) {
     case "boolean":
       return <Switch checked={value as boolean} onCheckedChange={onChange} />;
+    case "image":
+      return (
+        <ImageUploadField
+          id={field.name}
+          value={(value as string) || ""}
+          onChange={onChange}
+          placeholder={field.placeholder}
+        />
+      );
     case "reference":
       return (
         <ReferencePicker

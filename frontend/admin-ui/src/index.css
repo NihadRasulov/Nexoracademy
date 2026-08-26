@@ -50,9 +50,9 @@
 
 :root {
     /* Brand: Nexora blue gradient (#4DC2E9 -> #2884C4), derived from the Nexora Academy logo */
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
+    --background: oklch(0.975 0.006 238);
+    --foreground: oklch(0.205 0.035 250);
+    --card: oklch(0.998 0.003 238);
     --card-foreground: oklch(0.145 0 0);
     --popover: oklch(1 0 0);
     --popover-foreground: oklch(0.145 0 0);
@@ -73,8 +73,8 @@
     --chart-3: oklch(0.6 0.13 244);
     --chart-4: oklch(0.5 0.12 250);
     --chart-5: oklch(0.38 0.1 255);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.99 0.004 240);
+    --radius: 0.85rem;
+    --sidebar: oklch(0.998 0.002 240);
     --sidebar-foreground: oklch(0.145 0 0);
     --sidebar-primary: oklch(0.5228 0.1169 244.74);
     --sidebar-primary-foreground: oklch(0.985 0 0);
@@ -85,9 +85,9 @@
 }
 
 .dark {
-    --background: oklch(0.145 0 0);
+    --background: oklch(0.14 0.025 252);
     --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
+    --card: oklch(0.19 0.027 252);
     --card-foreground: oklch(0.985 0 0);
     --popover: oklch(0.205 0 0);
     --popover-foreground: oklch(0.985 0 0);
@@ -108,7 +108,7 @@
     --chart-3: oklch(0.6 0.13 244);
     --chart-4: oklch(0.5 0.12 250);
     --chart-5: oklch(0.4 0.1 255);
-    --sidebar: oklch(0.205 0 0);
+    --sidebar: oklch(0.165 0.03 252);
     --sidebar-foreground: oklch(0.985 0 0);
     --sidebar-primary: oklch(0.6394 0.128 239.53);
     --sidebar-primary-foreground: oklch(0.145 0 0);
@@ -124,8 +124,36 @@
     }
   body {
     @apply bg-background text-foreground;
+    min-width: 320px;
+    background-image: radial-gradient(circle at 90% -15%, color-mix(in oklab, var(--primary) 8%, transparent), transparent 32rem);
     }
   html {
     @apply font-sans;
     }
 }
+
+@layer components {
+  .admin-shell {
+    background: var(--background);
+  }
+
+  .admin-sidebar {
+    background: var(--sidebar);
+    box-shadow: 12px 0 36px color-mix(in oklab, var(--foreground) 3%, transparent);
+  }
+
+  .dark .admin-sidebar {
+    background:
+      radial-gradient(circle at 20% 0%, color-mix(in oklab, var(--primary) 13%, transparent), transparent 18rem),
+      var(--sidebar);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-slot="card"] {
+    transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+  }
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: color-mix(in oklab, var(--muted-foreground) 30%, transparent); border: 3px solid transparent; border-radius: 999px; background-clip: padding-box; }

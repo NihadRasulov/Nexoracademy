@@ -1,30 +1,22 @@
 package az.demo.NexoraAcademy.exception;
 
-import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.authentication.BadCredentialsException;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
-
-@ExtendWith(MockitoExtension.class)
 class GlobalExceptionHandlerTest {
 
-    @Mock
-    private HttpServletRequest request;
-
+    private final MockHttpServletRequest request = new MockHttpServletRequest();
     private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
 
     @BeforeEach
     void setUp() {
-        when(request.getRequestURI()).thenReturn("/api/v1/test");
+        request.setRequestURI("/api/v1/test");
     }
 
     @Test

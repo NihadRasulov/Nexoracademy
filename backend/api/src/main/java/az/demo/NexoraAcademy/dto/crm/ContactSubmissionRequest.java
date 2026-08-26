@@ -12,8 +12,6 @@ import java.time.Instant;
 import java.util.UUID;
 
 public record ContactSubmissionRequest(
-        UUID leadId,
-
         @NotNull(groups = ValidationGroups.OnCreate.class) SubmissionType type,
 
         UUID courseId,

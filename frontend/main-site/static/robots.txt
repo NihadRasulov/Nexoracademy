@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /sys-control-9912/
+
+Sitemap: https://nexoracademy.az/sitemap.xml

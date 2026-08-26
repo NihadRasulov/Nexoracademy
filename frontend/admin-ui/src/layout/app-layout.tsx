@@ -6,18 +6,18 @@ import { AppTopbar } from "@/layout/app-topbar";
 
 export function AppLayout() {
   return (
-    <div className="flex min-h-screen bg-muted/30">
-      <aside className="fixed inset-y-0 left-0 z-20 hidden w-64 flex-col border-r bg-background lg:flex">
+    <div className="admin-shell flex min-h-screen">
+      <aside className="admin-sidebar fixed inset-y-0 left-0 z-20 hidden w-64 flex-col border-r lg:flex">
         <BrandMark />
         <ScrollArea className="flex-1">
           <SidebarNav />
         </ScrollArea>
       </aside>
 
-      <div className="flex min-h-screen flex-1 flex-col lg:ml-64">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:ml-64">
         <AppTopbar />
-        <main className="flex-1 p-4 sm:p-6">
-          <Outlet />
+        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+          <div className="mx-auto w-full max-w-[1500px]"><Outlet /></div>
         </main>
       </div>
     </div>

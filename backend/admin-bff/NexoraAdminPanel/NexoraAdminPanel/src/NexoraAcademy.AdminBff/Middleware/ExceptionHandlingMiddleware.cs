@@ -20,11 +20,6 @@ public class ExceptionHandlingMiddleware(RequestDelegate next, ILogger<Exception
             await WriteAsync(context, HttpStatusCode.Unauthorized,
                 new ErrorResponse("SESSION_EXPIRED", "Sessiyanin muddeti bitib, yeniden daxil olun."));
         }
-        catch (OtpRequiredException)
-        {
-            await WriteAsync(context, HttpStatusCode.Unauthorized,
-                new ErrorResponse("OTP_REQUIRED", "Bu hesab ucun OTP tesdiqi teleb olunur, admin panelinden istifade edile bilmez."));
-        }
         catch (PanelAccessDeniedException)
         {
             await WriteAsync(context, HttpStatusCode.Forbidden,
