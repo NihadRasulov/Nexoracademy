@@ -71,6 +71,16 @@ services:
       JAVA_OPTS: -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms256m -Xmx512m
       # Migrations are handled by the separate flyway service.
       SPRING_FLYWAY_ENABLED: "false"
+      # DotenvEnvironmentPostProcessor reads .env in CWD, but Docker has none.
+      # Map flat env-var names to Spring Boot relaxed-binding format (app.admin-seed.*).
+      APP_ADMIN_SEED_ENABLED: ${ADMIN_SEED_ENABLED:-false}
+      APP_ADMIN_SEED_EMAIL: ${ADMIN_SEED_EMAIL:-}
+      APP_ADMIN_SEED_PASSWORD: ${ADMIN_SEED_PASSWORD:-}
+      APP_JWT_SECRET: ${JWT_SECRET:-}
+      APP_JWT_ISSUER: ${JWT_ISSUER:-}
+      APP_JWT_ACCESS_EXPIRATION_MS: ${JWT_ACCESS_EXPIRATION_MS:-}
+      APP_JWT_REFRESH_EXPIRATION_MS: ${JWT_REFRESH_EXPIRATION_MS:-}
+      APP_CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
     expose: ["8081"]
     volumes:
       - nexora_app_logs:/app/logs
