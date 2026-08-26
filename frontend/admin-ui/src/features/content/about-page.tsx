@@ -35,7 +35,7 @@ export function AboutPage() {
   useEffect(() => {
     if (ready || !query.data) return;
     const found = query.data.find((item) => item.key === KEY) ?? null;
-    const stats = found?.data?.stats && typeof found.data.stats === "object" ? found.data.stats : {};
+    const stats = (found?.data?.stats && typeof found.data.stats === "object" ? found.data.stats : {}) as Record<string, unknown>;
     setDocument(found); setTitle(found?.title ?? "Nexora Academy haqqında"); setBody(found?.body ?? ""); setImageUrl(String(found?.data?.heroImage ?? "")); setMission(String(found?.data?.mission ?? "")); setGraduates(Number(stats.graduates) || 0); setEmploymentRate(Number(stats.employmentRate) || 0); setInstructors(Number(stats.instructors) || 0); setPublished(found?.published ?? true); setReady(true);
   }, [query.data, ready]);
 
