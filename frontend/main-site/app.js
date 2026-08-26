@@ -668,7 +668,7 @@
 
     const file = $('input[name="cv"]', form);
     const fileLabel = file
-      ? $(`label[for="${file.id}"] [class*="label__text"]`, form)
+      ? $(`label[for="${file.id}"] [class*="label-text"]`, form)
       : null;
     const fileLabelDefault = fileLabel?.textContent || "CV əlavə et";
     file?.addEventListener(
