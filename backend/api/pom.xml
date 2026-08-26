@@ -37,7 +37,7 @@
 		     assignment" xəbərdarlığı verirdi (JPA, yoxsa JDBC?). Yalnız data-jpa saxlanılır. -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-web</artifactId>
+			<artifactId>spring-boot-starter-webmvc</artifactId>
 		</dependency>
 
 		<!-- SecurityConfig permitAll-yə /actuator/health əlavə edib, amma bu asılılıq

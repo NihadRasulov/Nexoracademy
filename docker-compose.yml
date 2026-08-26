@@ -58,8 +58,15 @@ services:
     env_file: .env
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: 8081
       DB_HOST: postgres
       DB_PORT: 5432
+      # Explicit Spring mappings make the container contract unambiguous and
+      # prevent a silent fallback to an unconfigured DataSource.
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-nexora_academy}?stringtype=unspecified
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-nexora_app}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
       UPLOADS_DIR: /app/uploads
       JAVA_OPTS: -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms256m -Xmx512m
     expose: ["8081"]
