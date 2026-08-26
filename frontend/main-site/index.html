@@ -411,37 +411,6 @@
                       ></path>
                     </svg>
                   </button>
-                  <button
-                    aria-label="səsi aç / səsi bağla"
-                    class="hero-section__controls-item"
-                    data-hero-control="sound"
-                    type="button"
-                  >
-                    <svg
-                      class=""
-                      height="20"
-                      viewbox="0 0 20 20"
-                      width="20"
-                      xmlns="http://www.w3.org/2000/svg"
-                    >
-                      <path
-                        d="M15 13.9584C14.8667 13.9584 14.7416 13.9167 14.625 13.8334C14.35 13.625 14.2917 13.2334 14.5 12.9584C15.55 11.5584 15.775 9.70002 15.1 8.09169C14.9667 7.77502 15.1167 7.40835 15.4333 7.27502C15.75 7.14169 16.1166 7.29169 16.25 7.60835C17.1 9.62502 16.8083 11.9667 15.5 13.7167C15.375 13.875 15.1916 13.9584 15 13.9584Z"
-                        fill="white"
-                      ></path>
-                      <path
-                        d="M16.525 16.0417C16.3917 16.0417 16.2667 16 16.15 15.9167C15.875 15.7083 15.8167 15.3167 16.025 15.0417C17.8083 12.6666 18.2 9.48332 17.05 6.74165C16.9167 6.42498 17.0667 6.05832 17.3833 5.92498C17.7 5.79165 18.0667 5.94165 18.2 6.25832C19.525 9.40832 19.075 13.0583 17.025 15.7917C16.9083 15.9583 16.7167 16.0417 16.525 16.0417Z"
-                        fill="white"
-                      ></path>
-                      <path
-                        d="M11.7 10.8C12.225 10.275 13.125 10.65 13.125 11.3917V13.8333C13.125 15.2667 12.6083 16.3417 11.6833 16.8583C11.3083 17.0667 10.8917 17.1667 10.4583 17.1667C9.79165 17.1667 9.07498 16.9417 8.34165 16.4833L7.80832 16.15C7.35832 15.8667 7.28332 15.2333 7.65832 14.8583L11.7 10.8Z"
-                        fill="white"
-                      ></path>
-                      <path
-                        d="M18.1417 1.85834C17.8917 1.60834 17.4834 1.60834 17.2334 1.85834L13.1084 5.98334C13.0584 4.65 12.5584 3.65 11.675 3.15834C10.7417 2.64167 9.55002 2.775 8.33335 3.53334L5.90835 5.05C5.74169 5.15 5.55002 5.20834 5.35835 5.20834H4.58335H4.16669C2.15002 5.20834 1.04169 6.31667 1.04169 8.33334V11.6667C1.04169 13.6833 2.15002 14.7917 4.16669 14.7917H4.30002L1.85002 17.2417C1.60002 17.4917 1.60002 17.9 1.85002 18.15C1.98335 18.2667 2.14169 18.3333 2.30835 18.3333C2.47502 18.3333 2.63335 18.2667 2.75835 18.1417L18.1417 2.75834C18.4 2.50834 18.4 2.10834 18.1417 1.85834Z"
-                        fill="white"
-                      ></path>
-                    </svg>
-                  </button>
                 </div>
               </div>
               <div class="hero-section__content">
@@ -1139,7 +1108,7 @@
                           decoding="async"
                           height="100"
                           loading="lazy"
-                          src="assets/roadmap-talent-purple.svg"
+                          src="assets/roadmap-2.svg"
                           style="color: transparent"
                           width="100"
                         />
@@ -1227,8 +1196,8 @@
                     <div class="roadmap__item">
                       <div class="roadmap__item-header">
                         <div class="roadmap__header-text roadmap__text-2">
-                          <span> Dəstək </span>
-                          <span> Karyera və mentor dəstəyi </span>
+                         
+                          <span>Karyera və mentor dəstəyi </span>
                         </div>
                       </div>
                       <div
@@ -1254,7 +1223,7 @@
                           decoding="async"
                           height="100"
                           loading="lazy"
-                          src="assets/roadmap-hub-purple.svg"
+                          src="assets/roadmap-1.svg"
                           style="color: transparent"
                           width="100"
                         />
@@ -2161,318 +2130,7 @@
         </div>
       </div>
     </footer>
-    <!-- Roadmap dual-track runtime: begin -->
-    <script>
-      (function () {
-        var ROADMAP_DURATION = 7000;
-        var animationFrame = 0;
-        var animationStartedAt = 0;
 
-        function clamp(value, min, max) {
-          return Math.max(min, Math.min(max, value));
-        }
-
-        function setPath(path, d) {
-          if (path) path.setAttribute("d", d);
-        }
-
-        function updateRoadmapDualTrackGeometry() {
-          document
-            .querySelectorAll(".roadmap__timeline-wrapper")
-            .forEach(function (wrapper) {
-              var svg = wrapper.querySelector(".dual-track__line");
-              if (!svg) return;
-
-              var computed = window.getComputedStyle(wrapper);
-              var gap =
-                parseFloat(computed.getPropertyValue("--roadmap-track-gap")) ||
-                280;
-              var verticalInset =
-                parseFloat(
-                  computed.getPropertyValue("--roadmap-track-inset"),
-                ) || 60;
-              var svgHeight = gap + verticalInset * 2;
-              var centerY = svgHeight / 2;
-              var upperY = centerY - gap / 2;
-              var lowerY = centerY + gap / 2;
-
-              svg.style.height = svgHeight + "px";
-              svg.setAttribute("viewBox", "0 0 1000 " + svgHeight);
-
-              var wrapperRect = wrapper.getBoundingClientRect();
-              var currentDot = wrapper.querySelector(
-                ".roadmap__item--current .roadmap__dot-wrapper--current",
-              );
-              var currentRect = currentDot
-                ? currentDot.getBoundingClientRect()
-                : null;
-
-              // Merge exactly through the center of the static white "Cari vəziyyət" point.
-              var mergeX = 870;
-              if (currentRect && wrapperRect.width) {
-                mergeX =
-                  ((currentRect.left +
-                    currentRect.width / 2 -
-                    wrapperRect.left) /
-                    wrapperRect.width) *
-                  1000;
-              }
-              mergeX = clamp(mergeX, 780, 920);
-
-              var splitX = 192;
-              var parallelStartX = 220;
-              var mergeStartX = mergeX - 55;
-              var splitControlX = splitX + 28;
-              var mergeControlX = mergeX - 28;
-
-              var entryD = "M 0 " + centerY + " L " + splitX + " " + centerY;
-              var upperD =
-                "M " +
-                splitX +
-                " " +
-                centerY +
-                " C " +
-                splitControlX +
-                " " +
-                centerY +
-                " " +
-                splitControlX +
-                " " +
-                upperY +
-                " " +
-                parallelStartX +
-                " " +
-                upperY +
-                " L " +
-                mergeStartX +
-                " " +
-                upperY +
-                " C " +
-                mergeControlX +
-                " " +
-                upperY +
-                " " +
-                mergeControlX +
-                " " +
-                centerY +
-                " " +
-                mergeX +
-                " " +
-                centerY;
-              var lowerD =
-                "M " +
-                splitX +
-                " " +
-                centerY +
-                " C " +
-                splitControlX +
-                " " +
-                centerY +
-                " " +
-                splitControlX +
-                " " +
-                lowerY +
-                " " +
-                parallelStartX +
-                " " +
-                lowerY +
-                " L " +
-                mergeStartX +
-                " " +
-                lowerY +
-                " C " +
-                mergeControlX +
-                " " +
-                lowerY +
-                " " +
-                mergeControlX +
-                " " +
-                centerY +
-                " " +
-                mergeX +
-                " " +
-                centerY;
-              var exitD = "M " + mergeX + " " + centerY + " L 1000 " + centerY;
-              var upperMotionD =
-                "M 25 " +
-                centerY +
-                " L " +
-                splitX +
-                " " +
-                centerY +
-                " C " +
-                splitControlX +
-                " " +
-                centerY +
-                " " +
-                splitControlX +
-                " " +
-                upperY +
-                " " +
-                parallelStartX +
-                " " +
-                upperY +
-                " L " +
-                mergeStartX +
-                " " +
-                upperY +
-                " C " +
-                mergeControlX +
-                " " +
-                upperY +
-                " " +
-                mergeControlX +
-                " " +
-                centerY +
-                " " +
-                mergeX +
-                " " +
-                centerY +
-                " L 975 " +
-                centerY;
-              var lowerMotionD =
-                "M 25 " +
-                centerY +
-                " L " +
-                splitX +
-                " " +
-                centerY +
-                " C " +
-                splitControlX +
-                " " +
-                centerY +
-                " " +
-                splitControlX +
-                " " +
-                lowerY +
-                " " +
-                parallelStartX +
-                " " +
-                lowerY +
-                " L " +
-                mergeStartX +
-                " " +
-                lowerY +
-                " C " +
-                mergeControlX +
-                " " +
-                lowerY +
-                " " +
-                mergeControlX +
-                " " +
-                centerY +
-                " " +
-                mergeX +
-                " " +
-                centerY +
-                " L 975 " +
-                centerY;
-
-              setPath(svg.querySelector(".dual-track__stroke--entry"), entryD);
-              setPath(svg.querySelector(".dual-track__stroke--upper"), upperD);
-              setPath(svg.querySelector(".dual-track__stroke--lower"), lowerD);
-              setPath(svg.querySelector(".dual-track__stroke--exit"), exitD);
-              setPath(
-                svg.querySelector(".dual-track__motion--upper"),
-                upperMotionD,
-              );
-              setPath(
-                svg.querySelector(".dual-track__motion--lower"),
-                lowerMotionD,
-              );
-            });
-        }
-
-        function easeInOut(t) {
-          return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-        }
-
-        function placeMovingLight(wrapper, path, light, progress) {
-          if (!path || !light || !path.getTotalLength) return;
-          var length = path.getTotalLength();
-          if (!length) return;
-          var point = path.getPointAtLength(length * progress);
-          var svg = wrapper.querySelector(".dual-track__line");
-          if (!svg) return;
-          var wrapperRect = wrapper.getBoundingClientRect();
-          var svgRect = svg.getBoundingClientRect();
-          var viewBox = svg.viewBox.baseVal;
-          var x =
-            svgRect.left -
-            wrapperRect.left +
-            ((point.x - viewBox.x) / viewBox.width) * svgRect.width;
-          var y =
-            svgRect.top -
-            wrapperRect.top +
-            ((point.y - viewBox.y) / viewBox.height) * svgRect.height;
-          light.style.left = x + "px";
-          light.style.top = y + "px";
-        }
-
-        function animateRoadmapLights(now) {
-          if (!animationStartedAt) animationStartedAt = now;
-          var raw =
-            ((now - animationStartedAt) % ROADMAP_DURATION) / ROADMAP_DURATION;
-          var progress = easeInOut(raw);
-          var opacity =
-            raw < 0.08 ? raw / 0.08 : raw > 0.94 ? (1 - raw) / 0.06 : 1;
-          opacity = clamp(opacity, 0, 1);
-
-          document
-            .querySelectorAll(".roadmap__timeline-wrapper")
-            .forEach(function (wrapper) {
-              var upperPath = wrapper.querySelector(
-                ".dual-track__motion--upper",
-              );
-              var lowerPath = wrapper.querySelector(
-                ".dual-track__motion--lower",
-              );
-              var upperLight = wrapper.querySelector(
-                ".dual-track__moving-light--upper",
-              );
-              var lowerLight = wrapper.querySelector(
-                ".dual-track__moving-light--lower",
-              );
-              placeMovingLight(wrapper, upperPath, upperLight, progress);
-              placeMovingLight(wrapper, lowerPath, lowerLight, progress);
-              if (upperLight) upperLight.style.opacity = opacity;
-              if (lowerLight) lowerLight.style.opacity = opacity;
-            });
-
-          animationFrame = window.requestAnimationFrame(animateRoadmapLights);
-        }
-
-        function initializeRoadmapDualTracks() {
-          updateRoadmapDualTrackGeometry();
-          document
-            .querySelectorAll(".roadmap__timeline-wrapper img")
-            .forEach(function (img) {
-              if (!img.complete)
-                img.addEventListener("load", updateRoadmapDualTrackGeometry);
-            });
-          if ("ResizeObserver" in window) {
-            document
-              .querySelectorAll(".roadmap__timeline-wrapper")
-              .forEach(function (w) {
-                new ResizeObserver(updateRoadmapDualTrackGeometry).observe(w);
-              });
-          }
-          window.cancelAnimationFrame(animationFrame);
-          animationStartedAt = 0;
-          animationFrame = window.requestAnimationFrame(animateRoadmapLights);
-        }
-
-        window.addEventListener("load", initializeRoadmapDualTracks);
-        window.addEventListener("resize", updateRoadmapDualTrackGeometry);
-        if (
-          document.readyState === "interactive" ||
-          document.readyState === "complete"
-        ) {
-          initializeRoadmapDualTracks();
-        }
-      })();
-    </script>
-    <!-- Roadmap dual-track runtime: end -->
 
     <!-- Nexora AI Chat Widget -->
     <button class="chat-fab" id="chat-fab" aria-label="Open AI chat">

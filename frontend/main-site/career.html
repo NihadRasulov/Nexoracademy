@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Nexora Academy-də açıq vakansiyaları və komanda imkanlarını araşdırın." />
     <meta name="keywords" content="Nexora Academy, texnologiya kursları, kurs kataloqu, tələbə təhsili, praktiki öyrənmə" />
-    <meta name="nexora-api-base" content="" />
+    <meta name="nexora-api-base" content="http://localhost:8080" />
     <title>Nexora Academy | Karyera</title>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" />
     <link rel="stylesheet" href="style.css" />
@@ -980,59 +980,7 @@
     </div>
   </div>
 </footer>
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-  var cards = document.querySelectorAll('[data-parallax-tilt="true"]');
-  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  cards.forEach(function (card) {
-    if (reduceMotion) return;
-    var image = card.querySelector('.career-parallax-image');
-    var maxRotate = 17;
-    var cardScale = 1.025;
-    var imageShift = 10;
-    var raf = 0;
-    var lastEvent = null;
 
-    function renderTilt() {
-      raf = 0;
-      if (!lastEvent) return;
-      var rect = card.getBoundingClientRect();
-      var x = lastEvent.clientX - rect.left;
-      var y = lastEvent.clientY - rect.top;
-      var nx = Math.max(-1, Math.min(1, (x - rect.width / 2) / (rect.width / 2)));
-      var ny = Math.max(-1, Math.min(1, (y - rect.height / 2) / (rect.height / 2)));
-      var rotateY = nx * maxRotate;
-      var rotateX = -ny * maxRotate;
-      card.style.transform = 'perspective(850px) rotateX(' + rotateX.toFixed(2) + 'deg) rotateY(' + rotateY.toFixed(2) + 'deg) scale3d(' + cardScale + ', ' + cardScale + ', ' + cardScale + ')';
-      if (image) {
-        image.style.transform = 'translate3d(' + (-nx * imageShift).toFixed(2) + 'px,' + (-ny * imageShift).toFixed(2) + 'px,52px) scale(1.075)';
-      }
-    }
-
-    function resetCard() {
-      lastEvent = null;
-      if (raf) { cancelAnimationFrame(raf); raf = 0; }
-      card.classList.remove('is-tilting');
-      card.style.transform = 'perspective(850px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)';
-      if (image) image.style.transform = 'translate3d(0,0,42px) scale(1.035)';
-    }
-
-    function queueTilt(event) {
-      lastEvent = event;
-      if (!raf) raf = requestAnimationFrame(renderTilt);
-    }
-
-    card.addEventListener('pointerenter', function (event) {
-      card.classList.add('is-tilting');
-      queueTilt(event);
-    });
-    card.addEventListener('pointermove', queueTilt);
-    card.addEventListener('pointerleave', resetCard);
-    card.addEventListener('pointercancel', resetCard);
-    resetCard();
-  });
-});
-</script>
 
 <!-- Nexora AI Chat Widget -->
 <button class="chat-fab" id="chat-fab" aria-label="Open AI chat">

@@ -4,58 +4,58 @@
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) =>
     Array.from(root.querySelectorAll(selector));
-  const IMAGE_FALLBACKS = Object.freeze({
+  const MOCK_IMAGE_FALLBACKS = Object.freeze({
     "course-networking": {
-      src: "assets/courses/CCNA.svg",
-      alt: "Şəbəkə texnologiyaları kursu vizualı",
+      src: "assets/mock/CCNA.png",
+      alt: "Şəbəkə texnologiyaları kursu üçün nümunəvi vizual",
     },
     "course-cybersecurity": {
-      src: "assets/courses/CCNP.svg",
-      alt: "Kibertəhlükəsizlik kursu vizualı",
+      src: "assets/mock/CCNP.png",
+      alt: "Kibertəhlükəsizlik kursu üçün nümunəvi vizual",
     },
     "course-cloud-devops": {
-      src: "assets/courses/IT_Essentials.svg",
-      alt: "Cloud və DevOps kursu vizualı",
+      src: "assets/mock/CCNA.png",
+      alt: "Cloud və DevOps kursu üçün nümunəvi vizual",
     },
     "blog-networking": {
-      src: "assets/fallback/blog-networking.svg",
-      alt: "Şəbəkə texnologiyaları bloqu vizualı",
+      src: "assets/mock/mock-blog-networking.svg",
+      alt: "Şəbəkə texnologiyaları bloqu üçün nümunəvi vizual",
     },
     "blog-cybersecurity": {
-      src: "assets/fallback/blog-cybersecurity.svg",
-      alt: "Kibertəhlükəsizlik bloqu vizualı",
+      src: "assets/mock/mock-blog-cybersecurity.svg",
+      alt: "Kibertəhlükəsizlik bloqu üçün nümunəvi vizual",
     },
     "blog-cloud-devops": {
-      src: "assets/fallback/blog-cloud-devops.svg",
-      alt: "Cloud və DevOps bloqu vizualı",
+      src: "assets/mock/mock-blog-cloud-devops.svg",
+      alt: "Cloud və DevOps bloqu üçün nümunəvi vizual",
     },
     "academy-certification": {
-      src: "assets/fallback/academy-certification.svg",
-      alt: "IT sertifikasiyası vizualı",
+      src: "assets/mock/mock-academy-certification.svg",
+      alt: "IT sertifikasiyası üçün nümunəvi vizual",
     },
     "career-network-engineer": {
-      src: "assets/fallback/career-network-engineer.svg",
-      alt: "Şəbəkə mühəndisliyi karyerası vizualı",
+      src: "assets/mock/mock-career-network-engineer.svg",
+      alt: "Şəbəkə mühəndisliyi karyerası üçün nümunəvi vizual",
     },
     "faq-networking-guide": {
-      src: "assets/fallback/faq-networking-guide.svg",
+      src: "assets/mock/mock-faq-networking-guide.svg",
       alt: "Şəbəkə sertifikasiyası bələdçisi üçün nümunəvi vizual",
     },
     "decoration-network-nodes": {
-      src: "assets/fallback/decoration-network-nodes.svg",
+      src: "assets/mock/mock-decoration-network-nodes.svg",
       alt: "Şəbəkə qovşaqlarını göstərən dekorativ vizual",
     },
     "instructor-1": {
       src: "assets/nexora-portraits/nexora-team-01.jpg",
-      alt: "Nexora Academy təlimçisi",
+      alt: "İnstrüktor nümunəvi vizual",
     },
     "instructor-2": {
       src: "assets/nexora-portraits/nexora-team-02.jpg",
-      alt: "Nexora Academy təlimçisi",
+      alt: "İnstrüktor nümunəvi vizual",
     },
     "instructor-3": {
       src: "assets/nexora-portraits/nexora-team-03.jpg",
-      alt: "Nexora Academy təlimçisi",
+      alt: "İnstrüktor nümunəvi vizual",
     },
   });
   const apiBaseMeta = document.querySelector('meta[name="nexora-api-base"]')?.content;
@@ -85,7 +85,7 @@
 
   function applyDataImageFallbacks(root = document) {
     $$("img[data-image-fallback]", root).forEach((image) => {
-      const fallback = IMAGE_FALLBACKS[image.dataset.imageFallback];
+      const fallback = MOCK_IMAGE_FALLBACKS[image.dataset.imageFallback];
       if (!fallback) return;
       const dataSource = safeCourseDetailUrl(image.dataset.imageSrc);
       const dataAlt = String(image.dataset.imageAlt || "").trim();
@@ -494,23 +494,17 @@
   function initHeroMedia(signal) {
     const video = $(".hero-section__video");
     const playButton = $('[data-hero-control="playback"]');
-    const muteButton = $('[data-hero-control="sound"]');
     const hasSource = Boolean(
       video?.querySelector("source[src]") || video?.getAttribute("src"),
     );
     if (!video || !hasSource) {
       playButton?.setAttribute("aria-disabled", "true");
-      muteButton?.setAttribute("aria-disabled", "true");
       return;
     }
     const icons = {
       play: '<path d="M8 5.75v12.5L18 12 8 5.75Z"></path>',
       pause:
         '<path d="M8 5V19M16 5V19" style="fill:none" stroke="var(--neutral-1)" stroke-linecap="round" stroke-width="2"></path>',
-      muted:
-        '<path d="M4 9h3l4-4v14l-4-4H4V9Z"></path><path d="m15 9 5 6m0-6-5 6" style="fill:none" stroke="var(--neutral-1)" stroke-linecap="round" stroke-width="2"></path>',
-      sound:
-        '<path d="M4 9h3l4-4v14l-4-4H4V9Z"></path><path d="M14.5 8.5C16.4 10.4 16.4 13.6 14.5 15.5M17 6C20.3 9.3 20.3 14.7 17 18" style="fill:none" stroke="var(--neutral-1)" stroke-linecap="round" stroke-width="1.8"></path>',
     };
     const setButtonIcon = (button, icon) => {
       const svg = $("svg", button);
@@ -530,13 +524,6 @@
       );
       setButtonIcon(playButton, isPaused ? "play" : "pause");
     };
-    const syncSoundControl = () => {
-      if (!muteButton) return;
-      const isMuted = video.muted || video.volume === 0;
-      muteButton.dataset.mediaState = isMuted ? "muted" : "unmuted";
-      muteButton.setAttribute("aria-label", isMuted ? "Səsi aç" : "Səsi bağla");
-      setButtonIcon(muteButton, isMuted ? "muted" : "sound");
-    };
     playButton?.addEventListener(
       "click",
       async () => {
@@ -550,28 +537,17 @@
       },
       { signal },
     );
-    muteButton?.addEventListener(
-      "click",
-      () => {
-        video.muted = !video.muted;
-        syncSoundControl();
-      },
-      { signal },
-    );
     ["play", "pause", "ended"].forEach((eventName) =>
       video.addEventListener(eventName, syncPlaybackControl, { signal }),
     );
-    video.addEventListener("volumechange", syncSoundControl, { signal });
     video.addEventListener(
       "loadedmetadata",
       () => {
         syncPlaybackControl();
-        syncSoundControl();
       },
       { signal },
     );
     syncPlaybackControl();
-    syncSoundControl();
   }
 
   function initHeroTypewriter(signal) {
@@ -1286,10 +1262,10 @@
     const coverImage = safeCourseDetailUrl(data.cover_image_url);
     const fallbackKeys = ["blog-networking", "blog-cybersecurity", "blog-cloud-devops"];
     const fallbackKey = fallbackKeys[index % fallbackKeys.length];
-    const fallback = IMAGE_FALLBACKS[fallbackKey];
+    const fallback = MOCK_IMAGE_FALLBACKS[fallbackKey];
     const imgSrc = coverImage || fallback?.src || "";
     const imgAlt = coverImage ? title : fallback?.alt || title;
-    return `<a class="blog-card" href="news.html?target=${encodeURIComponent(key)}">
+    return `<a class="blog-card" href="news-details.html?key=${encodeURIComponent(key)}">
       ${imgSrc ? `<div class="blog-card__media"><img alt="${escapeHtml(imgAlt)}" data-nimg="1" decoding="async" height="400" loading="lazy" width="400" ${coverImage ? `src="${escapeHtml(coverImage)}"` : `data-image-src="" data-image-fallback="${fallbackKey}"`} style="color: transparent" /></div>` : ""}
       <div class="blog-card__content">
         <h3 class="blog-card__title">${escapeHtml(title)}</h3>
@@ -1399,6 +1375,68 @@
       grid.dataset.newsSource = "fallback";
     } finally {
       if (!signal.aborted) grid.removeAttribute("aria-busy");
+    }
+  }
+
+  function renderNewsDetails(item) {
+    const title = String(item?.title || "Xəbər").trim();
+    const body = String(item?.body || "").trim();
+    const data = item?.data && typeof item.data === "object" ? item.data : {};
+    const coverImage = safeCourseDetailUrl(data.cover_image_url);
+    const date = formatDate(item?.updatedAt || item?.createdAt);
+    const fallbackKeys = ["blog-networking", "blog-cybersecurity", "blog-cloud-devops"];
+    const fallback = MOCK_IMAGE_FALLBACKS[fallbackKeys[0]];
+    const imgSrc = coverImage || fallback?.src || "";
+    const imgAlt = coverImage ? title : fallback?.alt || title;
+
+    return `<article class="Nexora_courseDetailV2">
+      <section class="Nexora_courseDetailV2__hero">
+        <div class="Nexora_courseDetailV2__heroCopy">
+          <p class="Nexora_eyebrow">Xəbər</p>
+          <h1 class="Nexora_pageTitle">${escapeHtml(title)}</h1>
+          ${date ? `<p class="Nexora_pageLead">${escapeHtml(date)}</p>` : ""}
+        </div>
+        ${imgSrc ? `<figure class="Nexora_courseDetailV2__visual">
+          <img src="${escapeHtml(imgSrc)}" alt="${escapeHtml(imgAlt)}" loading="lazy" />
+        </figure>` : ""}
+      </section>
+      <div class="Nexora_courseDetailV2__contentLayout">
+        <div class="Nexora_courseDetailV2__contentMain">
+          <section class="Nexora_courseDetailV2__contentSection">
+            <div class="Nexora_courseDetailV2__richText"><p>${escapeHtml(body)}</p></div>
+          </section>
+        </div>
+      </div>
+    </article>`;
+  }
+
+  async function initNewsDetailsPage(signal) {
+    const container = $("#newsDetails");
+    if (!container) return;
+    const key = new URLSearchParams(location.search).get("key")?.trim() || "";
+    if (!key) {
+      container.innerHTML = `<div class="Nexora_emptyState">
+        <h1>Xəbər seçilməyib</h1>
+        <p>Xəbər siyahısından seçim edərək yenidən yoxlayın.</p>
+      </div>`;
+      return;
+    }
+    container.setAttribute("aria-busy", "true");
+    try {
+      const item = await publicContentByKey(`news.${key}`, { signal });
+      if (!item || typeof item !== "object")
+        throw new ApiError(404, "Xəbər tapılmadı.");
+      if (signal.aborted) return;
+      container.innerHTML = renderNewsDetails(item);
+      if (item.title) document.title = `${item.title} | Nexora Academy`;
+    } catch (error) {
+      if (error?.name === "AbortError" || signal.aborted) return;
+      container.innerHTML = `<div class="Nexora_emptyState">
+        <h1>Xəbər əlçatan deyil</h1>
+        <p>Xəbər siyahısına qayıdaraq digər xəbərlərə baxın.</p>
+      </div>`;
+    } finally {
+      if (!signal.aborted) container.removeAttribute("aria-busy");
     }
   }
 
@@ -1972,7 +2010,7 @@
     const duration = course.durationWeeks
       ? `${escapeHtml(course.durationWeeks)} həftə`
       : "";
-    const courseFallback = courseImageFallback(course);
+    const courseFallback = courseMockFallback(course);
     const realImageUrl = safeCourseDetailUrl(course.imageUrl);
     const nameBasedPath = `assets/courses/${courseTitleToFile(title)}.svg`;
     const imageUrl = realImageUrl || nameBasedPath;
@@ -2024,7 +2062,7 @@
       }
     }
     if (image) {
-      const fallback = IMAGE_FALLBACKS["course-networking"];
+      const fallback = MOCK_IMAGE_FALLBACKS["course-networking"];
       image.removeAttribute("data-image-src");
       image.removeAttribute("data-image-fallback");
       image.src = fallback.src;
@@ -2085,7 +2123,7 @@
       window.location.assign(detailUrl);
     });
     if (image) {
-      const fallback = courseImageFallback({ ...course, categoryName });
+      const fallback = courseMockFallback({ ...course, categoryName });
       image.removeAttribute("data-image-src");
       image.removeAttribute("data-image-fallback");
       image.src = fallback.src;
@@ -2498,16 +2536,16 @@
       : "";
   }
 
-  function courseImageFallback(course) {
+  function courseMockFallback(course) {
     const context =
       `${course.title || ""} ${course.categoryName || ""}`.toLocaleLowerCase(
         "az",
       );
     if (COURSE_CLOUD_REGEX.test(context))
-      return IMAGE_FALLBACKS["course-cloud-devops"];
+      return MOCK_IMAGE_FALLBACKS["course-cloud-devops"];
     if (COURSE_CYBER_REGEX.test(context))
-      return IMAGE_FALLBACKS["course-cybersecurity"];
-    return IMAGE_FALLBACKS["course-networking"];
+      return MOCK_IMAGE_FALLBACKS["course-cybersecurity"];
+    return MOCK_IMAGE_FALLBACKS["course-networking"];
   }
 
   function renderCourseInstructor(instructor) {
@@ -2516,7 +2554,7 @@
     if (!name) return "";
     const title = String(instructor.title || "").trim();
     const fallbackIndex = (name.codePointAt(0) || 0) % 3;
-    const fallback = IMAGE_FALLBACKS[`instructor-${fallbackIndex + 1}`];
+    const fallback = MOCK_IMAGE_FALLBACKS[`instructor-${fallbackIndex + 1}`];
     const realImageUrl = safeCourseDetailUrl(instructor.imageUrl);
     const imageUrl = realImageUrl || fallback.src;
     const imageAlt = realImageUrl ? instructor.imageAlt || name : fallback.alt;
@@ -2553,7 +2591,7 @@
       ? `${course.durationWeeks} həftə`
       : "";
     const difficulty = enumLabel(course.difficulty);
-    const courseFallback = courseImageFallback(course);
+    const courseFallback = courseMockFallback(course);
     const realImageUrl = safeCourseDetailUrl(course.imageUrl);
     const nameBasedPath = `assets/courses/${courseTitleToFile(title)}.svg`;
     const imageUrl = realImageUrl || nameBasedPath;
@@ -2810,6 +2848,9 @@
       case "news":
         void initNewsPage(signal);
         break;
+      case "news-details":
+        void initNewsDetailsPage(signal);
+        break;
       default:
         break;
     }
@@ -2923,6 +2964,270 @@
     });
   }
 
+  const ROADMAP_DURATION = 7000;
+  let roadmapAnimationFrame = 0;
+  let roadmapAnimationStartedAt = 0;
+
+  function roadmapSetPath(path, d) {
+    if (path) path.setAttribute("d", d);
+  }
+
+  function updateRoadmapDualTrackGeometry() {
+    document
+      .querySelectorAll(".roadmap__timeline-wrapper")
+      .forEach((wrapper) => {
+        const svg = wrapper.querySelector(".dual-track__line");
+        if (!svg) return;
+
+        const computed = window.getComputedStyle(wrapper);
+        const gap =
+          parseFloat(computed.getPropertyValue("--roadmap-track-gap")) || 280;
+        const verticalInset =
+          parseFloat(
+            computed.getPropertyValue("--roadmap-track-inset"),
+          ) || 60;
+        const svgHeight = gap + verticalInset * 2;
+        const centerY = svgHeight / 2;
+        const upperY = centerY - gap / 2;
+        const lowerY = centerY + gap / 2;
+
+        svg.style.height = svgHeight + "px";
+        svg.setAttribute("viewBox", "0 0 1000 " + svgHeight);
+
+        const wrapperRect = wrapper.getBoundingClientRect();
+        const currentDot = wrapper.querySelector(
+          ".roadmap__item--current .roadmap__dot-wrapper--current",
+        );
+        const currentRect = currentDot
+          ? currentDot.getBoundingClientRect()
+          : null;
+
+        let mergeX = 870;
+        if (currentRect && wrapperRect.width) {
+          mergeX =
+            ((currentRect.left +
+              currentRect.width / 2 -
+              wrapperRect.left) /
+              wrapperRect.width) *
+            1000;
+        }
+        mergeX = Math.max(780, Math.min(920, mergeX));
+
+        const splitX = 192;
+        const parallelStartX = 220;
+        const mergeStartX = mergeX - 55;
+        const splitControlX = splitX + 28;
+        const mergeControlX = mergeX - 28;
+
+        const entryD = "M 0 " + centerY + " L " + splitX + " " + centerY;
+        const upperD =
+          "M " + splitX + " " + centerY +
+          " C " + splitControlX + " " + centerY + " " + splitControlX + " " + upperY + " " + parallelStartX + " " + upperY +
+          " L " + mergeStartX + " " + upperY +
+          " C " + mergeControlX + " " + upperY + " " + mergeControlX + " " + centerY + " " + mergeX + " " + centerY;
+        const lowerD =
+          "M " + splitX + " " + centerY +
+          " C " + splitControlX + " " + centerY + " " + splitControlX + " " + lowerY + " " + parallelStartX + " " + lowerY +
+          " L " + mergeStartX + " " + lowerY +
+          " C " + mergeControlX + " " + lowerY + " " + mergeControlX + " " + centerY + " " + mergeX + " " + centerY;
+        const exitD = "M " + mergeX + " " + centerY + " L 1000 " + centerY;
+        const upperMotionD =
+          "M 25 " + centerY +
+          " L " + splitX + " " + centerY +
+          " C " + splitControlX + " " + centerY + " " + splitControlX + " " + upperY + " " + parallelStartX + " " + upperY +
+          " L " + mergeStartX + " " + upperY +
+          " C " + mergeControlX + " " + upperY + " " + mergeControlX + " " + centerY + " " + mergeX + " " + centerY +
+          " L 975 " + centerY;
+        const lowerMotionD =
+          "M 25 " + centerY +
+          " L " + splitX + " " + centerY +
+          " C " + splitControlX + " " + centerY + " " + splitControlX + " " + lowerY + " " + parallelStartX + " " + lowerY +
+          " L " + mergeStartX + " " + lowerY +
+          " C " + mergeControlX + " " + lowerY + " " + mergeControlX + " " + centerY + " " + mergeX + " " + centerY +
+          " L 975 " + centerY;
+
+        roadmapSetPath(svg.querySelector(".dual-track__stroke--entry"), entryD);
+        roadmapSetPath(svg.querySelector(".dual-track__stroke--upper"), upperD);
+        roadmapSetPath(svg.querySelector(".dual-track__stroke--lower"), lowerD);
+        roadmapSetPath(svg.querySelector(".dual-track__stroke--exit"), exitD);
+        roadmapSetPath(svg.querySelector(".dual-track__motion--upper"), upperMotionD);
+        roadmapSetPath(svg.querySelector(".dual-track__motion--lower"), lowerMotionD);
+      });
+  }
+
+  function roadmapEaseInOut(t) {
+    return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  }
+
+  function roadmapPlaceMovingLight(wrapper, path, light, progress) {
+    if (!path || !light || !path.getTotalLength) return;
+    const length = path.getTotalLength();
+    if (!length) return;
+    const point = path.getPointAtLength(length * progress);
+    const svg = wrapper.querySelector(".dual-track__line");
+    if (!svg) return;
+    const wrapperRect = wrapper.getBoundingClientRect();
+    const svgRect = svg.getBoundingClientRect();
+    const viewBox = svg.viewBox.baseVal;
+    const x =
+      svgRect.left -
+      wrapperRect.left +
+      ((point.x - viewBox.x) / viewBox.width) * svgRect.width;
+    const y =
+      svgRect.top -
+      wrapperRect.top +
+      ((point.y - viewBox.y) / viewBox.height) * svgRect.height;
+    light.style.left = x + "px";
+    light.style.top = y + "px";
+  }
+
+  function animateRoadmapLights(now) {
+    if (!roadmapAnimationStartedAt) roadmapAnimationStartedAt = now;
+    const raw =
+      ((now - roadmapAnimationStartedAt) % ROADMAP_DURATION) / ROADMAP_DURATION;
+    const progress = roadmapEaseInOut(raw);
+    let opacity =
+      raw < 0.08 ? raw / 0.08 : raw > 0.94 ? (1 - raw) / 0.06 : 1;
+    opacity = Math.max(0, Math.min(1, opacity));
+
+    document
+      .querySelectorAll(".roadmap__timeline-wrapper")
+      .forEach((wrapper) => {
+        const upperPath = wrapper.querySelector(".dual-track__motion--upper");
+        const lowerPath = wrapper.querySelector(".dual-track__motion--lower");
+        const upperLight = wrapper.querySelector(".dual-track__moving-light--upper");
+        const lowerLight = wrapper.querySelector(".dual-track__moving-light--lower");
+        roadmapPlaceMovingLight(wrapper, upperPath, upperLight, progress);
+        roadmapPlaceMovingLight(wrapper, lowerPath, lowerLight, progress);
+        if (upperLight) upperLight.style.opacity = opacity;
+        if (lowerLight) lowerLight.style.opacity = opacity;
+      });
+
+    roadmapAnimationFrame = window.requestAnimationFrame(animateRoadmapLights);
+  }
+
+  function initializeRoadmapDualTracks() {
+    updateRoadmapDualTrackGeometry();
+    document
+      .querySelectorAll(".roadmap__timeline-wrapper img")
+      .forEach((img) => {
+        if (!img.complete)
+          img.addEventListener("load", updateRoadmapDualTrackGeometry);
+      });
+    if ("ResizeObserver" in window) {
+      document
+        .querySelectorAll(".roadmap__timeline-wrapper")
+        .forEach((w) => {
+          new ResizeObserver(updateRoadmapDualTrackGeometry).observe(w);
+        });
+    }
+    window.cancelAnimationFrame(roadmapAnimationFrame);
+    roadmapAnimationStartedAt = 0;
+    roadmapAnimationFrame = window.requestAnimationFrame(animateRoadmapLights);
+  }
+
+  function initRoadmap(signal) {
+    if (!document.querySelector(".roadmap__timeline-wrapper")) return;
+    window.addEventListener("load", initializeRoadmapDualTracks);
+    window.addEventListener("resize", updateRoadmapDualTrackGeometry);
+    if (
+      document.readyState === "interactive" ||
+      document.readyState === "complete"
+    ) {
+      initializeRoadmapDualTracks();
+    }
+    signal?.addEventListener(
+      "abort",
+      () => {
+        window.cancelAnimationFrame(roadmapAnimationFrame);
+        window.removeEventListener("load", initializeRoadmapDualTracks);
+        window.removeEventListener("resize", updateRoadmapDualTrackGeometry);
+      },
+      { once: true },
+    );
+  }
+
+  function initCareerTilt(signal) {
+    const cards = $$('[data-parallax-tilt="true"]');
+    if (!cards.length) return;
+    const reduceMotion =
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    cards.forEach((card) => {
+      if (reduceMotion) return;
+      const image = $(".career-parallax-image", card);
+      const maxRotate = 17;
+      const cardScale = 1.025;
+      const imageShift = 10;
+      let raf = 0;
+      let lastEvent = null;
+
+      function renderTilt() {
+        raf = 0;
+        if (!lastEvent) return;
+        const rect = card.getBoundingClientRect();
+        const x = lastEvent.clientX - rect.left;
+        const y = lastEvent.clientY - rect.top;
+        const nx = Math.max(
+          -1,
+          Math.min(1, (x - rect.width / 2) / (rect.width / 2)),
+        );
+        const ny = Math.max(
+          -1,
+          Math.min(1, (y - rect.height / 2) / (rect.height / 2)),
+        );
+        const rotateY = nx * maxRotate;
+        const rotateX = -ny * maxRotate;
+        card.style.transform =
+          "perspective(850px) rotateX(" +
+          rotateX.toFixed(2) +
+          "deg) rotateY(" +
+          rotateY.toFixed(2) +
+          "deg) scale3d(" +
+          cardScale +
+          ", " +
+          cardScale +
+          ", " +
+          cardScale +
+          ")";
+        if (image) {
+          image.style.transform =
+            "translate3d(" +
+            (-nx * imageShift).toFixed(2) +
+            "px," +
+            (-ny * imageShift).toFixed(2) +
+            "px,52px) scale(1.075)";
+        }
+      }
+
+      function resetCard() {
+        lastEvent = null;
+        if (raf) {
+          cancelAnimationFrame(raf);
+          raf = 0;
+        }
+        card.classList.remove("is-tilting");
+        card.style.transform =
+          "perspective(850px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)";
+        if (image)
+          image.style.transform = "translate3d(0,0,42px) scale(1.035)";
+      }
+
+      function queueTilt(event) {
+        lastEvent = event;
+        if (!raf) raf = requestAnimationFrame(renderTilt);
+      }
+
+      card.addEventListener("pointerenter", (event) => {
+        card.classList.add("is-tilting");
+        queueTilt(event);
+      });
+      card.addEventListener("pointermove", queueTilt);
+      card.addEventListener("pointerleave", resetCard);
+      card.addEventListener("pointercancel", resetCard);
+      resetCard();
+    });
+  }
+
   function initPage(signal) {
     applyDataImageFallbacks();
     initStandaloneTarget();
@@ -2934,6 +3239,8 @@
     initSliders(signal);
     initPhoneInputs(signal);
     initFaqAccordion(signal);
+    initRoadmap(signal);
+    initCareerTilt(signal);
     initApiPage(signal);
     void initSiteSettings(signal);
     if (document.body.dataset.page === "home") {

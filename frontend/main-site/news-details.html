@@ -8,14 +8,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta
       name="description"
-      content="Nexora Academy-dən son xəbərlər, elanlar və yeniliklər."
-    />
-    <meta
-      name="keywords"
-      content="Nexora Academy, xəbərlər, elanlar, yeniliklər, kurs xəbərləri"
+      content="Nexora Academy xəbər detalı."
     />
     <meta name="nexora-api-base" content="http://localhost:8080" />
-    <title>Nexora Academy | Xəbərlər</title>
+    <title>Xəbər | Nexora Academy</title>
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
@@ -27,7 +23,7 @@
   <body
     class="__variable_7fc4d2 antialiased"
     style="overflow: auto"
-    data-page="news"
+    data-page="news-details"
   >
     <noscript>Bu saytın işləməsi üçün JavaScript aktiv olmalıdır.</noscript>
 
@@ -216,35 +212,17 @@
     </div>
 
     <main class="main--about Nexora_page">
-      <section class="section section--page-hero">
+      <section class="Nexora_pageHero Nexora_pageHero--compact">
         <div class="container">
-          <div class="navigate-section">
-            <div class="navigate-section__links">
-              <a href="index.html">Ana səhifə</a>
-              <span class="navigate-section__current">Xəbərlər</span>
-            </div>
-          </div>
-          <div class="section__header">
-            <h1 class="section__header__title">
-              Akademiyadan
-              <span class="ai-highlight ai-highlight--glow">
-                yeniliklər və elanlar
-              </span>
-            </h1>
-            <p class="section__header__desc">
-              Nexora Academy-dən son xəbərlər, qrup elanları, kampaniyalar və
-              yeniliklər.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section class="section section--blogs">
-        <div class="container">
-          <div class="section__content section__content--lg">
-            <div class="section__body">
-              <div class="blogs-section" id="newsGrid">
-                <p class="Nexora_status">Xəbərlər yüklənir…</p>
+          <div class="section__content section__content--inner Nexora_courseDetailShell">
+            <a class="ai-btn ai-btn--text Nexora_backLink" href="news.html">
+              Xəbərlərə qayıt
+            </a>
+            <div id="newsDetails" aria-live="polite">
+              <div class="Nexora_courseDetailV2__loading">
+                <p class="Nexora_eyebrow">Nexora Academy</p>
+                <h1>Xəbər yüklənir…</h1>
+                <p>Zəhmət olmasa gözləyin.</p>
               </div>
             </div>
           </div>
