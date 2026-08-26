@@ -102,9 +102,7 @@ services:
     expose: ["8000"]
     volumes:
       - nexora_chroma_data:/app/chroma_db
-    networks:
-      nexora-net:
-        ipv4_address: 172.30.0.8
+    networks: [nexora-net]
     depends_on:
       app:
         condition: service_healthy
@@ -163,7 +161,7 @@ services:
       - ./frontend/main-site/static:/etc/nginx/static:ro
     networks:
       nexora-net:
-        ipv4_address: ${NEXORA_GATEWAY_IP:-172.30.0.2}
+        ipv4_address: ${NEXORA_GATEWAY_IP:-172.30.0.10}
     depends_on:
       main-ui:
         condition: service_healthy
