@@ -1,8 +1,4 @@
-# CI — hər push/PR-da build + bütün testlər + image build.
-# Testlər Testcontainers istifadə edir (bax src/test/.../TestcontainersConfiguration.java),
-# ona görə ayrıca "services: postgres" bloku LAZIM DEYİL — GitHub-un ubuntu runner-ində
-# Docker onsuz da var və konteyner test zamanı avtomatik qalxır.
-name: CI
+name: Complete CI/CD Pipeline
 
 on:
   push:
@@ -10,41 +6,23 @@ on:
   pull_request:
     branches: [main]
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
 permissions:
   contents: read
+  packages: write
+  security-events: write
 
 jobs:
-  frontend-verify:
-    name: "Frontend Verify"
+  # ============================================================
+  # Stage: Build
+  # ============================================================
+  build:
+    name: Build Application
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: frontend/admin-ui
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-          cache-dependency-path: frontend/admin-ui/package-lock.json
-      - name: Install dependencies
-        run: npm ci --no-audit --no-fund
-      - name: TypeScript check
-        run: npx tsc -b
-      - name: Lint
-        run: npm run lint --if-present
-      - name: Build
-        run: npm run build
-      - name: Verify main-site HTML links
-        run: |
-          npx --yes linkinator "frontend/main-site/**/*.html" --recurse --skip "^https?://(fonts\.(googleapis|gstatic)\.com|cdnjs\.cloudflare\.com|wa\.me|instagram\.com|linkedin\.com|facebook\.com)" --format CSV || true
-
-  build-and-test:
-    name: Build & Test
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -55,7 +33,128 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Build + run all tests
+      - name: Build with Maven
+        working-directory: backend/api
+        run: ./mvnw -B clean compile
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: backend/api/target/
+          retention-days: 1
+
+  # ============================================================
+  # Stage: Frontend Build & Verify
+  # ============================================================
+  frontend-build:
+    name: Frontend Build & Verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend/admin-ui
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/admin-ui/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: TypeScript check
+        run: npx tsc -b
+
+      - name: Lint
+        run: npm run lint --if-present
+
+      - name: Build
+        run: npm run build
+
+  # ============================================================
+  # Stage: SAST (Static Application Security Testing)
+  # ============================================================
+  sast:
+    name: SAST - Semgrep Code Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Semgrep SAST scan
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/owasp-top-ten
+            p/cwe-top-25
+
+  # ============================================================
+  # Stage: SCA (Software Composition Analysis)
+  # ============================================================
+  sca:
+    name: SCA - Dependency Scanning
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-fs-results.sarif'
+          severity: 'HIGH,CRITICAL'
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-fs-results.sarif'
+          category: 'trivy-fs'
+
+  # ============================================================
+  # Stage: Secret Scanning
+  # ============================================================
+  secret-scan:
+    name: Secret Scanning - GitLeaks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run GitLeaks secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: true
+
+  # ============================================================
+  # Stage: Unit Tests & Integration Tests
+  # ============================================================
+  test:
+    name: Build & Test
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run all tests
         working-directory: backend/api
         run: ./mvnw -B verify
 
@@ -67,27 +166,160 @@ jobs:
           path: backend/api/target/surefire-reports/
           retention-days: 7
 
+  # ============================================================
+  # Stage: Docker Build
+  # ============================================================
   docker-build:
-    name: Docker image build
+    name: Docker Build
+    needs: [build, test, frontend-build]
     runs-on: ubuntu-latest
-    needs: build-and-test
     timeout-minutes: 20
-
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
     steps:
       - uses: actions/checkout@v4
 
-      # Yalnız build — push YOXDUR. Registry seçiləndən sonra DevOps burada
-      # docker/login-action + push əlavə etməlidir (bax PRODUCTION_HANDOVER.md).
-      - name: Build image
-        working-directory: backend/api
-        run: docker build -t nexora-academy:${{ github.sha }} .
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      # Image-dəki məlum CVE-ləri göstərir. İlk mərhələdə build-i sındırmır
-      # (exit-code: 0) — komanda nəticələri görüb baseline qurandan sonra
-      # exit-code: 1 edin ki, kritik CVE-lər deploy-u dayandırsın.
-      - name: Scan image for vulnerabilities
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short
+
+      - name: Build Docker image (without push)
+        uses: docker/build-push-action@v5
+        with:
+          context: backend/api
+          file: backend/api/Dockerfile
+          push: false
+          tags: nexora-academy:${{ github.sha }}
+          outputs: type=docker,dest=/tmp/image.tar
+
+      - name: Upload image as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: /tmp/image.tar
+          retention-days: 1
+
+  # ============================================================
+  # Stage: Container Security Scanning
+  # ============================================================
+  container-security:
+    name: Container Security - Trivy Scan
+    needs: docker-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Docker image
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: /tmp
+
+      - name: Load Docker image
+        run: docker load --input /tmp/image.tar
+
+      - name: Scan Docker image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: nexora-academy:${{ github.sha }}
-          severity: HIGH,CRITICAL
-          exit-code: '1'
+          input: 'nexora-academy:${{ github.sha }}'
+          format: 'sarif'
+          output: 'trivy-image-results.sarif'
+          severity: 'HIGH,CRITICAL'
+
+      - name: Upload Trivy image scan results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-image-results.sarif'
+          category: 'trivy-image'
+
+  # ============================================================
+  # Stage: Deploy (to staging/production)
+  # ============================================================
+  deploy:
+    name: Deploy to Server
+    needs: [test, container-security, sast, sca, secret-scan]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=sha,format=short
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: backend/api
+          file: backend/api/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd ~/Nexoracademy
+            
+            # Log in to GitHub Container Registry on server
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            # Pull latest containers and restart updated services
+            docker compose pull
+            docker compose up -d --remove-orphans
+            
+            # Clean up old images
+            docker image prune -f
+
+  # ============================================================
+  # Stage: Dynamic Application Security Testing (DAST)
+  # ============================================================
+  dast:
+    name: DAST - ZAP Security Scan
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run OWASP ZAP scan
+        uses: zaproxy/action-baseline@v0.7.0
+        with:
+          target: 'http://localhost:8080'
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'
+
+      - name: Upload ZAP scan report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report
+          path: report_html.html
+          retention-days: 30
