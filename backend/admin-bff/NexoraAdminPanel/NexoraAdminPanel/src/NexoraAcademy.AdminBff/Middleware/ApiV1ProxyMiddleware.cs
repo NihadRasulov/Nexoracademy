@@ -210,12 +210,14 @@ public sealed class ApiV1ProxyMiddleware(
         var hasRequestBody = HasBody(context.Request.Method)
             && (context.Request.ContentLength > 0 || context.Request.ContentLength == null);
 
+        byte[]? bodyBytes = null;
         if (hasRequestBody)
         {
-            // The body may need to be replayed once after a transparent token
-            // refresh. Large multipart bodies are buffered to disk by ASP.NET.
             context.Request.EnableBuffering();
             context.Request.Body.Position = 0;
+            using var ms = new MemoryStream();
+            await context.Request.Body.CopyToAsync(ms, context.RequestAborted);
+            bodyBytes = ms.ToArray();
         }
 
         using var request = new HttpRequestMessage(
@@ -230,9 +232,9 @@ public sealed class ApiV1ProxyMiddleware(
 
         CopyRequestHeaders(context.Request.Headers, request);
 
-        if (hasRequestBody)
+        if (hasRequestBody && bodyBytes is not null)
         {
-            request.Content = new StreamContent(context.Request.Body);
+            request.Content = new ByteArrayContent(bodyBytes);
             if (context.Request.ContentType is not null)
             {
                 request.Content.Headers.TryAddWithoutValidation(
@@ -279,10 +281,9 @@ public sealed class ApiV1ProxyMiddleware(
                     new AuthenticationHeaderValue("Bearer", refreshed.AccessToken);
                 CopyRequestHeaders(context.Request.Headers, retry);
 
-                if (hasRequestBody)
+                if (hasRequestBody && bodyBytes is not null)
                 {
-                    context.Request.Body.Position = 0;
-                    retry.Content = new StreamContent(context.Request.Body);
+                    retry.Content = new ByteArrayContent(bodyBytes);
                     if (context.Request.ContentType is not null)
                     {
                         retry.Content.Headers.TryAddWithoutValidation(

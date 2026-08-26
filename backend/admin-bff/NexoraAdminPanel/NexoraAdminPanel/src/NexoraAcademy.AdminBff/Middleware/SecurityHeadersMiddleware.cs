@@ -9,10 +9,11 @@ public sealed class SecurityHeadersMiddleware(RequestDelegate next)
         "font-src 'self'; " +
         "form-action 'self'; " +
         "frame-ancestors 'none'; " +
-        "img-src 'self' data:; " +
+        "img-src 'self' data: https:; " +
         "object-src 'none'; " +
-        "script-src 'self'; " +
-        "style-src 'self' 'unsafe-inline'";
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdnjs.cloudflare.com; " +
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+        "font-src 'self' https://fonts.gstatic.com";
 
     public Task InvokeAsync(HttpContext context)
     {
