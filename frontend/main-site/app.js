@@ -1423,7 +1423,7 @@
     }
     container.setAttribute("aria-busy", "true");
     try {
-      const item = await publicContentByKey(`news.${key}`, { signal });
+      const item = await publicContentByKey(key, { signal });
       if (!item || typeof item !== "object")
         throw new ApiError(404, "Xəbər tapılmadı.");
       if (signal.aborted) return;
