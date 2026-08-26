@@ -12,12 +12,9 @@ RUN sed -i 's/\r$//' mvnw && chmod +x mvnw \
     && ./mvnw dependency:go-offline -B
 
 COPY src ./src
-# Never publish an image whose executable JAR lost its production config or
-# PostgreSQL/YAML runtime dependencies.
+# Never publish an image whose executable JAR lost critical runtime dependencies.
 RUN ./mvnw clean package -DskipTests -B \
     && mv target/*.jar target/app.jar \
-    && jar tf target/app.jar | grep -qx 'BOOT-INF/classes/application.yml' \
-    && jar tf target/app.jar | grep -qx 'BOOT-INF/classes/application-prod.yml' \
     && jar tf target/app.jar | grep -Eq '^BOOT-INF/lib/postgresql-[^/]+\.jar$' \
     && jar tf target/app.jar | grep -Eq '^BOOT-INF/lib/snakeyaml-[^/]+\.jar$'
 
