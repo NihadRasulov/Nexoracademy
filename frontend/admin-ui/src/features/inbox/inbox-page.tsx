@@ -79,7 +79,7 @@ export function InboxPage() {
 
 function DetailDialog({ detail, onClose }: { detail: { kind: "application" | "contact"; row: ApplicationRow | ContactRow } | null; onClose: () => void }) {
   if (!detail) return null;
-  const { kind, row } = detail;
+  const { kind } = detail;
   return (
     <Dialog open onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-lg">
@@ -87,13 +87,14 @@ function DetailDialog({ detail, onClose }: { detail: { kind: "application" | "co
           <DialogTitle>{kind === "application" ? "Başvuru detalları" : "Mesaj detalları"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          {kind === "application" && (
-            <>
+          {kind === "application" && (() => {
+            const row = detail.row as ApplicationRow;
+            return <>
               <DetailRow icon={User} label="Ad soyad" value={row.fullname} />
               <DetailRow icon={Mail} label="E-poçt" value={row.email} />
               <DetailRow icon={Phone} label="Telefon" value={row.phone} />
               <DetailRow icon={Calendar} label="Tarix" value={formatDateTime(row.createdAt)} />
-              <DetailRow icon={Eye} label="Status" value={row.status.replaceAll("_", " ")} />
+              <DetailRow icon={Eye} label="Status" value={row.status?.replaceAll("_", " ")} />
               <div>
                 <p className="mb-1 text-xs font-medium text-muted-foreground">Məktub</p>
                 <div className="max-h-48 overflow-y-auto whitespace-pre-wrap rounded-lg border bg-muted/30 p-3 text-sm leading-relaxed">{row.letter}</div>
@@ -104,10 +105,11 @@ function DetailDialog({ detail, onClose }: { detail: { kind: "application" | "co
                   <a className="inline-flex items-center gap-1.5 font-medium text-primary hover:underline" href={adminApiUrl(`/api/v1/applications/${row.id}/cv`)}><Download className="size-3.5" />{row.cvFilename}</a>
                 </div>
               )}
-            </>
-          )}
-          {kind === "contact" && (
-            <>
+            </>;
+          })()}
+          {kind === "contact" && (() => {
+            const row = detail.row as ContactRow;
+            return <>
               <DetailRow icon={User} label="Ad soyad" value={row.fullName} />
               <DetailRow icon={Mail} label="E-poçt" value={row.email} />
               <DetailRow icon={Phone} label="Telefon" value={row.phone} />
@@ -117,8 +119,8 @@ function DetailDialog({ detail, onClose }: { detail: { kind: "application" | "co
                 <p className="mb-1 text-xs font-medium text-muted-foreground">Mesaj</p>
                 <div className="max-h-48 overflow-y-auto whitespace-pre-wrap rounded-lg border bg-muted/30 p-3 text-sm leading-relaxed">{row.message}</div>
               </div>
-            </>
-          )}
+            </>;
+          })()}
         </div>
       </DialogContent>
     </Dialog>
