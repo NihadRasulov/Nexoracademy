@@ -22,6 +22,9 @@ RUN ./mvnw clean package -DskipTests -B \
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
+# Pull latest security patches for openssl and other system libs
+RUN apk update && apk upgrade --no-cache && rm -rf /var/cache/apk/*
+
 RUN addgroup -S spring && adduser -S spring -G spring \
     # logback-spring.xml logs/create|read|update|delete|error/... altına yazır (bax LOG_DIR) —
     # /app WORKDIR-i default olaraq root-a məxsusdur, spring istifadəçisi ora yaza bilmir.

@@ -19,6 +19,10 @@ RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTr
 
 FROM python:3.12-slim
 
+# Pull latest security patches for openssl and other system libs
+RUN apt-get update && apt-get upgrade -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     HF_HOME=/app/.cache/huggingface \
