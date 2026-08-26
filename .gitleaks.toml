@@ -1,0 +1,16 @@
+title = "Nexora Academy gitleaks config"
+
+[allowlist]
+  description = "Global allowlist"
+  regexes = [
+    '''REDACTED\s*=\s*"TEXT"''',
+    '''JWT_SECRET\s*=\s*REDACTED''',
+  ]
+  paths = [
+    '''certs/.*\.key$''',
+    '''adminpanelUI/certs/.*\.key$''',
+  ]
+  commits = [
+    '9a254e55eb6822a107a880990616cadca7055c82',
+    '7629097ebb17e8078e31a7fca5767c9aec253df0',
+  ]
