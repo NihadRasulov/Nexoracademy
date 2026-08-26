@@ -69,6 +69,8 @@ services:
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
       UPLOADS_DIR: /app/uploads
       JAVA_OPTS: -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms256m -Xmx512m
+      # Migrations are handled by the separate flyway service.
+      SPRING_FLYWAY_ENABLED: "false"
     expose: ["8081"]
     volumes:
       - nexora_app_logs:/app/logs
