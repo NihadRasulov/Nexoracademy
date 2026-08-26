@@ -37,9 +37,13 @@ build/
 .env.*
 !.env.example
 application-secrets.yml
+application.yml
+application-dev.yml
+application-prod.yml
+logback-spring.xml
 # Doldurulmuş k8s Secret-i (şablon — 02-secret-template.yaml — commit oluna bilər)
 k8s/02-secret.yaml
-
+.env.example
 # --- Loglar (bax logback-spring.xml) ---
 /logs/
 
