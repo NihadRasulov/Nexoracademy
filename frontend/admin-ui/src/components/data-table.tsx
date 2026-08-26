@@ -23,6 +23,7 @@ interface DataTableProps<T> {
   loading?: boolean;
   emptyMessage?: string;
   rowActions?: (row: T) => ReactNode;
+  onRowClick?: (row: T) => void;
 }
 
 export function DataTable<T extends Record<string, unknown>>({
@@ -32,6 +33,7 @@ export function DataTable<T extends Record<string, unknown>>({
   loading,
   emptyMessage = "Heç bir qeyd tapılmadı.",
   rowActions,
+  onRowClick,
 }: DataTableProps<T>) {
   return (
     <div className="overflow-x-auto rounded-2xl border border-border/70 bg-card/90 shadow-sm shadow-sky-950/5">
@@ -73,7 +75,7 @@ export function DataTable<T extends Record<string, unknown>>({
 
           {!loading &&
             rows.map((row) => (
-              <TableRow key={rowKey(row)} className="transition-colors hover:bg-primary/[0.035]">
+              <TableRow key={rowKey(row)} className={`transition-colors hover:bg-primary/[0.035]${onRowClick ? " cursor-pointer" : ""}`} onClick={onRowClick ? () => onRowClick(row) : undefined}>
                 {columns.map((col) => (
                   <TableCell key={col.key} className={col.className}>
                     {col.render ? col.render(row) : renderPrimitive(row[col.key])}
