@@ -71,6 +71,9 @@ services:
       JAVA_OPTS: -XX:+UseG1GC -XX:MaxGCPauseMillis=100 -Xms256m -Xmx512m
       # Migrations are handled by the separate flyway service.
       SPRING_FLYWAY_ENABLED: "false"
+      # Increase Tomcat multipart upload limit (default 1MB) to match nginx's 30 MB.
+      SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE: 30MB
+      SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE: 30MB
       # DotenvEnvironmentPostProcessor reads .env in CWD, but Docker has none.
       # Map flat env-var names to Spring Boot relaxed-binding format (app.admin-seed.*).
       APP_ADMIN_SEED_ENABLED: ${ADMIN_SEED_ENABLED:-false}
