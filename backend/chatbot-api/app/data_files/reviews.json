@@ -1,0 +1,12 @@
+[
+  {"id": "rev-fullstack-1", "courseId": "fullstack-web", "authorName": "Rüfət Cəbrayılov", "rating": 5, "text": "Mentor dəstəyi həqiqətən fərqli idi — hər tapşırıqda ətraflı rəy alırdım. Kursdan sonra 2 həftəyə iş tapdım."},
+  {"id": "rev-fullstack-2", "courseId": "fullstack-web", "authorName": "Validə Səmədova", "rating": 4, "text": "Material çox yaxşı strukturlaşdırılıb, sadəcə Node.js hissəsi bir az sürətli keçdi."},
+  {"id": "rev-python-1", "courseId": "python-data", "authorName": "Kamran İbrahimov", "rating": 5, "text": "Real bank dataset-ləri üzərində işləmək çox faydalı oldu, iş yerimdə birbaşa tətbiq edirəm."},
+  {"id": "rev-python-2", "courseId": "python-data", "authorName": "Nigar Talıbova", "rating": 5, "text": "Günel xanımın izahları çox aydın idi."},
+  {"id": "rev-ethical-1", "courseId": "ethical-hacking", "authorName": "Emin Qasımov", "rating": 5, "text": "Laboratoriya tapşırıqları çox real idi, OSCP-yə hazırlaşmaq üçün əla təməl oldu."},
+  {"id": "rev-ethical-2", "courseId": "ethical-hacking", "authorName": "Səbinə Rüstəmova", "rating": 4, "text": "Tempo bəzən sürətli idi, amma Tural müəllim həmişə əlavə vaxt ayırırdı."},
+  {"id": "rev-network-1", "courseId": "network-pentest", "authorName": "Anar Vəliyev", "rating": 5, "text": "Red Team ssenariləri iş üçün çox faydalı təcrübə verdi."},
+  {"id": "rev-devops-1", "courseId": "devops-cloud", "authorName": "Ceyhun Məmmədli", "rating": 5, "text": "AWS və Terraform hissəsi iş yerimdəki infrastruktur layihəsini başa düşməyimə kömək etdi."},
+  {"id": "rev-soc-1", "courseId": "soc-analyst", "authorName": "Röya Fərzəliyeva", "rating": 5, "text": "Simulyasiya edilmiş insident tapşırığı real iş mühitinə çox bənzəyirdi."},
+  {"id": "rev-uiux-1", "courseId": "ui-ux-frontend", "authorName": "Nərgiz Abdullayeva", "rating": 5, "text": "Dizayn təcrübəm yox idi, amma Leyla xanım hər addımı çox aydın izah etdi."}
+]

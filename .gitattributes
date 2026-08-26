@@ -1,0 +1,6 @@
+/mvnw text eol=lf
+*.cmd text eol=crlf
+backend/api/src/main/resources/application.yml whitespace=cr-at-eol
+frontend/main-site/*.html whitespace=cr-at-eol
+frontend/main-site/*.css whitespace=cr-at-eol
+frontend/main-site/*.js whitespace=cr-at-eol

@@ -1,0 +1,52 @@
+[
+  {
+    "id": "kb-pricing",
+    "keywords": ["qiymət", "qiymet", "neçəyə", "neceye", "pul", "haqq", "azn", "ödəniş", "odenis", "cost"],
+    "text": "Kurs qiymətləri istiqamətdən asılı olaraq 650-1200 AZN arasındadır. UI/UX və Frontend Əsasları 650 AZN, SOC Analitik 700 AZN, Python və Data Analitika 750 AZN, Full-Stack Veb İnkişafı 890 AZN, Etik Hacker 980 AZN, DevOps 1100 AZN, Şəbəkə Təhlükəsizliyi 1200 AZN. Qiymət aylıq deyil, kursun tam müddəti üçündür."
+  },
+  {
+    "id": "kb-installment",
+    "keywords": ["taksit", "hissə", "hisse", "bank", "faizsiz", "kredit"],
+    "text": "Bank tərəfdaşlarımız vasitəsilə faizsiz taksit mövcuddur: PAŞA Bank ilə 6 ay 0% taksit, Kapital Bank ilə 12 aya qədər hissə-hissə ödəniş, ABB Birkart ilə 9 ay taksit."
+  },
+  {
+    "id": "kb-scholarship",
+    "keywords": ["təqaüd", "teqaud", "endirim", "kampaniya", "güzəşt", "guzest", "pulsuz"],
+    "text": "2026 Payız Təqaüd Proqramı aktivdir - seçilmiş namizədlər üçün bütün kurslarda 20%-ə qədər təqaüd. Qadın namizədlər üçün Etik Hacker kursunda tam təqaüd, Full-Stack kursunda erkən qeydiyyat üçün 15% endirim var."
+  },
+  {
+    "id": "kb-cohorts",
+    "keywords": ["axın", "axin", "başlayır", "baslayir", "start", "cədvəl", "cedvel", "tarix", "nə vaxt", "ne vaxt"],
+    "text": "Növbəti axınlar sentyabr-oktyabr aylarında başlayır: Full-Stack və SOC Analitik 7 Sentyabr, Python və UI/UX 14 Sentyabr, Etik Hacker 21 Sentyabr, Flutter 28 Sentyabr, Şəbəkə Pentesting 5 Oktyabr, DevOps 12 Oktyabr. Dərslər axşam saatlarında, həftədə 2-3 dəfə."
+  },
+  {
+    "id": "kb-format",
+    "keywords": ["onlayn", "online", "oflayn", "offline", "format", "harada", "məkan", "mekan", "ünvan", "unvan"],
+    "text": "Kurslar həm onlayn, həm oflayn formatda keçirilir. Oflayn dərslər Bakı, Nərimanov rayonu, Əhməd Rəcəbli 23 ünvanındadır."
+  },
+  {
+    "id": "kb-registration",
+    "keywords": ["qeydiyyat", "yazıl", "yazil", "müraciət", "muraciet", "qoşul", "qosul", "başlayım", "baslayim", "demo"],
+    "text": "Qeydiyyat üçün kurs səhifəsindəki müraciət formasını doldurun və ya söhbətdə ad və telefon nömrənizi yazın - komandamız 1 iş günü ərzində sizinlə əlaqə saxlayacaq."
+  },
+  {
+    "id": "kb-mentor",
+    "keywords": ["mentor", "dəstək", "destek", "kömək", "komek", "karyera"],
+    "text": "Hər kursun karyera mentoru var - CV review, portfolio hazırlığı, LinkedIn/GitHub profil qurulması və müsahibə simulyasiyası."
+  },
+  {
+    "id": "kb-certificate",
+    "keywords": ["sertifikat", "diplom", "sənəd", "sened", "oscp", "aws", "ccna"],
+    "text": "Hər kursun sonunda Nexora Academy imzalı bitirmə sertifikatı verilir. OSCP, AWS Solutions Architect və CCNA hazırlığı üçün mentor dəstəyi mövcuddur."
+  },
+  {
+    "id": "kb-contact",
+    "keywords": ["əlaqə", "elaqe", "telefon", "nömrə", "nomre", "email", "mail", "zəng", "zeng"],
+    "text": "Əlaqə: +994 12 555 00 00, info@nexora.az. İş saatları: Bazar ertəsi - Şənbə, 10:00 - 20:00. Ünvan: Bakı, Nərimanov rayonu, Əhməd Rəcəbli 23."
+  },
+  {
+    "id": "kb-employment",
+    "keywords": ["iş", "is", "işə", "ise", "employment", "vakansiya", "işlə", "isle", "maaş", "maas"],
+    "text": "Məzunlarımızın orta işə düzəlmə faizi 82%-dir. 120+ tərəfdaş şirkət: PASHA Bank, Kapital Bank, ABB, Azercell, EPAM Azerbaijan."
+  }
+]

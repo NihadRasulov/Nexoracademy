@@ -1,0 +1,17 @@
+__pycache__
+*.pyc
+*.pyo
+.git
+.gitignore
+.vscode
+.env
+.env.*
+*.md
+tests/
+.pytest_cache/
+htmlcov/
+.coverage
+venv/
+.venv/
+chroma_db/
+app/chroma_db/
