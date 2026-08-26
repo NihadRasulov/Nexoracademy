@@ -212,6 +212,15 @@ smoke() {
   curl -fsS --max-time 20 "${resolve[@]}" "${base}/" >/dev/null
   curl -fsS --max-time 20 "${resolve[@]}" "${base}/api/v1/public/catalog/categories" >/dev/null
   curl -fsS --max-time 20 "${resolve[@]}" "${base}/${ADMIN_PATH}/login" >/dev/null
+
+  local admin_backend_code
+  admin_backend_code="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 20 \
+    "${resolve[@]}" -H 'Content-Type: application/json' \
+    -d '{"email":"nexora-smoke-probe@invalid.example","password":"not-a-real-password"}' \
+    "${base}/${ADMIN_PATH}/api/v1/auth/login")"
+  [[ "$admin_backend_code" == "401" ]] \
+    || fail "Admin BFF -> Java login probe uğursuz oldu (HTTP $admin_backend_code)."
+
   curl -fsS --max-time 40 "${resolve[@]}" \
     -H 'Content-Type: application/json' -d '{"message":"/start"}' \
     "${base}/api/chat" | grep -q '"reply"' \
@@ -222,7 +231,7 @@ smoke() {
     "${resolve[@]}" "${base}/api/v1/users")"
   [[ "$blocked_code" == "404" ]] || fail "Java admin API gateway-də açıq qalıb (HTTP $blocked_code)."
 
-  success "Smoke test keçdi: public UI, Java public API, chatbot və admin login işləyir."
+  success "Smoke test keçdi: public UI/API, chatbot və Admin BFF -> Java login yolu işləyir."
   printf '\nSayt:  %s\nAdmin: %s/%s/\n' "$base" "$base" "$ADMIN_PATH"
 }
 

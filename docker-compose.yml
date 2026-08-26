@@ -105,6 +105,7 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       ASPNETCORE_HTTP_PORTS: 8080
       NexoraApi__BaseUrl: http://app:8081
+      ReverseProxy__KnownProxies__0: ${NEXORA_GATEWAY_IP:-172.30.0.2}
     expose: ["8080"]
     networks: [nexora-net]
     depends_on:
@@ -139,7 +140,9 @@ services:
       - nexora_tls_data:/etc/nginx/certs:ro
       - nexora_acme_challenges:/var/www/certbot:ro
       - ./frontend/main-site/static:/etc/nginx/static:ro
-    networks: [nexora-net]
+    networks:
+      nexora-net:
+        ipv4_address: ${NEXORA_GATEWAY_IP:-172.30.0.2}
     depends_on:
       main-ui:
         condition: service_healthy
@@ -169,6 +172,9 @@ services:
 networks:
   nexora-net:
     driver: bridge
+    ipam:
+      config:
+        - subnet: ${NEXORA_SUBNET:-172.30.0.0/24}
 
 volumes:
   nexora_pg_data:

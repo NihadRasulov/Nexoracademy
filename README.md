@@ -61,6 +61,11 @@ nano .env
 - `ADMIN_SEED_EMAIL` və `ADMIN_SEED_PASSWORD` — ilk admin hesabı;
 - `OPENROUTER_API_KEY` — chatbotun tam AI cavabları üçün real açar.
 
+`NEXORA_SUBNET` və `NEXORA_GATEWAY_IP` BFF-in yalnız `web-gateway`-dən gələn
+forwarded header-lərə etibar etməsi üçün daxili Docker şəbəkəsini sabitləşdirir.
+Default ünvanlar hostdakı başqa Docker/VPN şəbəkəsi ilə toqquşursa, hər ikisini
+eyni boş private subnet daxilində dəyişin.
+
 Secret yaratmaq üçün nümunə:
 
 ```bash
