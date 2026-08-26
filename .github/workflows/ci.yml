@@ -32,7 +32,9 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: maven
-
+      - name: Make Maven wrapper executable
+        run: chmod +x ./mvnw
+        
       - name: Build with Maven
         working-directory: backend/api
         run: ./mvnw -B clean compile
