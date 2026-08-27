@@ -1,11 +1,11 @@
 """
-Conversation orchestrator – production-grade rewrite.
+Conversation orchestrator – algorithmic guided flow.
+Simple state machine, no LLM dependency for primary flow.
 """
 from __future__ import annotations
 
 import logging
-import time
-from typing import TYPE_CHECKING
+from difflib import SequenceMatcher
 
 from core.session import (
     get_or_create,
@@ -13,102 +13,61 @@ from core.session import (
     update_state,
     add_history,
     reset,
-    get_context_history,
 )
-from core.intent import detect_intent, extract_phone as extract_phone_raw, extract_name, is_blocked
+from core.intent import extract_name
 from core.extractor import extract_phone as extract_phone_clean
-from core.personalisation import PersonalisationInjector
-from core.parser import ResponseParser
+from data.loader import load_courses, load_knowledge
+from models.schemas import ChatResponse, ActionButton, CourseCard
 from core.observability import telemetry, TurnMetrics
-
-if TYPE_CHECKING:
-    from rag.retriever import Retriever
-from data.loader import load_courses
-from models.schemas import ChatResponse, ActionButton, CourseCard, LeadRequest
-from core.config import settings
 
 logger = logging.getLogger("nexora.orchestrator")
 
-INTEREST_ACTIONS = [
-    ActionButton(type="button", label="Proqramlaşdırma", value="proqramlashdirma"),
-    ActionButton(type="button", label="Kibertəhlükəsizlik", value="kiber"),
-    ActionButton(type="button", label="Şəbəkə / DevOps", value="shebeke"),
-]
+CONTACT_INFO = (
+    "Dəstək komandamız sənə kömək edə bilər:\n"
+    "📞 +994 12 555 00 00\n"
+    "📧 info@nexora.az\n"
+    "📍 Bakı, Nərimanov, Əhməd Rəcəbli 23\n"
+    "⏰ B.e - Şənbə, 10:00 - 20:00"
+)
 
-LEVEL_ACTIONS = [
-    ActionButton(type="button", label="Yeni başlayan", value="baslangic"),
-    ActionButton(type="button", label="Orta səviyyə", value="orta"),
-    ActionButton(type="button", label="Təcrübəli", value="ireli"),
-]
-
-RECOMMENDATION_ACTIONS = [
-    ActionButton(type="button", label="Qeydiyyatdan keç", value="qeydiyyat"),
-    ActionButton(type="button", label="Demo dərs istəyirəm", value="demo"),
-    ActionButton(type="button", label="Başqa sahə seç", value="basha"),
-]
-
-DIRECTION_MAP = {
+DIRECTION_LABELS = {
     "proqramlashdirma": "Proqramlaşdırma",
     "kiber": "Kibertəhlükəsizlik",
-    "shebeke": "IT İnfrastruktur",
+    "infra": "IT İnfrastruktur",
 }
 
-LEVEL_MAP = {
-    "baslangic": "Başlanğıc",
-    "orta": "Orta",
-    "ireli": "İrəli",
-}
-
-STATE_CONTEXT = {
-    "interest_selected": (
-        "İstifadəçi hələ maraq sahəsini seçməyib. Ona seçim etməyə kömək et: "
-        "Proqramlaşdırma, Kibertəhlükəsizlik və ya Şəbəkə/DevOps. "
-        "Əgər yazdığı bu sahələrdən birinə uyğun gəlmirsə, onu seçim etməyə yönləndir, amma sualına da cavab ver."
-    ),
-    "level_selected": (
-        "İstifadəçi maraq sahəsini seçib, indi səviyyəsini seçməlidir: "
-        "Başlanğıc, Orta və ya İrəli. Cavab verərkən onu səviyyə seçməyə yönləndir."
-    ),
-    "recommendation": (
-        "İstifadəçiyə kurslar tövsiyə olunub. O, qeydiyyatdan keçmək, "
-        "demo dərs istəmək və ya başqa sual verə bilər. Kömək et."
-    ),
-    "lead_capture_name": (
-        "İstifadəçidən adını alırıq. Adını yazıbsa, təsdiq et və telefon nömrəsini soruş. "
-        "Hələ yazmayıbsa, nəzakətlə adını soruş. "
-        "Əgər sual verirsə, cavab ver, amma sonra yenə adını soruş."
-    ),
-    "lead_capture_phone": (
-        "İstifadəçidən telefon nömrəsini alırıq (+994XXXXXXXXX). "
-        "Nömrəni yazıbsa, təsdiq et. Yazmayıbsa, nömrəsini soruş. "
-        "Sual verirsə, cavab ver, amma sonra yenə nömrəni soruş."
-    ),
-    "completed": "İstifadəçi qeydiyyatdan keçib. Sərbəst sual verə bilər. Kömək et.",
+DIRECTION_SYNONYMS = {
+    "proqramlashdirma": ["proqram", "kod", "kodlama", "developer", "veb", "frontend", "backend", "fullstack", "python", "flutter", "mobile", "tətbiq", "tətbiqetmə", "data", "analitika", "ui", "ux", "dizayn"],
+    "kiber": ["kiber", "təhlükəsizlik", "hacker", "pentest", "soc", "şəbəkə", "guvənlik", "etik", "insident"],
+    "infra": ["infra", "devops", "bulud", "cloud", "aws", "docker", "kubernetes", "ci/cd", "server"],
 }
 
 
 class Orchestrator:
-    def __init__(
-        self,
-        retriever: "Retriever | None" = None,
-    ):
-        self.retriever = retriever
-        self._personaliser = PersonalisationInjector()
-        self._parser = ResponseParser()
+    def __init__(self, retriever=None):
+        self._courses = load_courses()
+        self._knowledge = load_knowledge()
+        self._build_direction_index()
+
+    def _build_direction_index(self):
+        self._directions: dict[str, list[dict]] = {}
+        for course in self._courses:
+            d = course.get("direction", "")
+            if d not in self._directions:
+                self._directions[d] = []
+            self._directions[d].append(course)
+
+        self._dir_key_by_label = {}
+        for key, label in DIRECTION_LABELS.items():
+            self._dir_key_by_label[label.lower()] = key
+            self._dir_key_by_label[key] = key
 
     def process(self, message: str, session_id: str, user_id: str | None = None) -> ChatResponse:
         session = get_or_create(session_id, user_id)
         text = message.strip()[:2000]
-
         state_before = session["state"]
 
         logger.debug("turn_start session=%s state=%s user=%s", session_id, state_before, user_id)
-
-        if is_blocked(text):
-            add_history(session, "user", text)
-            result = self._answer_with_llm(session, text)
-            self._finalize(session, text, result, state_before)
-            return result
 
         if not text or text in ("/start", ""):
             result = self._handle_start(session)
@@ -120,20 +79,20 @@ class Orchestrator:
 
         if state == "start":
             result = self._handle_start(session, text)
-        elif state == "interest_selected":
-            result = self._handle_interest(session, text)
-        elif state == "level_selected":
-            result = self._handle_level(session, text)
-        elif state == "recommendation":
-            result = self._handle_recommendation_reply(session, text)
-        elif state == "lead_capture_name":
+        elif state == "direction_selected":
+            result = self._handle_direction(session, text)
+        elif state == "course_selected":
+            result = self._handle_course_action(session, text)
+        elif state == "faq":
+            result = self._handle_faq(session, text)
+        elif state == "register_name":
             result = self._handle_name(session, text)
-        elif state == "lead_capture_phone":
+        elif state == "register_phone":
             result = self._handle_phone(session, text)
         elif state == "completed":
             result = self._handle_completed(session, text)
         else:
-            result = self._answer_with_llm(session, text)
+            result = self._handle_fallback(session)
 
         self._finalize(session, text, result, state_before)
         return result
@@ -143,145 +102,262 @@ class Orchestrator:
             lower = text.lower().strip()
             greeting_words = ["salam", "hi", "hello", "hey", "merhaba", "sağol", "sagol"]
             if lower not in greeting_words:
-                update_state(session, "interest_selected")
-                return self._answer_with_llm(session, text)
+                return self._try_answer_question(session, text)
 
-        update_state(session, "interest_selected")
-
+        update_state(session, "direction_selected")
         name = session.get("data", {}).get("name")
-        greeting = f"Xoş gördük, {name}!" if name else "Salam əziz dostum!"
+        greeting = f"Xoş gördük, {name}!" if name else "Salam!"
 
         return ChatResponse(
             reply=(
-                f"{greeting} Nexora Academy-nin süni intellekt köməkçisiyəm. "
-                "Çox şadam ki, bura gəlmisən! De görüm, səni ən çox hansı sahə maraqlandırır? "
-                "Seçimini et, mən də sənə ən uyğun kursları tapaq!"
+                f"{greeting} Nexora Academy kursları haqqında məlumat almaq istəyirsən. "
+                "Hansı istiqamət səni daha çox maraqlandırır?"
             ),
-            state="interest_selected",
-            actions=INTEREST_ACTIONS,
+            state="direction_selected",
+            actions=[
+                ActionButton(type="button", label="Proqramlaşdırma", value="proqramlashdirma"),
+                ActionButton(type="button", label="Kibertəhlükəsizlik", value="kiber"),
+                ActionButton(type="button", label="IT İnfrastruktur", value="infra"),
+            ],
             courses=[],
             capture="none",
         )
 
-    def _handle_interest(self, session: dict, text: str) -> ChatResponse:
+    def _handle_direction(self, session: dict, text: str) -> ChatResponse:
         lower = text.lower().strip()
-        matched = None
-        for key, label in DIRECTION_MAP.items():
-            if key in lower or label.lower() in lower:
-                matched = key
+        matched_key = None
+
+        for key, label in DIRECTION_LABELS.items():
+            if key == lower or label.lower() == lower:
+                matched_key = key
                 break
 
-        if matched:
-            session["data"]["interest"] = matched
-            update_state(session, "level_selected")
-            direction_label = DIRECTION_MAP.get(matched, "seçdiyin sahə")
-            return ChatResponse(
-                reply=(
-                    f"Əla seçimdir! {direction_label} istiqamətində sənə uyğun proqramı "
-                    "tapmaq üçün hazırkı səviyyəni seç: yeni başlayan, orta səviyyə və ya təcrübəli."
-                ),
-                state="level_selected",
-                actions=LEVEL_ACTIONS,
-                courses=[],
-                capture="none",
+        if not matched_key:
+            for key, synonyms in DIRECTION_SYNONYMS.items():
+                for syn in synonyms:
+                    if syn in lower:
+                        matched_key = key
+                        break
+                if matched_key:
+                    break
+
+        if not matched_key:
+            for label_lower, key in self._dir_key_by_label.items():
+                if label_lower in lower:
+                    matched_key = key
+                    break
+
+        if not matched_key:
+            best_score = 0.0
+            for key, label in DIRECTION_LABELS.items():
+                score = SequenceMatcher(None, lower, label.lower()).ratio()
+                if score > best_score:
+                    best_score = score
+                    matched_key = key
+            if best_score < 0.4:
+                matched_key = None
+
+        if matched_key:
+            direction_label = DIRECTION_LABELS.get(matched_key, matched_key)
+            courses = self._directions.get(direction_label, [])
+            if not courses:
+                return ChatResponse(
+                    reply=f"Hələlik {direction_label} istiqamətində kurs mövcud deyil.",
+                    state="direction_selected",
+                    actions=[
+                        ActionButton(type="button", label="Proqramlaşdırma", value="proqramlashdirma"),
+                        ActionButton(type="button", label="Kibertəhlükəsizlik", value="kiber"),
+                        ActionButton(type="button", label="IT İnfrastruktur", value="infra"),
+                    ],
+                    courses=[],
+                    capture="none",
+                )
+
+            session["data"]["direction"] = matched_key
+            update_state(session, "course_selected")
+
+            course_buttons = []
+            for c in courses:
+                course_buttons.append(
+                    ActionButton(type="button", label=c["title"], value=c["id"])
+                )
+            course_buttons.append(ActionButton(type="button", label="← Geri", value="basha"))
+
+            reply = (
+                f"{direction_label} istiqamətində {len(courses)} kursumuz var.\n"
+                "Hansı kurs haqqında ətraflı məlumat istəyirsən?"
             )
-
-        return self._answer_with_llm(session, text)
-
-    def _handle_level(self, session: dict, text: str) -> ChatResponse:
-        lower = text.lower().strip()
-        matched = None
-        for key, label in LEVEL_MAP.items():
-            if key in lower or label.lower() in lower:
-                matched = key
-                break
-
-        if matched:
-            session["data"]["level"] = matched
-            update_state(session, "recommendation")
-            courses = self._recommend_courses(session["data"]["interest"], matched)
-
-            direction_label = DIRECTION_MAP.get(session["data"]["interest"], "")
-            level_label = LEVEL_MAP.get(matched, "")
-
-            if courses:
-                reply = (
-                    f"Super! Sənin üçün {direction_label} sahəsində {level_label.lower()} "
-                    f"səviyyəsinə uyğun ən yaxşı kursları seçdim. Aşağıda kursları görə bilərsən.\n\n"
-                    f"Bunlardan hansısa xoşuna gəldi? Demo dərsdə iştirak etmək və ya "
-                    f"qeydiyyatdan keçmək üçün adını yaz, səninlə əlaqə saxlayaq!"
-                )
-            else:
-                reply = (
-                    f"Təəssüf ki, {direction_label} sahəsində {level_label.lower()} səviyyəyə "
-                    f"uyğun kurs hazırda mövcud deyil. "
-                    f"Amma başqa sahə seçsən, bəlkə orada sənə uyğun bir şey tapaq!"
-                )
 
             return ChatResponse(
                 reply=reply,
-                state="recommendation",
-                actions=RECOMMENDATION_ACTIONS,
-                courses=courses,
+                state="course_selected",
+                actions=course_buttons,
+                courses=[],
                 capture="none",
             )
 
-        return self._answer_with_llm(session, text)
+        return self._try_answer_question(session, text)
 
-    def _handle_recommendation_reply(self, session: dict, text: str) -> ChatResponse:
-        lower = text.lower()
+    def _handle_course_action(self, session: dict, text: str) -> ChatResponse:
+        lower = text.lower().strip()
 
-        if any(w in lower for w in ["basha", "basqa", "geri"]):
+        if lower in ("basha", "basqa", "geri", "← geri", "←geri"):
             reset(session)
             return self._handle_start(session)
 
-        if any(w in lower.split() for w in ["kec", "keç", "yox", "istemirem", "istəmirəm"]):
-            update_state(session, "completed")
+        selected_id = text.strip()
+        course = None
+        for c in self._courses:
+            if c["id"] == selected_id or c["title"].lower() == lower:
+                course = c
+                break
+
+        if not course:
+            for c in self._courses:
+                if selected_id in c["id"] or selected_id in c["title"].lower():
+                    course = c
+                    break
+
+        if course:
+            session["data"]["selected_course"] = course["id"]
+            update_state(session, "faq")
+
+            tools_str = ", ".join(course.get("tools", [])[:5])
+            sched = course.get("schedule", {})
+            sched_str = f"{sched.get('days', '')} · {sched.get('time', '')}" if sched else ""
+            instructor = course.get("instructor", {})
+
+            faq_buttons = []
+            for i, faq in enumerate(course.get("faq", [])[:3]):
+                faq_buttons.append(
+                    ActionButton(type="button", label=faq["question"][:50], value=f"faq_{i}")
+                )
+            faq_buttons.append(ActionButton(type="button", label="Qeydiyyat", value="qeydiyyat"))
+            faq_buttons.append(ActionButton(type="button", label="← Geri", value="basha"))
+
+            reply = (
+                f"📚 {course['title']}\n"
+                f"💰 {course.get('priceAzn', '?')} AZN · {course.get('durationWeeks', '?')} həftə\n"
+                f"📊 Səviyyə: {course.get('level', '?')} · Format: {course.get('format', '?')}\n"
+                f"👨‍🏫 {instructor.get('name', '?')} — {instructor.get('title', '')}\n"
+                f"📅 {sched_str}\n"
+                f"🛠 Alətlər: {tools_str}\n\n"
+                f"{course.get('shortDescription', '')}\n\n"
+                "Aşağıdakı seçimlərdən birini et və ya sualını yaz:"
+            )
+
             return ChatResponse(
-                reply=(
-                    "Heç problem deyil, canın sağ olsun! Nə vaxt istəsən, yenə buyur. "
-                    "Başqa sualın varsa mən buradam. Yenidən başlamaq üçün 'başla' yazmağın kifayətdir."
-                ),
-                state="completed",
-                actions=[ActionButton(type="button", label="Yenidən başla", value="basha")],
-                courses=[],
+                reply=reply,
+                state="faq",
+                actions=faq_buttons,
+                courses=[self._course_to_card(course)],
                 capture="none",
             )
 
-        intent = detect_intent(text)
-        if intent in ("lead_phone", "lead_name", "registration") or any(
-            word in lower for word in ["qeydiyyat", "demo"]
-        ):
-            update_state(session, "lead_capture_name")
+        return ChatResponse(
+            reply="Kurs seçmək üçün yuxarıdakı düymələrdən birinə bas.",
+            state="course_selected",
+            actions=[
+                ActionButton(type="button", label="← Geri", value="basha"),
+            ],
+            courses=[],
+            capture="none",
+        )
+
+    def _handle_faq(self, session: dict, text: str) -> ChatResponse:
+        lower = text.lower().strip()
+
+        if lower in ("basha", "basqa", "geri", "← geri", "←geri"):
+            reset(session)
+            return self._handle_start(session)
+
+        if lower in ("qeydiyyat", "qeydiyyatdan keç", "yazıl", "yazil"):
+            return self._start_registration(session)
+
+        course_id = session.get("data", {}).get("selected_course", "")
+        course = None
+        for c in self._courses:
+            if c["id"] == course_id:
+                course = c
+                break
+
+        if course and lower.startswith("faq_"):
+            try:
+                faq_idx = int(lower.replace("faq_", ""))
+                faqs = course.get("faq", [])
+                if 0 <= faq_idx < len(faqs):
+                    answer = faqs[faq_idx]["answer"]
+                    faq_buttons = []
+                    for i, faq in enumerate(faqs[:3]):
+                        faq_buttons.append(
+                            ActionButton(type="button", label=faq["question"][:50], value=f"faq_{i}")
+                        )
+                    faq_buttons.append(ActionButton(type="button", label="Qeydiyyat", value="qeydiyyat"))
+                    faq_buttons.append(ActionButton(type="button", label="← Geri", value="basha"))
+
+                    return ChatResponse(
+                        reply=answer,
+                        state="faq",
+                        actions=faq_buttons,
+                        courses=[self._course_to_card(course)],
+                        capture="none",
+                    )
+            except (ValueError, IndexError):
+                pass
+
+        faq_match = self._match_knowledge(text)
+        if faq_match:
             return ChatResponse(
-                reply="Məmnuniyyətlə kömək edərəm. Əvvəlcə adını yaz.",
-                state="lead_capture_name",
-                actions=[],
-                courses=[],
-                capture="name",
+                reply=faq_match,
+                state="faq",
+                actions=[
+                    ActionButton(type="button", label="Qeydiyyat", value="qeydiyyat"),
+                    ActionButton(type="button", label="← Geri", value="basha"),
+                ],
+                courses=[self._course_to_card(course)] if course else [],
+                capture="none",
             )
 
-        return self._answer_with_llm(session, text)
+        return ChatResponse(
+            reply=(
+                "Bu suala cavab verməkdə çətinlik çəkirəm.\n\n"
+                f"{CONTACT_INFO}\n\n"
+                "Əlaqə səhifəmizdən də istifadə edə bilərsən: nexoracademy.az/elaqe"
+            ),
+            state="faq",
+            actions=[
+                ActionButton(type="button", label="Qeydiyyat", value="qeydiyyat"),
+                ActionButton(type="button", label="← Geri", value="basha"),
+            ],
+            courses=[self._course_to_card(course)] if course else [],
+            capture="none",
+        )
+
+    def _start_registration(self, session: dict) -> ChatResponse:
+        update_state(session, "register_name")
+        return ChatResponse(
+            reply="Qeydiyyat üçün adını yaz.",
+            state="register_name",
+            actions=[],
+            courses=[],
+            capture="name",
+        )
 
     def _handle_name(self, session: dict, text: str) -> ChatResponse:
         name = extract_name(text) or text.strip()
         if len(name) >= 2:
             session["data"]["name"] = name
-            update_state(session, "lead_capture_phone")
+            update_state(session, "register_phone")
             return ChatResponse(
-                reply=(
-                    f"Təşəkkür edirəm, {name}. İndi əlaqə üçün telefon nömrəni "
-                    "+994XXXXXXXXX formatında yaz."
-                ),
-                state="lead_capture_phone",
+                reply=f"Təşəkkür edirəm, {name}. İndi əlaqə üçün telefon nömrəni +994XXXXXXXXX formatında yaz.",
+                state="register_phone",
                 actions=[],
                 courses=[],
                 capture="phone",
             )
-
         return ChatResponse(
             reply="Zəhmət olmasa adını ən azı 2 simvolla yaz.",
-            state="lead_capture_name",
+            state="register_name",
             actions=[],
             courses=[],
             capture="name",
@@ -293,115 +369,122 @@ class Orchestrator:
             session["data"]["phone"] = phone
             update_state(session, "completed")
             self._store_lead(session)
-
             name = session["data"].get("name", "")
             return ChatResponse(
                 reply=(
-                    f"{name}, məlumatların qeydə alındı! Çox sevindim səni tanıdığıma.\n\n"
-                    f"Komandamız 1 iş günü ərzində {phone} nömrəsi ilə sənə zəng edəcək. "
-                    f"Sənə uyğun kurs haqqında ətraflı məlumat verəcəklər.\n\n"
-                    f"Başqa sualın varsa, mən hələ də buradayam! İstənilən vaxt yaz."
+                    f"{name}, məlumatların qeydə alındı!\n\n"
+                    f"Komandamız 1 iş günü ərzində {phone} nömrəsi ilə sənə zəng edəcək.\n\n"
+                    "Başqa sualın varsa, mən hələ də buradayam!"
                 ),
                 state="completed",
                 actions=[ActionButton(type="button", label="Yenidən başla", value="basha")],
                 courses=[],
                 capture="none",
             )
-
         return ChatResponse(
             reply="Telefon nömrəsini +994XXXXXXXXX formatında yaz.",
-            state="lead_capture_phone",
+            state="register_phone",
             actions=[],
             courses=[],
             capture="phone",
         )
 
-    def _handle_completed(self, session: dict, text: str = "") -> ChatResponse:
+    def _handle_completed(self, session: dict, text: str) -> ChatResponse:
         lower = text.lower().strip()
-        if any(w in lower.split() for w in ["basha", "basqa", "geri", "yeniden", "yenidən"]):
+        if any(w in lower.split() for w in ["basha", "basqa", "geri", "yeniden", "yenidən", "başla"]):
             reset(session)
             return self._handle_start(session)
-        return self._answer_with_llm(session, text)
+        return self._try_answer_question(session, text)
 
-    def _answer_with_llm(self, session: dict, text: str) -> ChatResponse:
-        if self.retriever:
-            try:
-                results = self.retriever.retrieve(text, top_k=1)
-                if results and len(results) > 0:
-                    answer = results[0].get("text", "")
-                    if answer:
-                        return ChatResponse(
-                            reply=answer,
-                            state=session.get("state", "start"),
-                            actions=[],
-                            courses=[],
-                            capture="none",
-                        )
-            except Exception as exc:
-                logger.warning("rag_error error=%s", exc)
+    def _try_answer_question(self, session: dict, text: str) -> ChatResponse:
+        faq_match = self._match_knowledge(text)
+        if faq_match:
+            state = session.get("state", "start")
+            return ChatResponse(
+                reply=faq_match,
+                state=state,
+                actions=[
+                    ActionButton(type="button", label="Proqramlaşdırma", value="proqramlashdirma"),
+                    ActionButton(type="button", label="Kibertəhlükəsizlik", value="kiber"),
+                    ActionButton(type="button", label="IT İnfrastruktur", value="infra"),
+                ],
+                courses=[],
+                capture="none",
+            )
+        return self._handle_fallback(session)
 
-        return self._fallback_response(session)
-
-    def _fallback_response(self, session: dict) -> ChatResponse:
+    def _handle_fallback(self, session: dict) -> ChatResponse:
         state = session.get("state", "start")
-        if state in ("start", "interest_selected"):
+        if state in ("start", "direction_selected"):
+            update_state(session, "direction_selected")
             return ChatResponse(
-                reply="Sənə uyğun kurs tapmaq üçün maraqlandığın istiqaməti seç.",
-                state="interest_selected",
-                actions=INTEREST_ACTIONS,
+                reply="Hansı istiqamət səni daha çox maraqlandırır?",
+                state="direction_selected",
+                actions=[
+                    ActionButton(type="button", label="Proqramlaşdırma", value="proqramlashdirma"),
+                    ActionButton(type="button", label="Kibertəhlükəsizlik", value="kiber"),
+                    ActionButton(type="button", label="IT İnfrastruktur", value="infra"),
+                ],
                 courses=[],
                 capture="none",
-            )
-        if state == "level_selected":
-            return ChatResponse(
-                reply="Hazırkı səviyyəni seç: yeni başlayan, orta səviyyə və ya təcrübəli.",
-                state=state,
-                actions=LEVEL_ACTIONS,
-                courses=[],
-                capture="none",
-            )
-        if state == "recommendation":
-            return ChatResponse(
-                reply="Kurslardan biri ilə bağlı demo dərs və ya qeydiyyat üçün seçim et.",
-                state=state,
-                actions=RECOMMENDATION_ACTIONS,
-                courses=[],
-                capture="none",
-            )
-        if state == "lead_capture_name":
-            return ChatResponse(
-                reply="Qeydiyyatı davam etdirmək üçün adını yaz.",
-                state=state,
-                actions=[],
-                courses=[],
-                capture="name",
-            )
-        if state == "lead_capture_phone":
-            return ChatResponse(
-                reply="Əlaqə üçün telefon nömrəni +994XXXXXXXXX formatında yaz.",
-                state=state,
-                actions=[],
-                courses=[],
-                capture="phone",
             )
         return ChatResponse(
-            reply="Yeni kurs seçimi üçün aşağıdakı düymədən istifadə et.",
-            state="completed",
-            actions=[ActionButton(type="button", label="Yenidən başla", value="basha")],
+            reply=(
+                "Bu suala cavab verməkdə çətinlik çəkirəm.\n\n"
+                f"{CONTACT_INFO}"
+            ),
+            state=state,
+            actions=[ActionButton(type="button", label="← Geri", value="basha")],
             courses=[],
             capture="none",
         )
 
-    def _finalize(
-        self,
-        session: dict,
-        user_text: str,
-        result: ChatResponse,
-        state_before: str,
-    ):
+    def _match_knowledge(self, text: str) -> str | None:
+        lower = text.lower().strip()
+        best_entry = None
+        best_score = 0.0
+
+        for entry in self._knowledge:
+            keywords = entry.get("keywords", [])
+            for kw in keywords:
+                if kw.lower() in lower:
+                    return entry["text"]
+                score = SequenceMatcher(None, kw.lower(), lower).ratio()
+                if score > best_score:
+                    best_score = score
+                    best_entry = entry
+
+        if best_score >= 0.55:
+            return best_entry["text"]
+        return None
+
+    def _course_to_card(self, course: dict) -> CourseCard:
+        return CourseCard(
+            id=course["id"],
+            name=course["title"],
+            price=course.get("priceAzn"),
+            category=course.get("direction", ""),
+            level=course.get("level", ""),
+            tools=course.get("tools", []),
+            instructor=course.get("instructor", {}).get("name", ""),
+            schedule=course.get("schedule", {}),
+        )
+
+    def _store_lead(self, session: dict):
+        from core.lead_service import add_lead
+        add_lead({
+            "name": session["data"].get("name", ""),
+            "phone": session["data"].get("phone", ""),
+            "interest": session["data"].get("direction", ""),
+            "level": "",
+            "sessionId": session.get("sessionId", ""),
+            "userId": session.get("userId", ""),
+            "source": "chatbot",
+        })
+
+    def _finalize(self, session: dict, user_text: str, result: ChatResponse, state_before: str):
         add_history(session, "assistant", result.reply)
         session_save(session)
-
         telemetry.record(
             TurnMetrics(
                 session_id=session["sessionId"],
@@ -413,46 +496,3 @@ class Orchestrator:
                 reply_len=len(result.reply),
             )
         )
-
-    def _store_lead(self, session: dict):
-        from core.lead_service import add_lead
-        interest = session["data"].get("interest", "")
-        add_lead({
-            "name": session["data"].get("name", ""),
-            "phone": session["data"].get("phone", ""),
-            "interest": interest,
-            "level": session["data"].get("level", ""),
-            "sessionId": session.get("sessionId", ""),
-            "userId": session.get("userId", ""),
-            "source": "chatbot",
-        })
-        telemetry.record_lead(interest)
-
-    def _recommend_courses(self, interest: str, level: str) -> list[CourseCard]:
-        courses = load_courses()
-        direction_label = DIRECTION_MAP.get(interest)
-        level_label = LEVEL_MAP.get(level)
-
-        matched = courses
-        if direction_label:
-            by_dir = [c for c in courses if c.get("direction") == direction_label]
-            if by_dir:
-                matched = by_dir
-        if level_label:
-            by_lvl = [c for c in matched if c.get("level") == level_label]
-            if by_lvl:
-                matched = by_lvl
-
-        return [
-            CourseCard(
-                id=c["id"],
-                name=c["title"],
-                price=c.get("priceAzn"),
-                category=c.get("direction", ""),
-                level=c.get("level", ""),
-                tools=c.get("tools", []),
-                instructor=c.get("instructor", {}).get("name", ""),
-                schedule=c.get("schedule", {}),
-            )
-            for c in matched[:4]
-        ]

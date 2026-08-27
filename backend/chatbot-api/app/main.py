@@ -124,7 +124,7 @@ from core.orchestrator import Orchestrator
 from routes.chat import router as chat_router, init as init_chat
 from routes.lead import router as lead_router
 
-orchestrator = Orchestrator(retriever=retriever)
+orchestrator = Orchestrator()
 init_chat(orchestrator)
 
 app.include_router(chat_router, prefix="/api")

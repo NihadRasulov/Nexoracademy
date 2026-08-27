@@ -242,7 +242,7 @@
     } catch (error) {
       hideTyping();
       const aborted = error?.name === "AbortError";
-      showError(aborted ? "The request timed out. Check that the API is running and try again." : "The Nexora API could not be reached. Check the server, then retry.");
+      showError(aborted ? "Sorğunun vaxtı bitdi. Yenidən cəhd edin." : "AI köməkçiyə qoşulmaq mümkün olmadı.");
       setConnection("offline", "Offline");
     } finally {
       setPending(false);
@@ -253,7 +253,7 @@
   async function initializeConversation() {
     if (!elements.loadingIntro.isConnected) elements.messages.appendChild(elements.loadingIntro);
     elements.loadingIntro.hidden = false;
-    setConnection("connecting", "Connecting");
+    setConnection("connecting", "Qoşulur");
     setPending(true);
     hideError();
     try {
@@ -264,8 +264,8 @@
       setConnection("online", "Online");
     } catch (_) {
       elements.loadingIntro.hidden = true;
-      addLocalError("The chat interface is ready, but the Nexora API is not responding.");
-      showError("Start the FastAPI server on port 8000, then retry.");
+      addLocalError("AI köməkçi hazırda cavab vermir.");
+      showError("Serveri yoxlayın və yenidən cəhd edin.");
       setConnection("offline", "Offline");
       lastRequest = { value: "/start", displayValue: "" };
     } finally {
