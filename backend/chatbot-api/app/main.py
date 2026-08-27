@@ -5,10 +5,12 @@ Startup sequence:
   1. Load .env and settings
   2. Configure structured logging
   3. Connect to Redis (optional – degrades gracefully)
-  4. Initialise RAG pipeline (optional)
-  5. Initialise LLM client (with circuit breaker wired to Redis)
-  6. Build Orchestrator and inject into routes
-  7. Expose /health and /metrics endpoints
+  4. Initialise database (SQLite default / PostgreSQL in production)
+  5. Initialise RAG pipeline (optional)
+  6. Initialise LLM client (with circuit breaker wired to Redis)
+  7. Build Orchestrator and inject into routes
+  8. Mount static frontend (if present)
+  9. Expose /health and /metrics endpoints
 """
 from __future__ import annotations
 
@@ -51,6 +53,7 @@ for warning in settings.validate():
 # ── FastAPI app ───────────────────────────────────────────────────────────────
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(
     title="Nexora Academy AI",
@@ -60,10 +63,9 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://nexoracademy.az"],
-    allow_methods=["POST", "GET"],
-    allow_headers=["Content-Type", "Accept"],
-    allow_credentials=True,
+    allow_origins=["https://nexoracademy.az", "https://www.nexoracademy.az"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # ── Redis ─────────────────────────────────────────────────────────────────────
@@ -92,6 +94,14 @@ _session_manager = SessionManager(redis_client=_redis_client)
 set_manager(_session_manager)
 set_rate_limiter_redis(_redis_client)
 
+# ── Database ──────────────────────────────────────────────────────────────────
+try:
+    from db.database import init_db
+    init_db()
+    logger.info("database_ready url=%s", settings.database_url.split("@")[-1] if "@" in settings.database_url else settings.database_url)
+except Exception as exc:
+    logger.error("database_init_failed error=%s – leads will buffer in memory", exc)
+
 # ── RAG pipeline ──────────────────────────────────────────────────────────────
 retriever = None
 
@@ -109,32 +119,16 @@ except Exception as exc:
     logger.warning("rag_init_failed error=%s – running without RAG", exc)
     retriever = None
 
-# ── LLM client ────────────────────────────────────────────────────────────────
-llm = None
-
-if settings.llm_available:
-    try:
-        from llm.client import LLMClient
-        llm = LLMClient(
-            api_key=settings.openrouter_api_key,
-            model=settings.openrouter_model,
-            redis_client=_redis_client,   # circuit breaker state in Redis
-        )
-        logger.info("llm_ready model=%s", settings.openrouter_model)
-    except Exception as exc:
-        logger.error("llm_init_failed error=%s – running without LLM", exc)
-        llm = None
-else:
-    logger.warning("llm_skipped – OPENROUTER_API_KEY not set")
-
 # ── Orchestrator ──────────────────────────────────────────────────────────────
 from core.orchestrator import Orchestrator
 from routes.chat import router as chat_router, init as init_chat
+from routes.lead import router as lead_router
 
-orchestrator = Orchestrator(retriever=retriever, llm=llm)
+orchestrator = Orchestrator(retriever=retriever)
 init_chat(orchestrator)
 
 app.include_router(chat_router, prefix="/api")
+app.include_router(lead_router, prefix="/api")
 
 # ── Global error handlers ─────────────────────────────────────────────────────
 
@@ -173,6 +167,8 @@ async def validation_error_handler(_req: _Request, exc: RequestValidationError):
 
 @app.get("/health")
 async def health():
+    from db.database import health_check as db_health
+
     redis_ok = False
     if _redis_client:
         try:
@@ -181,27 +177,19 @@ async def health():
         except Exception:
             redis_ok = False
 
-    cb_state = "unknown"
-    if llm:
-        try:
-            cb_state = llm.cb.state()
-        except Exception:
-            pass
 
-    return {
-        "status": "ok",
-        "service": "nexora-ai-chatbot",
-        "version": "2.0.0",
-        "environment": settings.environment,
-        "components": {
-            "llm": llm is not None,
-            "llm_circuit": cb_state,
-            "rag": retriever is not None,
-            "rag_docs": retriever.count() if retriever else 0,
-            "redis": redis_ok,
-            "platform_api": settings.platform_api_url,
-        },
-    }
+    db_ok = db_health() if isinstance(db_health(), bool) else db_health().get("healthy", True)
+    all_ok = redis_ok and db_ok
+    status_code = 200 if all_ok else 503
+    from fastapi.responses import JSONResponse as _JSONResponse
+    return _JSONResponse(
+        status_code=status_code,
+        content={
+            "status": "ok" if all_ok else "degraded",
+            "service": "nexora-ai-chatbot",
+            "version": "2.0.0"
+        }
+    )
 
 # ── Metrics endpoint (Prometheus) ─────────────────────────────────────────────
 
@@ -213,6 +201,15 @@ if settings.metrics_enabled:
         logger.info("metrics_endpoint_mounted path=/metrics")
     except Exception as exc:
         logger.warning("metrics_mount_failed error=%s", exc)
+
+# ── Static frontend ───────────────────────────────────────────────────────────
+
+FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent / "src" / "main" / "resources" / "static"
+if not FRONTEND_DIR.exists():
+    FRONTEND_DIR = Path(__file__).resolve().parent.parent / "public"
+if FRONTEND_DIR.exists():
+    app.mount("/chat", StaticFiles(directory=str(FRONTEND_DIR), html=True), name="frontend")
+    logger.info("frontend_mounted path=%s mount=/chat", FRONTEND_DIR)
 
 # ── Dev server entry point ────────────────────────────────────────────────────
 

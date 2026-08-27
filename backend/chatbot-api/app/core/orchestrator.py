@@ -23,11 +23,8 @@ from core.observability import telemetry, TurnMetrics
 
 if TYPE_CHECKING:
     from rag.retriever import Retriever
-    from llm.client import LLMClient
-
-from llm.prompts import SYSTEM_PROMPT
 from data.loader import load_courses
-from models.schemas import ChatResponse, ActionButton, CourseCard
+from models.schemas import ChatResponse, ActionButton, CourseCard, LeadRequest
 from core.config import settings
 
 logger = logging.getLogger("nexora.orchestrator")
@@ -94,10 +91,8 @@ class Orchestrator:
     def __init__(
         self,
         retriever: "Retriever | None" = None,
-        llm: "LLMClient | None" = None,
     ):
         self.retriever = retriever
-        self.llm = llm
         self._personaliser = PersonalisationInjector()
         self._parser = ResponseParser()
 
@@ -111,26 +106,18 @@ class Orchestrator:
 
         if is_blocked(text):
             add_history(session, "user", text)
-            from models.schemas import ChatResponse as _CR
-            result = _CR(
-                reply="Bu mövzu haqqında kömək edə bilmirəm. Nexora Academy kursları haqqında sual verə bilərsən.",
-                state="blocked",
-                actions=[],
-                courses=[],
-                capture="none",
-            )
-            self._finalize(session, text, result, state_before, llm_called=False)
+            result = self._answer_with_llm(session, text)
+            self._finalize(session, text, result, state_before)
             return result
 
         if not text or text in ("/start", ""):
             result = self._handle_start(session)
-            self._finalize(session, text, result, state_before, llm_called=False)
+            self._finalize(session, text, result, state_before)
             return result
 
         add_history(session, "user", text)
         state = session["state"]
 
-        llm_called = False
         if state == "start":
             result = self._handle_start(session, text)
         elif state == "interest_selected":
@@ -145,15 +132,10 @@ class Orchestrator:
             result = self._handle_phone(session, text)
         elif state == "completed":
             result = self._handle_completed(session, text)
-            llm_called = True
         else:
             result = self._answer_with_llm(session, text)
-            llm_called = True
 
-        if not llm_called:
-            llm_called = getattr(result, "_llm_called", False)
-
-        self._finalize(session, text, result, state_before, llm_called=llm_called)
+        self._finalize(session, text, result, state_before)
         return result
 
     def _handle_start(self, session: dict, text: str = "") -> ChatResponse:
@@ -204,9 +186,7 @@ class Orchestrator:
                 capture="none",
             )
 
-        result = self._answer_with_llm(session, text)
-        result._llm_called = True
-        return result
+        return self._answer_with_llm(session, text)
 
     def _handle_level(self, session: dict, text: str) -> ChatResponse:
         lower = text.lower().strip()
@@ -246,9 +226,7 @@ class Orchestrator:
                 capture="none",
             )
 
-        result = self._answer_with_llm(session, text)
-        result._llm_called = True
-        return result
+        return self._answer_with_llm(session, text)
 
     def _handle_recommendation_reply(self, session: dict, text: str) -> ChatResponse:
         lower = text.lower()
@@ -283,9 +261,7 @@ class Orchestrator:
                 capture="name",
             )
 
-        result = self._answer_with_llm(session, text)
-        result._llm_called = True
-        return result
+        return self._answer_with_llm(session, text)
 
     def _handle_name(self, session: dict, text: str) -> ChatResponse:
         name = extract_name(text) or text.strip()
@@ -316,17 +292,15 @@ class Orchestrator:
         if phone:
             session["data"]["phone"] = phone
             update_state(session, "completed")
-            saved = self._store_contact(session)
+            self._store_lead(session)
 
             name = session["data"].get("name", "")
             return ChatResponse(
                 reply=(
-                    (f"{name}, məlumatların qeydə alındı! Komandamız 1 iş günü ərzində "
-                     f"{phone} nömrəsi ilə sənə zəng edəcək. Sənə uyğun kurs haqqında "
-                     f"ətraflı məlumat verəcəklər.\n\nBaşqa sualın varsa, mən buradayam!"
-                     if saved else
-                     f"{name}, məlumatı hazırda sistemə yaza bilmədim. Zəhmət olmasa "
-                     "saytdakı əlaqə formasından göndər və ya bir az sonra yenidən cəhd et.")
+                    f"{name}, məlumatların qeydə alındı! Çox sevindim səni tanıdığıma.\n\n"
+                    f"Komandamız 1 iş günü ərzində {phone} nömrəsi ilə sənə zəng edəcək. "
+                    f"Sənə uyğun kurs haqqında ətraflı məlumat verəcəklər.\n\n"
+                    f"Başqa sualın varsa, mən hələ də buradayam! İstənilən vaxt yaz."
                 ),
                 state="completed",
                 actions=[ActionButton(type="button", label="Yenidən başla", value="basha")],
@@ -350,81 +324,23 @@ class Orchestrator:
         return self._answer_with_llm(session, text)
 
     def _answer_with_llm(self, session: dict, text: str) -> ChatResponse:
-        from data.loader import load_knowledge
-
-        context_parts: list[str] = []
-
         if self.retriever:
             try:
-                results = self.retriever.retrieve(text, top_k=settings.rag_top_k)
-                if results:
-                    rag_text = "RAG məlumatları:\n" + "\n\n".join(r["text"] for r in results)
-                    context_parts.append(rag_text)
-                    logger.debug("rag_retrieved count=%d", len(results))
+                results = self.retriever.retrieve(text, top_k=1)
+                if results and len(results) > 0:
+                    answer = results[0].get("text", "")
+                    if answer:
+                        return ChatResponse(
+                            reply=answer,
+                            state=session.get("state", "start"),
+                            actions=[],
+                            courses=[],
+                            capture="none",
+                        )
             except Exception as exc:
                 logger.warning("rag_error error=%s", exc)
 
-        courses = load_courses()
-        if courses:
-            context_parts.append(
-                "Mövcud kurslar:\n" + "\n".join(
-                    f"- {c.get('title','')} ({c.get('direction','')}, {c.get('level','')}) "
-                    f"- {c.get('priceAzn','')} AZN"
-                    for c in courses[:settings.context_max_courses]
-                )
-            )
-
-        for entry in load_knowledge():
-            context_parts.append(f"[{entry['id']}] {entry['text']}")
-
-        context = "\n\n".join(context_parts)
-
-        state_hint = STATE_CONTEXT.get(session["state"], "")
-        system_content = SYSTEM_PROMPT
-        if state_hint:
-            system_content += f"\n\nCari vəziyyət: {state_hint}"
-
-        messages: list[dict] = [{"role": "system", "content": system_content}]
-
-        if context:
-            messages.append({"role": "system", "content": f"Kontekst məlumatı:\n{context}"})
-
-        personalisation = self._personaliser.build(session)
-        if personalisation:
-            messages.append({"role": "system", "content": personalisation})
-
-        messages.extend(get_context_history(session))
-
-        messages.append({"role": "user", "content": text})
-
-        if not self.llm:
-            return self._fallback_response(session)
-
-        t0 = time.time()
-        try:
-            from llm.client import LLMCircuitOpenError
-            raw_reply = self.llm.chat(messages)
-            latency_ms = int((time.time() - t0) * 1000)
-            logger.debug("llm_reply latency_ms=%d", latency_ms)
-        except LLMCircuitOpenError:
-            logger.warning("llm_circuit_open – returning fallback")
-            telemetry.record_llm_error("circuit_open")
-            return self._fallback_response(session)
-        except Exception as exc:
-            latency_ms = int((time.time() - t0) * 1000)
-            logger.error("llm_error error=%s latency_ms=%d", exc, latency_ms)
-            telemetry.record_llm_error(type(exc).__name__)
-            return self._fallback_response(session)
-
-        parsed = self._parser.parse(raw_reply, session["state"])
-
-        return ChatResponse(
-            reply=parsed["reply"],
-            state=parsed.get("state", session["state"]),
-            actions=parsed.get("actions", []),
-            courses=parsed.get("courses", []),
-            capture=parsed.get("capture", "none"),
-        )
+        return self._fallback_response(session)
 
     def _fallback_response(self, session: dict) -> ChatResponse:
         state = session.get("state", "start")
@@ -482,7 +398,6 @@ class Orchestrator:
         user_text: str,
         result: ChatResponse,
         state_before: str,
-        llm_called: bool,
     ):
         add_history(session, "assistant", result.reply)
         session_save(session)
@@ -493,27 +408,25 @@ class Orchestrator:
                 user_id=session.get("userId"),
                 state_before=state_before,
                 state_after=result.state,
-                llm_called=llm_called,
-                llm_latency_ms=None,
                 fallback_hit=False,
-                retry_count=0,
                 user_message_len=len(user_text),
                 reply_len=len(result.reply),
             )
         )
 
-    def _store_contact(self, session: dict) -> bool:
-        from core.contact_service import submit_contact
+    def _store_lead(self, session: dict):
+        from core.lead_service import add_lead
         interest = session["data"].get("interest", "")
-        saved = submit_contact(
-            name=session["data"].get("name", ""),
-            phone=session["data"].get("phone", ""),
-            interest=interest,
-            level=session["data"].get("level", ""),
-        )
-        if saved:
-            telemetry.record_lead(interest)
-        return saved
+        add_lead({
+            "name": session["data"].get("name", ""),
+            "phone": session["data"].get("phone", ""),
+            "interest": interest,
+            "level": session["data"].get("level", ""),
+            "sessionId": session.get("sessionId", ""),
+            "userId": session.get("userId", ""),
+            "source": "chatbot",
+        })
+        telemetry.record_lead(interest)
 
     def _recommend_courses(self, interest: str, level: str) -> list[CourseCard]:
         courses = load_courses()

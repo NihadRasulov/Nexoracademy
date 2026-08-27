@@ -20,10 +20,7 @@ class TurnMetrics:
     user_id: Optional[str]
     state_before: str
     state_after: str
-    llm_called: bool
-    llm_latency_ms: Optional[int]
     fallback_hit: bool
-    retry_count: int
     user_message_len: int
     reply_len: int
     timestamp: float = field(default_factory=time.time)
@@ -36,20 +33,12 @@ if settings.metrics_enabled:
         from prometheus_client import Counter, Histogram
 
         _chat_turns = Counter("nexora_chat_turns_total", "Total chat turns processed")
-        _llm_calls = Counter("nexora_llm_calls_total", "Total LLM API calls made")
-        _llm_errors = Counter("nexora_llm_errors_total", "Total LLM errors", ["type"])
         _fallbacks = Counter("nexora_fallback_hits_total", "Total fallback responses served")
-        _retries = Counter("nexora_llm_retries_total", "Total LLM retry attempts")
         _leads = Counter("nexora_leads_total", "Total leads captured", ["interest"])
         _state_transitions = Counter(
             "nexora_state_transitions_total",
             "State machine transitions",
             ["from_state", "to_state"],
-        )
-        _llm_latency = Histogram(
-            "nexora_llm_latency_ms",
-            "LLM call latency in milliseconds",
-            buckets=[500, 1000, 2000, 4000, 8000, 12000, 20000, 30000],
         )
         _prom_available = True
         logger.info("prometheus_metrics_enabled")
@@ -70,12 +59,6 @@ class ObservabilityMiddleware:
             except Exception:
                 pass
 
-    def record_llm_error(self, error_type: str) -> None:
-        if _prom_available:
-            try:
-                _llm_errors.labels(type=error_type).inc()
-            except Exception:
-                pass
 
     def _log(self, m: TurnMetrics) -> None:
         record = {
@@ -87,14 +70,8 @@ class ObservabilityMiddleware:
     def _increment(self, m: TurnMetrics) -> None:
         try:
             _chat_turns.inc()
-            if m.llm_called:
-                _llm_calls.inc()
-            if m.llm_latency_ms is not None:
-                _llm_latency.observe(m.llm_latency_ms)
             if m.fallback_hit:
                 _fallbacks.inc()
-            if m.retry_count > 0:
-                _retries.inc(m.retry_count)
             if m.state_before != m.state_after:
                 _state_transitions.labels(
                     from_state=m.state_before,
