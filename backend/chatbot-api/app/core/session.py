@@ -66,8 +66,10 @@ class SessionManager:
             session = self._load(validated)
             if session is not None:
                 return session
+            new_id = validated
+        else:
+            new_id = generate_session_id()
 
-        new_id = generate_session_id()
         session = _fresh_session(new_id)
         logger.info("session_created session_id=%s", new_id)
         return session
