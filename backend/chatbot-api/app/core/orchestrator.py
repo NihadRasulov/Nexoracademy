@@ -101,6 +101,20 @@ class Orchestrator:
         if text:
             lower = text.lower().strip()
             greeting_words = ["salam", "hi", "hello", "hey", "merhaba", "sağol", "sagol"]
+
+            for key, label in DIRECTION_LABELS.items():
+                if key == lower or label.lower() == lower:
+                    session["data"]["direction"] = key
+                    update_state(session, "direction_selected")
+                    return self._handle_direction(session, text)
+
+            for key, synonyms in DIRECTION_SYNONYMS.items():
+                for syn in synonyms:
+                    if syn in lower:
+                        session["data"]["direction"] = key
+                        update_state(session, "direction_selected")
+                        return self._handle_direction(session, text)
+
             if lower not in greeting_words:
                 return self._try_answer_question(session, text)
 

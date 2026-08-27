@@ -43,6 +43,8 @@ def _fresh_session(session_id: str) -> dict:
         "data": {
             "interest": None,
             "level": None,
+            "direction": None,
+            "selected_course": None,
             "name": None,
             "phone": None,
         },
@@ -96,6 +98,8 @@ class SessionManager:
         session["data"] = {
             "interest": None,
             "level": None,
+            "direction": None,
+            "selected_course": None,
             "name": None,
             "phone": None,
         }
