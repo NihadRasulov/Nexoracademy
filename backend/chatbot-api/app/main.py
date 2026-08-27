@@ -178,7 +178,8 @@ async def health():
             redis_ok = False
 
 
-    db_ok = db_health() if isinstance(db_health(), bool) else db_health().get("healthy", True)
+    db_result = db_health()
+    db_ok = db_result if isinstance(db_result, bool) else db_result.get("healthy", True)
     all_ok = redis_ok and db_ok
     status_code = 200 if all_ok else 503
     from fastapi.responses import JSONResponse as _JSONResponse

@@ -99,7 +99,11 @@ services:
     env_file: .env
     environment:
       ENVIRONMENT: production
-      PLATFORM_API_URL: http://app:8081
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-nexora_academy}
+      DB_USER: ${DB_USER:-nexora_app}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
       REDIS_ENABLED: "true"
       REDIS_URL: redis://:${REDIS_PASSWORD:-nexora-redis-pass}@redis:6379/0
     expose: ["8000"]
@@ -107,6 +111,8 @@ services:
       - nexora_chroma_data:/app/chroma_db
     networks: [nexora-net]
     depends_on:
+      postgres:
+        condition: service_healthy
       app:
         condition: service_healthy
       redis:

@@ -1,11 +1,29 @@
 """
 Centralised configuration for the Nexora chatbot.
 All settings are read from environment variables with safe defaults.
-Redis and PostgreSQL are optional – the system degrades gracefully without them.
+SQLite is used for local development; production derives a PostgreSQL URL from
+the same DB_* variables used by Docker Compose.
 """
 from __future__ import annotations
 import os
 from dataclasses import dataclass, field
+from urllib.parse import quote_plus
+
+
+def _database_url() -> str:
+    chatbot_url = os.environ.get("CHATBOT_DATABASE_URL", "").strip()
+    if chatbot_url:
+        return chatbot_url
+
+    if os.environ.get("ENVIRONMENT", "development").lower() != "production":
+        return os.environ.get("DATABASE_URL", "").strip() or "sqlite:///./nexora_leads.db"
+
+    user = quote_plus(os.environ.get("DB_USER", "nexora_app"))
+    password = quote_plus(os.environ.get("DB_PASSWORD", ""))
+    host = os.environ.get("DB_HOST", "postgres")
+    port = os.environ.get("DB_PORT", "5432")
+    database = quote_plus(os.environ.get("DB_NAME", "nexora_academy"))
+    return f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{database}"
 
 
 @dataclass
@@ -25,11 +43,7 @@ class Config:
     rate_limit_window_s: int = int(os.environ.get("RATE_LIMIT_WINDOW_S", "60"))
 
     # ── Database ─────────────────────────────────────────────────────────────
-    database_url: str = field(
-        default_factory=lambda: os.environ.get(
-            "DATABASE_URL", "sqlite:///./nexora_leads.db"
-        )
-    )
+    database_url: str = field(default_factory=_database_url)
     db_echo: bool = field(default_factory=lambda: os.environ.get("DB_ECHO", "false").lower() == "true")
 
     # ── Application ──────────────────────────────────────────────────────────
@@ -62,14 +76,14 @@ class Config:
                 errors.append(msg + " (FATAL in production)")
             else:
                 warnings.append(msg)
-        if "sqlite" in self.database_url and self.is_production:
+        if self.database_url.lower().startswith("sqlite") and self.is_production:
             errors.append("SQLite detected in production – use PostgreSQL (FATAL)")
         if self.is_production and errors:
             import logging
             log = logging.getLogger("nexora.config")
             for e in errors:
                 log.critical("config_error msg=%s", e)
-            sys.exit(1)
+            raise SystemExit(1)
         return warnings
 
 
