@@ -9,7 +9,8 @@ const LoginPage = lazy(() => import("@/pages/login-page").then((module) => ({ de
 const DashboardPage = lazy(() => import("@/pages/dashboard-page").then((module) => ({ default: module.DashboardPage })));
 const HomepagePage = lazy(() => import("@/features/homepage/homepage-page").then((module) => ({ default: module.HomepagePage })));
 const NewsPage = lazy(() => import("@/features/news/news-page").then((module) => ({ default: module.NewsPage })));
-const AboutPage = lazy(() => import("@/features/content/about-page").then((module) => ({ default: module.AboutPage })));
+const AcademyPage = lazy(() => import("@/features/content/about-page").then((module) => ({ default: module.AcademyPage })));
+const CareerPage = lazy(() => import("@/features/content/career-page").then((module) => ({ default: module.CareerPage })));
 const CmsCollectionPage = lazy(() => import("@/features/content/cms-collection-page").then((module) => ({ default: module.CmsCollectionPage })));
 const CatalogPage = lazy(() => import("@/features/catalog/catalog-page").then((module) => ({ default: module.CatalogPage })));
 const InboxPage = lazy(() => import("@/features/inbox/inbox-page").then((module) => ({ default: module.InboxPage })));
@@ -37,7 +38,9 @@ export function App() {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/homepage" element={<HomepagePage />} />
-              <Route path="/about" element={<AboutPage />} />
+              <Route path="/academy" element={<AcademyPage />} />
+              <Route path="/about" element={<Navigate to="/academy" replace />} />
+              <Route path="/career" element={<CareerPage />} />
               <Route path="/news" element={<NewsPage />} />
               <Route path="/faq" element={<CmsCollectionPage type="FAQ" />} />
               <Route path="/vacancies" element={<CmsCollectionPage type="VACANCY" />} />

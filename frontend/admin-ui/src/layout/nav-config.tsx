@@ -2,11 +2,12 @@ import {
   BookOpen,
   BriefcaseBusiness,
   CircleHelp,
+  FileText,
   Gauge,
+  GraduationCap,
   Inbox,
   Newspaper,
   PanelsTopLeft,
-  Settings2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -32,10 +33,11 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Sayt və kontent",
     items: [
       { label: "Ana səhifə", to: "/homepage", icon: PanelsTopLeft, description: "Hero, statistika və sayt parametrləri", keywords: ["homepage", "hero", "esas sehife"] },
-      { label: "Haqqımızda", to: "/about", icon: Settings2, description: "Akademiya haqqında məzmun", keywords: ["about", "haqqimizda", "akademiya"] },
+      { label: "Akademiya", to: "/academy", icon: GraduationCap, description: "Akademiya səhifəsinin məzmunu", keywords: ["about", "haqqimizda", "akademiya"] },
+      { label: "Karyera", to: "/career", icon: BriefcaseBusiness, description: "Karyera səhifəsinin məzmunu", keywords: ["career", "karyera", "hero", "yol xeritesi"] },
       { label: "Xəbərlər", to: "/news", icon: Newspaper, description: "Xəbər yarat və yayımla", keywords: ["xeber", "blog", "məqalə", "yazi"] },
       { label: "FAQ", to: "/faq", icon: CircleHelp, description: "Tez-tez verilən suallar", keywords: ["sual", "cavab", "faq"] },
-      { label: "Vakansiyalar", to: "/vacancies", icon: BriefcaseBusiness, description: "Açıq iş elanları", keywords: ["vakansiya", "is elani", "karyera"] },
+      { label: "Vakansiyalar", to: "/vacancies", icon: FileText, description: "Açıq iş elanları", keywords: ["vakansiya", "is elani", "karyera"] },
     ],
   },
   {

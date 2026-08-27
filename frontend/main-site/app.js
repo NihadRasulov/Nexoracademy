@@ -1726,6 +1726,121 @@
     heading.replaceChildren(...nodes);
   }
 
+  function replaceCareerHeading(heading, highlightClass, lead, accent, tail = "") {
+    if (!heading) return;
+    const leadText = String(lead || "").trim();
+    const accentText = String(accent || "").trim();
+    const tailText = String(tail || "").trim();
+    if (!leadText && !accentText && !tailText) return;
+    const highlight = document.createElement("span");
+    highlight.className = highlightClass;
+    highlight.textContent = accentText;
+    const nodes = [];
+    if (leadText) nodes.push(document.createTextNode(`${leadText} `));
+    if (accentText) nodes.push(highlight);
+    if (tailText) nodes.push(document.createTextNode(` ${tailText}`));
+    heading.replaceChildren(...nodes);
+  }
+
+  function applyCareerContent(page) {
+    const data = contentObject(page?.data);
+    const hero = contentObject(data.hero);
+    replaceCareerHeading(
+      $(".career-hero__title"),
+      "career-hero__highlight",
+      hero.titleLead,
+      hero.titleAccent,
+      hero.titleTail,
+    );
+    const heroDescription = $(".career-hero__desc");
+    if (heroDescription && String(hero.description || "").trim())
+      heroDescription.textContent = String(hero.description).trim();
+    const heroButton = $(".career-hero__btn");
+    if (heroButton && String(hero.buttonLabel || "").trim())
+      heroButton.textContent = String(hero.buttonLabel).trim();
+    const heroButtonUrl = safeCourseDetailUrl(hero.buttonUrl);
+    if (heroButton && heroButtonUrl) heroButton.setAttribute("href", heroButtonUrl);
+    const heroImage = $(".career-hero__img");
+    const heroImageUrl = safeCourseDetailUrl(hero.imageUrl);
+    if (heroImage && heroImageUrl) heroImage.setAttribute("src", heroImageUrl);
+
+    const journey = contentObject(data.journey);
+    replaceSplitHeading(
+      $(".section--works .section__header__title"),
+      journey.titleLead,
+      journey.titleAccent,
+    );
+    const journeyItems = Array.isArray(journey.items) ? journey.items : [];
+    const journeyCards = $$(".career-works .service-card");
+    journeyItems.forEach((entry, index) => {
+      const item = contentObject(entry);
+      const card = journeyCards[index];
+      if (!card) return;
+      const title = $(".service-card__title", card);
+      const description = $(".service-card__desc", card);
+      const image = $("img.service-card__icon", card);
+      if (title && String(item.title || "").trim())
+        title.textContent = String(item.title).trim();
+      if (description && String(item.description || "").trim())
+        description.textContent = String(item.description).trim();
+      const imageUrl = safeCourseDetailUrl(item.imageUrl);
+      if (image && imageUrl) {
+        image.setAttribute("src", imageUrl);
+        if (String(item.title || "").trim())
+          image.setAttribute("alt", String(item.title).trim());
+      }
+    });
+
+    const intro = contentObject(data.intro);
+    replaceCareerHeading(
+      $(".career__header-title"),
+      "career__highlight",
+      intro.titleLead,
+      intro.titleAccent,
+      intro.titleTail,
+    );
+    const paragraphs = Array.isArray(intro.paragraphs) ? intro.paragraphs : [];
+    const paragraphNodes = $$(".career__info p");
+    paragraphs.forEach((paragraph, index) => {
+      const node = paragraphNodes[index];
+      if (node && String(paragraph || "").trim())
+        node.textContent = String(paragraph).trim();
+    });
+    const introImage = $(".career-parallax-image");
+    const introImageUrl = safeCourseDetailUrl(intro.imageUrl);
+    if (introImage && introImageUrl) introImage.setAttribute("src", introImageUrl);
+
+    const vacancies = contentObject(data.vacancies);
+    const vacanciesTitle = $(".section--vacancy .section__header__title");
+    const vacanciesDescription = $(".section--vacancy .section__header__desc");
+    if (vacanciesTitle && String(vacancies.title || "").trim())
+      vacanciesTitle.textContent = String(vacancies.title).trim();
+    if (vacanciesDescription && String(vacancies.description || "").trim())
+      vacanciesDescription.textContent = String(vacancies.description).trim();
+  }
+
+  async function initCareerContent(signal) {
+    const root = $(".main--career");
+    if (!root) return null;
+    root.setAttribute("aria-busy", "true");
+    root.dataset.contentSource = "loading";
+    try {
+      const page = await publicContentByKey("page.career", { signal });
+      if (!page || typeof page !== "object")
+        throw new ApiError(0, "Karyera məlumatının formatı düzgün deyil.");
+      if (signal.aborted) return null;
+      applyCareerContent(page);
+      root.dataset.contentSource = "api";
+      return page;
+    } catch (error) {
+      if (error?.name === "AbortError" || signal.aborted) return null;
+      root.dataset.contentSource = "fallback";
+      return null;
+    } finally {
+      root.removeAttribute("aria-busy");
+    }
+  }
+
   function applyHomeContent(page) {
     const data = contentObject(page?.data);
     const hero = contentObject(data.hero);
@@ -2915,6 +3030,7 @@
         void initContactPage(signal);
         break;
       case "career":
+        void initCareerContent(signal);
         void initVacanciesPage(signal);
         break;
       case "vacancy-details":
@@ -3339,4 +3455,3 @@
     document.addEventListener("DOMContentLoaded", boot, { once: true });
   else boot();
 })();
-
